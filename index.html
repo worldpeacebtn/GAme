@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>G.A.me - Cyber Helix Presentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #020205;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            /* Hide scrollbar for a cleaner look, but keep functionality */
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
+        }
+        body::-webkit-scrollbar {
+            display: none;
+        }
+        
+        h1, h2, h3, .cyber-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none; /* Let clicks pass through unless on specific 3D objects */
+        }
+
+        /* The scroll proxy allows native scrolling which is smoother than wheel events */
+        #scroll-proxy {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 600vh; /* 6 pages of scrolling */
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none; /* Only children should be clickable */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .clickable {
+            pointer-events: auto;
+        }
+
+        /* Glitch Effect for text */
+        .glitch-text {
+            position: relative;
+            display: inline-block;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.8;
+        }
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 red;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim 3s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -1px 0 cyan;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(24px, 9999px, 14px, 0); }
+            20% { clip: rect(85px, 9999px, 114px, 0); }
+            40% { clip: rect(15px, 9999px, 90px, 0); }
+            60% { clip: rect(104px, 9999px, 45px, 0); }
+            80% { clip: rect(4px, 9999px, 80px, 0); }
+            100% { clip: rect(50px, 9999px, 30px, 0); }
+        }
+
+        .glass-panel {
+            background: rgba(10, 15, 30, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0,255,255,0.2) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1;
+            position: absolute;
+            bottom: 100%;
+            animation: scanline 8s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scanline {
+            0% { bottom: 100%; }
+            100% { bottom: -100px; }
+        }
+
+        /* Hide elements dynamically */
+        .hidden-fade {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        .visible-fade {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        /* New Styles for Minigame & Leaderboard */
+        #minigame-layer {
+            background: rgba(10, 5, 20, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 100; /* Above everything */
+        }
+        
+        .arcade-text {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px #ff00ff, 0 0 20px #00ffff;
+        }
+
+        #game-canvas {
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.2), inset 0 0 20px rgba(0, 255, 255, 0.2);
+            border-radius: 8px;
+            background: linear-gradient(180deg, #050010 0%, #150030 100%);
+        }
+
+        /* Editor & Carousel Styles */
+        .carousel-track {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 1.5rem;
+            padding-bottom: 1rem;
+            scrollbar-width: thin;
+            scrollbar-color: #00ffff rgba(10,15,30,0.5);
+        }
+        .carousel-track::-webkit-scrollbar { height: 6px; }
+        .carousel-track::-webkit-scrollbar-track { background: rgba(10,15,30,0.5); }
+        .carousel-track::-webkit-scrollbar-thumb { background: #00ffff; border-radius: 3px; }
+        
+        .carousel-item {
+            scroll-snap-align: center;
+            flex: 0 0 85%;
+            max-width: 280px;
+            transition: transform 0.3s;
+        }
+        .carousel-item:hover { transform: translateY(-5px); }
+        
+        .editor-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        @media (min-width: 768px) {
+            .editor-grid { grid-template-columns: 1fr 1fr; }
+        }
+        .emoji-btn {
+            font-size: 2rem;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #374151;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .emoji-btn:hover, .emoji-btn.active {
+            border-color: #00ffff;
+            background: rgba(0, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+    </style>
+
+    <!-- Import Map for Three.js so it works in a single file -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- 3D Canvas Background -->
+    <div id="canvas-container"></div>
+    <div class="scanline z-50"></div>
+
+    <!-- Scroll proxy to trigger native scrolling without blocking 3D -->
+    <div id="scroll-proxy"></div>
+
+    <div id="ui-layer">
+        
+        <!-- Top Header -->
+        <header class="p-6 flex justify-between items-start transition-opacity duration-500" id="main-header">
+            <div>
+                <h1 class="text-3xl font-black text-cyan-400 glitch-text tracking-widest" data-text="G.A.me">G.A.me</h1>
+                <p class="text-xs tracking-[0.3em] text-cyan-200 opacity-70">SYSTEM.PROTOCOL.X42</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs text-fuchsia-400 font-mono" id="scroll-depth">DEPTH: 0m</p>
+                <p class="text-[10px] text-gray-500 font-mono">SCROLL TO ASCEND</p>
+            </div>
+        </header>
+
+        <!-- Right Side Timeline -->
+        <div class="absolute right-6 top-1/2 transform -translate-y-1/2 flex flex-col gap-6 items-center clickable hidden-fade" id="timeline-ui">
+            <div class="w-px h-full bg-cyan-900 absolute left-1/2 transform -translate-x-1/2 -z-10"></div>
+            <!-- Timeline nodes generated by JS -->
+        </div>
+
+        <!-- Center Interaction (Appears at Top) -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center clickable hidden-fade" id="play-screen-ui">
+            <h2 class="text-2xl md:text-4xl font-bold text-fuchsia-400 mb-6 cyber-font text-center shadow-fuchsia-500 drop-shadow-lg">
+                CORE SPHERE REACHED
+            </h2>
+            <button id="btn-play-cutscene" class="group relative px-8 py-4 bg-transparent overflow-hidden rounded-sm border border-cyan-500 hover:border-fuchsia-500 transition-colors duration-300">
+                <div class="absolute inset-0 bg-cyan-500/20 group-hover:bg-fuchsia-500/20 transition-colors duration-300 blur-md"></div>
+                <span class="relative cyber-font text-cyan-400 group-hover:text-fuchsia-400 text-xl font-bold tracking-widest">
+                    INITIALIZE PLAYBACK
+                </span>
+            </button>
+            <p class="mt-4 text-xs font-mono text-gray-400 text-center max-w-sm">
+                Warning: Initiating cutscene will override manual controls. Ensure audio systems are online.
+            </p>
+        </div>
+
+        <!-- MEDIA INTEGRATION GUIDE NODE (Depth 20) -->
+        <div class="absolute top-1/3 left-1/2 transform -translate-x-1/2 w-11/12 max-w-2xl clickable hidden-fade" id="media-node-ui">
+            <div class="glass-panel p-6 rounded-lg border-l-4 border-cyan-500">
+                <h3 class="text-xl cyber-font text-cyan-400 mb-2">EXTERNAL MEDIA STREAM</h3>
+                <p class="text-sm text-gray-300 font-mono mb-4">
+                    [SYSTEM_GUIDE]: To integrate external immersive media like 
+                    <span class="text-fuchsia-400">worldpeacebtn.github.io/-/RENEW.html</span>, 
+                    use an iframe overlay here. Ensure the external site allows iframe embedding (X-Frame-Options).
+                </p>
+                
+                <!-- 
+                HOW TO EMBED YOUR MEDIA:
+                Uncomment the iframe below and replace the 'src' with your link.
+                You can adjust width/height and styling.
+                -->
+                <div class="w-full aspect-video bg-black/80 rounded border border-cyan-900 flex items-center justify-center relative overflow-hidden">
+                    <p class="text-cyan-800 font-mono animate-pulse absolute z-0">[MEDIA FRAME PLACEHOLDER]</p>
+                    
+                    <!-- ACTUAL IFRAME CODE (Uncomment to use) -->
+                    <!-- <iframe src="https://worldpeacebtn.github.io/-/RENEW.html" class="w-full h-full relative z-10 border-0" title="Renew Media" allow="autoplay; fullscreen"></iframe> -->
+                </div>
+            </div>
+        </div>
+
+        <!-- GALLERY NODE (Depth 30) -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-4xl clickable hidden-fade" id="gallery-node-ui">
+            <h3 class="text-2xl cyber-font text-cyan-400 mb-4 text-center">CIRCULATING GALLERY</h3>
+            <div class="carousel-track">
+                <div class="carousel-item glass-panel p-4 rounded-lg border-t-2 border-fuchsia-500">
+                    <div class="h-32 bg-gray-900 rounded mb-4 flex items-center justify-center text-4xl">🧬</div>
+                    <h4 class="text-fuchsia-400 font-bold cyber-font">Project: HELIX</h4>
+                    <p class="text-xs text-gray-400 mt-2">Core presentation layer. Active development. DNA data integration.</p>
+                </div>
+                <div class="carousel-item glass-panel p-4 rounded-lg border-t-2 border-cyan-500">
+                    <div class="h-32 bg-gray-900 rounded mb-4 flex items-center justify-center text-4xl">🎭</div>
+                    <h4 class="text-cyan-400 font-bold cyber-font">Project: RENEW</h4>
+                    <p class="text-xs text-gray-400 mt-2">Theatrical integration and interactive library system. Status: Online.</p>
+                </div>
+                <div class="carousel-item glass-panel p-4 rounded-lg border-t-2 border-green-500">
+                    <div class="h-32 bg-gray-900 rounded mb-4 flex items-center justify-center text-4xl">🦍</div>
+                    <h4 class="text-green-400 font-bold cyber-font">APEX Combat</h4>
+                    <p class="text-xs text-gray-400 mt-2">Empathy-based conflict resolution simulation via emoji avatar system.</p>
+                </div>
+                <div class="carousel-item glass-panel p-4 rounded-lg border-t-2 border-yellow-500">
+                    <div class="h-32 bg-gray-900 rounded mb-4 flex items-center justify-center text-4xl">📚</div>
+                    <h4 class="text-yellow-400 font-bold cyber-font">Guide Book</h4>
+                    <p class="text-xs text-gray-400 mt-2">Character lore, backgrounds, and mythological database.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- THEATER NODE (Depth 45) -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-3xl clickable hidden-fade" id="theater-node-ui">
+            <div class="glass-panel p-6 rounded-lg">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                    <h3 class="text-xl cyber-font text-cyan-400">NEON THEATER</h3>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 bg-cyan-900/50 text-cyan-300 text-xs font-mono rounded hover:bg-cyan-500 hover:text-black transition" id="btn-floor-1">FLOOR 1</button>
+                        <button class="px-3 py-1 bg-gray-800 text-gray-400 text-xs font-mono rounded hover:bg-fuchsia-500 hover:text-white transition" id="btn-floor-2">FLOOR 2</button>
+                    </div>
+                </div>
+                <div id="theater-stage" class="w-full aspect-video bg-black/80 rounded border border-cyan-900 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-500">
+                    <div class="text-6xl mb-4 animate-bounce">🎪</div>
+                    <p class="text-cyan-400 font-mono text-center">MAIN STAGE (FLOOR 1)<br><span class="text-xs text-gray-500">Awaiting Performance Data...</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDITOR NODE (Depth 60) -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center clickable hidden-fade" id="editor-node-ui">
+            <h2 class="text-3xl font-bold text-cyan-400 mb-2 cyber-font text-center glitch-text" data-text="CREATOR STUDIO">
+                CREATOR STUDIO
+            </h2>
+            <p class="text-gray-300 font-mono text-sm mb-6 text-center max-w-md">
+                Access the Character Library, design custom entities (Myths, Heroes, Animals), and build stage backgrounds for the APEX arena.
+            </p>
+            <button id="btn-open-editor" class="px-8 py-3 bg-cyan-900/40 border-2 border-cyan-500 rounded text-white font-bold cyber-font hover:bg-cyan-600 transition-colors shadow-[0_0_15px_#00ffff]">
+                INITIALIZE EDITOR
+            </button>
+        </div>
+
+        <!-- APEX MINIGAME NODE (Depth 75) -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center clickable hidden-fade" id="apex-node-ui">
+            <h2 class="text-3xl font-bold text-fuchsia-400 mb-2 cyber-font text-center glitch-text" data-text="APEX ARENA">
+                APEX ARENA
+            </h2>
+            <p class="text-cyan-300 font-mono text-sm mb-6 text-center max-w-sm">
+                Warning: Hostile entity detected. Neutralize with high-frequency empathy blasts.
+            </p>
+            <button id="btn-play-apex" class="px-8 py-3 bg-fuchsia-900/40 border-2 border-fuchsia-500 rounded text-white font-bold cyber-font hover:bg-fuchsia-600 transition-colors shadow-[0_0_15px_#ff00ff]">
+                ENTER COMBAT
+            </button>
+        </div>
+        
+        <!-- APEX MINIGAME OVERLAY -->
+        <div class="fixed inset-0 hidden-fade flex-col items-center justify-center clickable" id="minigame-layer">
+            <div class="w-full max-w-4xl px-4 relative flex flex-col items-center">
+                
+                <!-- Header / HP Bars -->
+                <div class="w-full flex justify-between items-center mb-4 px-4">
+                    <div class="flex flex-col gap-1 w-1/3">
+                        <span class="text-cyan-400 font-bold cyber-font text-sm md:text-base">PLAYER (🐰)</span>
+                        <div class="w-full h-4 bg-gray-900 rounded overflow-hidden border border-cyan-900">
+                            <div id="player-hp-bar" class="h-full bg-cyan-500 w-full transition-all duration-300"></div>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-fuchsia-500 font-bold arcade-text text-xl md:text-3xl tracking-widest text-center">APEX</h3>
+                    
+                    <div class="flex flex-col gap-1 w-1/3 text-right">
+                        <span class="text-fuchsia-400 font-bold cyber-font text-sm md:text-base">BOSS (🦍)</span>
+                        <div class="w-full h-4 bg-gray-900 rounded overflow-hidden border border-fuchsia-900 flex justify-end">
+                            <div id="boss-hp-bar" class="h-full bg-fuchsia-500 w-full transition-all duration-300"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Game Canvas -->
+                <canvas id="game-canvas" width="800" height="400" class="max-w-full h-auto touch-none"></canvas>
+                
+                <!-- Controls Hint -->
+                <p class="text-gray-400 font-mono text-xs mt-4 text-center">
+                    [DESKTOP]: Space to Jump, Enter to Shoot <br>
+                    [MOBILE]: Tap Left Side to Jump, Tap Right Side to Shoot<br>
+                    *Jump to generate Powerbeats of Love!*
+                </p>
+
+                <!-- Exit Button -->
+                <button id="btn-exit-apex" class="absolute -top-12 right-4 text-gray-500 hover:text-white font-mono border border-gray-800 px-3 py-1 rounded">EXIT MODULE</button>
+
+                <!-- Leaderboard Screen (Hidden by default) -->
+                <div id="leaderboard-screen" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-500 z-50 rounded-lg">
+                    <h2 class="arcade-text text-4xl text-cyan-400 mb-2" id="game-result-title">YOU WIN</h2>
+                    <p class="text-fuchsia-400 font-mono mb-8" id="game-result-sub">The entity has been pacified.</p>
+                    
+                    <div class="glass-panel p-6 rounded w-full max-w-sm mb-6">
+                        <h3 class="text-center text-white cyber-font mb-4 border-b border-gray-700 pb-2">RANKINGS</h3>
+                        <ul id="leaderboard-list" class="font-mono text-sm space-y-2">
+                            <!-- Populated by JS -->
+                        </ul>
+                    </div>
+                    
+                    <button id="btn-restart-apex" class="px-6 py-2 bg-transparent border border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-black font-bold cyber-font transition-colors">
+                        PLAY AGAIN
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CREATOR STUDIO OVERLAY -->
+        <div class="fixed inset-0 hidden-fade bg-black/95 flex-col items-center justify-center clickable z-[150] p-4 md:p-8" id="creator-layer">
+            <div class="w-full max-w-6xl h-full flex flex-col glass-panel rounded-xl overflow-hidden border border-cyan-500/50 relative">
+                
+                <!-- Header -->
+                <div class="p-4 border-b border-cyan-900/50 flex justify-between items-center bg-gray-900/50">
+                    <h2 class="text-2xl cyber-font text-cyan-400">ENTITY EDITOR & LIBRARY</h2>
+                    <button id="btn-close-editor" class="text-gray-400 hover:text-fuchsia-400 font-mono text-sm px-3 py-1 border border-gray-700 rounded transition">EXIT</button>
+                </div>
+
+                <!-- Main Content -->
+                <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
+                    
+                    <!-- Left Sidebar (Tabs & Form) -->
+                    <div class="w-full md:w-1/2 lg:w-2/5 p-6 overflow-y-auto border-r border-cyan-900/50">
+                        <div class="flex gap-2 mb-6 border-b border-gray-700 pb-2 overflow-x-auto scrollbar-hide">
+                            <button class="editor-tab active text-cyan-400 font-bold font-mono text-sm px-2 py-1 whitespace-nowrap" data-target="edit-player">PLAYER</button>
+                            <button class="editor-tab text-gray-500 hover:text-cyan-400 font-mono text-sm px-2 py-1 whitespace-nowrap transition" data-target="edit-enemy">ENEMY</button>
+                            <button class="editor-tab text-gray-500 hover:text-cyan-400 font-mono text-sm px-2 py-1 whitespace-nowrap transition" data-target="edit-stage">STAGE & STORY</button>
+                            <button class="editor-tab text-gray-500 hover:text-cyan-400 font-mono text-sm px-2 py-1 whitespace-nowrap transition" data-target="edit-library">LIBRARY</button>
+                        </div>
+
+                        <!-- Player Editor Tab -->
+                        <div id="edit-player" class="editor-content block">
+                            <h3 class="text-fuchsia-400 font-bold cyber-font mb-4">SELECT PLAYER CLASS</h3>
+                            
+                            <label class="block text-xs text-gray-400 font-mono mb-2">Animals (Quick Agility)</label>
+                            <div class="flex flex-wrap gap-2 mb-4" id="picker-animals">
+                                <button class="emoji-btn active" onclick="selectPlayer('🐰')">🐰</button>
+                                <button class="emoji-btn" onclick="selectPlayer('🦊')">🦊</button>
+                                <button class="emoji-btn" onclick="selectPlayer('🦉')">🦉</button>
+                                <button class="emoji-btn" onclick="selectPlayer('🐸')">🐸</button>
+                            </div>
+                            
+                            <label class="block text-xs text-gray-400 font-mono mb-2">Myths & Legends (Magic Defense)</label>
+                            <div class="flex flex-wrap gap-2 mb-4" id="picker-myths">
+                                <button class="emoji-btn" onclick="selectPlayer('🐉')">🐉</button>
+                                <button class="emoji-btn" onclick="selectPlayer('🦄')">🦄</button>
+                                <button class="emoji-btn" onclick="selectPlayer('🧞')">🧞</button>
+                                <button class="emoji-btn" onclick="selectPlayer('🧜‍♀️')">🧜‍♀️</button>
+                            </div>
+
+                            <label class="block text-xs text-gray-400 font-mono mb-2">Superheroes (Heavy Attacks)</label>
+                            <div class="flex flex-wrap gap-2 mb-6" id="picker-heroes">
+                                <button class="emoji-btn" onclick="selectPlayer('🦸')">🦸</button>
+                                <button class="emoji-btn" onclick="selectPlayer('🥷')">🥷</button>
+                                <button class="emoji-btn" onclick="selectPlayer('🧙')">🧙</button>
+                                <button class="emoji-btn" onclick="selectPlayer('🤖')">🤖</button>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="block text-xs text-gray-400 font-mono mb-2">Neon Aura Color</label>
+                                <input type="color" id="player-color" value="#00ffff" class="w-full h-10 rounded cursor-pointer bg-transparent border border-gray-700">
+                            </div>
+                        </div>
+
+                        <!-- Enemy Editor Tab -->
+                        <div id="edit-enemy" class="editor-content hidden">
+                            <h3 class="text-fuchsia-400 font-bold cyber-font mb-4">SELECT ENEMY ENTITY</h3>
+                            
+                            <label class="block text-xs text-gray-400 font-mono mb-2">Classic Threats (Brute Force)</label>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <button class="emoji-btn active" onclick="selectEnemy('🦍')">🦍</button>
+                                <button class="emoji-btn" onclick="selectEnemy('🐺')">🐺</button>
+                                <button class="emoji-btn" onclick="selectEnemy('🐍')">🐍</button>
+                                <button class="emoji-btn" onclick="selectEnemy('🦖')">🦖</button>
+                            </div>
+                            
+                            <label class="block text-xs text-gray-400 font-mono mb-2">Cosmic / Mythic Evils (Unpredictable)</label>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <button class="emoji-btn" onclick="selectEnemy('👽')">👽</button>
+                                <button class="emoji-btn" onclick="selectEnemy('👹')">👹</button>
+                                <button class="emoji-btn" onclick="selectEnemy('🧛')">🧛</button>
+                                <button class="emoji-btn" onclick="selectEnemy('👾')">👾</button>
+                            </div>
+
+                             <div class="mb-4">
+                                <label class="block text-xs text-gray-400 font-mono mb-2">Corruption Color</label>
+                                <input type="color" id="enemy-color" value="#ff00ff" class="w-full h-10 rounded cursor-pointer bg-transparent border border-gray-700">
+                            </div>
+                        </div>
+
+                        <!-- Stage & Story Tab -->
+                        <div id="edit-stage" class="editor-content hidden">
+                            <h3 class="text-fuchsia-400 font-bold cyber-font mb-4">LORE & STAGE DESIGN</h3>
+                            <label class="block text-xs text-gray-400 font-mono mb-1">Entity Name</label>
+                            <input type="text" id="lore-name" value="The Neon Drifter" class="w-full bg-black/50 border border-gray-700 rounded p-2 text-white mb-4 focus:border-cyan-500 outline-none">
+                            
+                            <label class="block text-xs text-gray-400 font-mono mb-1">Background Story (Guide Book Entry)</label>
+                            <textarea id="lore-story" rows="4" class="w-full bg-black/50 border border-gray-700 rounded p-2 text-white mb-4 focus:border-cyan-500 outline-none text-sm">A wanderer from the Kiez, utilizing high-frequency empathy to neutralize digital corruption in the lower strata.</textarea>
+                            
+                            <label class="block text-xs text-gray-400 font-mono mb-1">Stage Theme</label>
+                            <select id="stage-theme" class="w-full bg-black/50 border border-gray-700 rounded p-2 text-white mb-4 outline-none">
+                                <option value="cyber">Cyber Grid (Default)</option>
+                                <option value="forest">Zauberwald (Neon Forest)</option>
+                                <option value="theater">Grand Theater (Stage)</option>
+                            </select>
+                        </div>
+
+                        <!-- Library Tab -->
+                        <div id="edit-library" class="editor-content hidden">
+                            <h3 class="text-fuchsia-400 font-bold cyber-font mb-4">CHARACTER LIBRARY</h3>
+                            <p class="text-xs text-gray-400 font-mono mb-4">Saved configurations for the APEX Arena and Theater.</p>
+                            
+                            <div class="space-y-3" id="library-list">
+                                <!-- Populated by JS -->
+                                <div class="bg-gray-800/50 p-3 rounded border border-gray-700 flex justify-between items-center">
+                                    <div>
+                                        <span class="text-2xl mr-2">🐰 vs 🦍</span>
+                                        <span class="text-sm font-bold text-cyan-400">Classic Kiez Matchup</span>
+                                    </div>
+                                    <button class="text-xs text-fuchsia-400 hover:text-white transition" onclick="loadPreset('🐰', '🦍', '#00ffff', '#ff00ff', 'The Neon Drifter')">LOAD</button>
+                                </div>
+                                <div class="bg-gray-800/50 p-3 rounded border border-gray-700 flex justify-between items-center">
+                                    <div>
+                                        <span class="text-2xl mr-2">🥷 vs 👹</span>
+                                        <span class="text-sm font-bold text-cyan-400">Mythic Shadow</span>
+                                    </div>
+                                    <button class="text-xs text-fuchsia-400 hover:text-white transition" onclick="loadPreset('🥷', '👹', '#00ff88', '#ff3300', 'Silent Blade')">LOAD</button>
+                                </div>
+                                 <div class="bg-gray-800/50 p-3 rounded border border-gray-700 flex justify-between items-center">
+                                    <div>
+                                        <span class="text-2xl mr-2">🦸 vs 👽</span>
+                                        <span class="text-sm font-bold text-cyan-400">Cosmic Defense</span>
+                                    </div>
+                                    <button class="text-xs text-fuchsia-400 hover:text-white transition" onclick="loadPreset('🦸', '👽', '#0033ff', '#00ff00', 'Star Guardian')">LOAD</button>
+                                </div>
+                            </div>
+                            
+                            <button id="btn-save-library" class="w-full mt-6 py-2 bg-cyan-900/30 border border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-black font-bold font-mono transition">SAVE CURRENT TO LIBRARY</button>
+                        </div>
+                    </div>
+
+                    <!-- Right Main Preview Area -->
+                    <div class="w-full md:w-1/2 lg:w-3/5 p-6 bg-black/60 flex flex-col items-center justify-center relative border-t md:border-t-0 md:border-l border-cyan-900/50">
+                        <div class="absolute inset-0 bg-[url('https://placehold.co/800x600/0a0f1e/1e293b?text=+')] opacity-20 bg-cover bg-center pointer-events-none transition-all duration-500" id="preview-bg"></div>
+                        
+                        <h3 class="text-gray-400 font-mono text-sm mb-8 relative z-10 tracking-[0.3em]">LIVE STAGE PREVIEW</h3>
+                        
+                        <div class="flex items-end justify-center gap-8 md:gap-16 w-full max-w-lg relative z-10 border-b-2 border-cyan-900 pb-4">
+                            <!-- Player Preview -->
+                            <div class="flex flex-col items-center gap-4 transition-transform" id="preview-player-container">
+                                <div class="text-xs font-mono px-2 py-1 rounded bg-cyan-900/50 text-cyan-300" id="preview-player-name">Player</div>
+                                <div class="text-7xl md:text-8xl drop-shadow-[0_0_15px_#00ffff] transition-all duration-300 transform hover:-translate-y-4 cursor-pointer" id="preview-player-emoji">🐰</div>
+                            </div>
+                            
+                            <div class="text-2xl font-black text-fuchsia-500 italic pb-6 md:pb-8">VS</div>
+                            
+                            <!-- Enemy Preview -->
+                            <div class="flex flex-col items-center gap-4 transition-transform" id="preview-enemy-container">
+                                <div class="text-xs font-mono px-2 py-1 rounded bg-fuchsia-900/50 text-fuchsia-300">Enemy</div>
+                                <div class="text-7xl md:text-8xl drop-shadow-[0_0_15px_#ff00ff] transition-all duration-300 transform hover:-translate-y-4 cursor-pointer" id="preview-enemy-emoji">🦍</div>
+                            </div>
+                        </div>
+
+                        <div class="mt-8 relative z-10 bg-gray-900/80 p-4 rounded border border-gray-700 max-w-lg w-full text-center shadow-lg">
+                            <h4 class="text-cyan-400 font-bold mb-2 cyber-font" id="preview-lore-title">The Neon Drifter</h4>
+                            <p class="text-sm text-gray-300 font-mono italic" id="preview-lore-text">A wanderer from the Kiez, utilizing high-frequency empathy to neutralize digital corruption in the lower strata.</p>
+                        </div>
+                        
+                        <p class="mt-6 text-xs text-gray-500 font-mono text-center relative z-10">
+                            [SYSTEM_NOTE]: Configured entities will automatically render inside the APEX Arena Minigame (Depth 75).
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Cutscene Overlay UI -->
+        <div class="absolute inset-0 hidden-fade bg-black/40 flex flex-col justify-end p-8 md:p-16" id="cutscene-layer">
+            
+            <div id="cutscene-character-img" class="absolute bottom-8 left-8 md:left-16 w-32 h-32 md:w-64 md:h-64 bg-contain bg-no-repeat bg-bottom opacity-0 transition-opacity duration-500" style="background-image: url('https://placehold.co/400x400/101015/00ffff?text=Avatar');"></div>
+            
+            <div class="glass-panel p-6 rounded-lg max-w-3xl ml-auto mr-auto w-full mb-8 transform translate-y-10 opacity-0 transition-all duration-700 relative" id="dialogue-box">
+                <div class="absolute -top-3 left-6 bg-[#0a0f1e] px-2 text-cyan-400 font-bold cyber-font text-sm border border-cyan-900 rounded" id="dialogue-name">SYSTEM</div>
+                <p class="text-lg md:text-2xl font-light text-gray-100" id="dialogue-text"></p>
+                <div class="absolute bottom-2 right-4 flex gap-1">
+                    <div class="w-2 h-2 bg-fuchsia-500 animate-pulse"></div>
+                    <div class="w-2 h-2 bg-fuchsia-500 animate-pulse" style="animation-delay: 0.2s"></div>
+                </div>
+            </div>
+            
+            <div class="absolute top-8 right-8 clickable">
+                <button id="btn-skip" class="text-xs text-gray-500 hover:text-white font-mono uppercase tracking-widest border border-gray-800 px-3 py-1 rounded">Skip >> </button>
+            </div>
+        </div>
+
+        <!-- Review Mode UI (Databank) -->
+        <div class="absolute inset-0 hidden-fade p-6 md:p-12 flex flex-col" id="review-layer">
+            <h2 class="text-3xl cyber-font text-cyan-400 mb-6">X42 DATABANK <span class="text-sm text-gray-500 ml-4">ACCESS GRANTED</span></h2>
+            
+            <div class="flex gap-4 mb-6 clickable border-b border-gray-800 pb-2">
+                <button class="tab-btn active text-fuchsia-400 font-bold cyber-font tracking-wide px-4" data-target="tab-profiles">PROFILES</button>
+                <button class="tab-btn text-gray-500 hover:text-cyan-400 cyber-font tracking-wide px-4 transition-colors" data-target="tab-map">MAP DETAILS</button>
+                <button class="tab-btn text-gray-500 hover:text-cyan-400 cyber-font tracking-wide px-4 transition-colors" data-target="tab-items">ITEMS/NOTES</button>
+            </div>
+
+            <div class="flex-1 relative overflow-hidden glass-panel rounded-lg p-6 clickable overflow-y-auto">
+                <!-- Profiles Tab -->
+                <div id="tab-profiles" class="tab-content grid md:grid-cols-2 gap-8">
+                    <div class="border border-cyan-900/50 p-4 bg-black/40 rounded flex gap-4 items-start">
+                        <div class="w-20 h-20 bg-cyan-900/30 rounded border border-cyan-500 flex-shrink-0" style="background: url('https://placehold.co/100/101015/00ffff?text=RH') center/cover"></div>
+                        <div>
+                            <h3 class="text-cyan-400 font-bold text-xl mb-1">Red Riding Hood</h3>
+                            <p class="text-xs text-fuchsia-400 mb-2">Role: System Coordinator / Courier</p>
+                            <p class="text-sm text-gray-300">Monitors the decentralized hubs in St. Pauli. Keyholder to the encrypted network. Specializes in rapid module transformation.</p>
+                        </div>
+                    </div>
+                    <div class="border border-cyan-900/50 p-4 bg-black/40 rounded flex gap-4 items-start">
+                        <div class="w-20 h-20 bg-cyan-900/30 rounded border border-cyan-500 flex-shrink-0" style="background: url('https://placehold.co/100/101015/ff00ff?text=Wolf') center/cover"></div>
+                        <div>
+                            <h3 class="text-fuchsia-400 font-bold text-xl mb-1">The Wolf</h3>
+                            <p class="text-xs text-cyan-400 mb-2">Role: Network Security / Intrusion</p>
+                            <p class="text-sm text-gray-300">Former system architect turned rogue. Tests the Kiez-Network vulnerabilities. Operates from the shadows of the harbor.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map Tab -->
+                <div id="tab-map" class="tab-content hidden grid grid-cols-1 gap-4">
+                    <div class="h-64 w-full border border-green-500/30 rounded bg-[url('https://placehold.co/800x400/051005/00ff00?text=KIEZ+MAP+DATA')] bg-cover bg-center flex items-center justify-center relative">
+                        <div class="absolute inset-0 bg-green-900/20 mix-blend-overlay"></div>
+                        <!-- Radar ping CSS -->
+                        <div class="w-4 h-4 bg-green-500 rounded-full absolute top-1/3 left-1/3 animate-ping"></div>
+                        <div class="w-4 h-4 bg-cyan-500 rounded-full absolute bottom-1/3 right-1/4 animate-ping" style="animation-delay: 1s;"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-black/50 p-4 border-l-2 border-green-500">
+                            <h4 class="text-green-400 font-bold">Node Alpha (Silbersack)</h4>
+                            <p class="text-xs text-gray-400 mt-1">Status: Active. Recyclable material dense. Shelter conversion time: 45s.</p>
+                        </div>
+                        <div class="bg-black/50 p-4 border-l-2 border-cyan-500">
+                            <h4 class="text-cyan-400 font-bold">Node Beta (Zauberwald)</h4>
+                            <p class="text-xs text-gray-400 mt-1">Status: Encrypted. Algae bio-curtain operational. Comms secure.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Items Tab -->
+                <div id="tab-items" class="tab-content hidden grid md:grid-cols-3 gap-6">
+                    <div class="bg-gray-900/60 p-4 rounded border-t-2 border-fuchsia-500">
+                        <h4 class="text-fuchsia-400 font-bold cyber-font">Algae Filter Mesh</h4>
+                        <p class="text-xs mt-2 text-gray-300">Component used in temporary shelters to purify air and generate minimal ambient power.</p>
+                    </div>
+                    <div class="bg-gray-900/60 p-4 rounded border-t-2 border-cyan-500">
+                        <h4 class="text-cyan-400 font-bold cyber-font">Decrypted MSG Log</h4>
+                        <p class="text-xs mt-2 text-gray-300">"The red thread is secure. Meet at coordinates 53.548, 9.961. Bring the modules."</p>
+                    </div>
+                     <div class="bg-gray-900/60 p-4 rounded border-t-2 border-gray-500">
+                        <h4 class="text-gray-400 font-bold cyber-font">Hinz&Kunzt Upcycling Blueprint</h4>
+                        <p class="text-xs mt-2 text-gray-300">Schematics for rapid conversion of local sales hubs into emergency triage centers.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-center clickable">
+                <button id="btn-restart" class="text-xs text-cyan-500 hover:text-fuchsia-400 cyber-font tracking-widest px-4 py-2 border border-cyan-900 rounded transition-colors">
+                    REBOOT SYSTEM (RESTART)
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        // ==============================================================================
+        // 🎬 THE G.A.me DIRECTOR'S GUIDE & CONFIGURATION
+        // ==============================================================================
+        // Welcome to the Matrix. Here is where you program the presentation.
+        // 
+        // 1. TIMELINE NODES
+        const TIMELINE_CONFIG = [
+            { id: 0, label: "BASE", depth: 0, desc: "System Root" },
+            { id: 1, label: "MEDIA", depth: 15, desc: "External Feeds" },
+            { id: 2, label: "GALLERY", depth: 30, desc: "Project Exhibition" },
+            { id: 3, label: "THEATER", depth: 45, desc: "Dual-Floor Stage" },
+            { id: 4, label: "EDITOR", depth: 60, desc: "Creator Studio" },
+            { id: 5, label: "APEX", depth: 75, desc: "Combat Arena" },
+            { id: 6, label: "CORE", depth: 90, desc: "Upper Strands" },
+            { id: 7, label: "SPHERE", depth: 100, desc: "The Construct" }
+        ];
+
+        // 2. CUTSCENE SCRIPT (The Play sequence)
+        // Add events here to control what happens when the user clicks PLAY at the top.
+        // 'time': milliseconds from start.
+        // 'type': 
+        //    - 'audio' (plays a synthetic tone for demo, add 'url' for real music)
+        //    - 'dialogue' (shows character text)
+        //    - 'camera' (moves the 3D camera to predefined spots)
+        //    - 'glitch' (adds UI glitch effect)
+        //    - 'end' (finishes cutscene and shows review databank)
+        const CUTSCENE_SCRIPT = [
+            { time: 0, type: 'audio', freq: 100, typeOSC: 'sawtooth', duration: 2 }, // Synth bass drop
+            { time: 500, type: 'dialogue', name: 'SYSTEM', text: 'Booting X42 Visual Protocol...', charImg: 'none' },
+            { time: 2000, type: 'camera', target: 'zoom_in' },
+            { time: 3000, type: 'glitch' },
+            { time: 3500, type: 'dialogue', name: 'RED RIDING HOOD', text: 'Die Module stehen. Der rote Faden ist aktiv.', charImg: 'https://placehold.co/400x400/101015/00ffff?text=RH' },
+            { time: 4000, type: 'audio', freq: 440, typeOSC: 'sine', duration: 1 }, // High ping
+            { time: 7000, type: 'camera', target: 'pan_around' },
+            { time: 7500, type: 'dialogue', name: 'THE WOLF', text: 'Ich sehe die Knotenpunkte. Noise ist eliminiert.', charImg: 'https://placehold.co/400x400/101015/ff00ff?text=Wolf' },
+            { time: 11000, type: 'dialogue', name: 'SYSTEM', text: 'Databank unlocked. Preparing review interface.', charImg: 'none' },
+            { time: 13000, type: 'camera', target: 'reset' },
+            { time: 14000, type: 'end' }
+        ];
+        // ==============================================================================
+
+
+        
+        // --- State Management ---
+        const STATE = {
+            scrollProgress: 0, // 0 to 1
+            mode: 'scroll', // 'scroll', 'cinema', 'review'
+            cameraTargetY: 0,
+            cameraTargetZ: 15,
+            cameraTargetRotX: 0,
+            cameraTargetRotY: 0
+        };
+
+        // --- Three.js Setup ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020205, 0.03);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 15);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // --- Post Processing (Neon Bloom) ---
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.2; // Base strength, will increase as we go up
+        bloomPass.radius = 0.5;
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // --- Create DNA Helix (Particles) ---
+        const particleCount = 4000; // Increased for a denser, taller helix
+        const helixGeometry = new THREE.BufferGeometry();
+        const helixPositions = new Float32Array(particleCount * 3);
+        const helixColors = new Float32Array(particleCount * 3);
+
+        const color1 = new THREE.Color(0x00ffff); // Cyan
+        const color2 = new THREE.Color(0xff00ff); // Magenta
+        const tempColor = new THREE.Color();
+
+        // Helix parameters
+        const radius = 4;
+        const heightMultiplier = 300; // Doubled total height of the helix
+        
+        for (let i = 0; i < particleCount; i++) {
+            // Determine strand (0 or 1)
+            const strand = i % 2;
+            const t = (i / particleCount); // 0 to 1 progress along the strand
+            
+            // Angle increases based on t (More turns for taller helix)
+            const angle = t * Math.PI * 40; 
+            const offset = strand * Math.PI; // Opposite side for 2nd strand
+
+            const x = Math.cos(angle + offset) * radius;
+            const y = (t * heightMultiplier) - 5; // Start slightly below 0
+            const z = Math.sin(angle + offset) * radius;
+
+            helixPositions[i * 3] = x;
+            helixPositions[i * 3 + 1] = y;
+            helixPositions[i * 3 + 2] = z;
+
+            // Gradient color from bottom to top
+            tempColor.lerpColors(color1, color2, t);
+            
+            // Add some randomness to colors
+            tempColor.r += (Math.random() - 0.5) * 0.2;
+            tempColor.b += (Math.random() - 0.5) * 0.2;
+
+            helixColors[i * 3] = tempColor.r;
+            helixColors[i * 3 + 1] = tempColor.g;
+            helixColors[i * 3 + 2] = tempColor.b;
+        }
+
+        helixGeometry.setAttribute('position', new THREE.BufferAttribute(helixPositions, 3));
+        helixGeometry.setAttribute('color', new THREE.BufferAttribute(helixColors, 3));
+
+        // Create glowing particle material
+        const particleMaterial = new THREE.PointsMaterial({
+            size: 0.15,
+            vertexColors: true,
+            blending: THREE.AdditiveBlending,
+            transparent: true,
+            opacity: 0.8,
+            map: createCircleTexture(), // Custom texture for round dots
+            depthWrite: false
+        });
+
+        const dnaParticles = new THREE.Points(helixGeometry, particleMaterial);
+        scene.add(dnaParticles);
+
+        // --- Add Floating Geometric Shapes (Neon Objects) ---
+        const floatingShapes = [];
+        const shapeGeometries = [
+            new THREE.TorusGeometry(1, 0.2, 16, 50),
+            new THREE.OctahedronGeometry(1.2, 0),
+            new THREE.TetrahedronGeometry(1.5, 0)
+        ];
+        const shapeMaterials = [
+            new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x00ffff, emissiveIntensity: 0.8, wireframe: true }),
+            new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0xff00ff, emissiveIntensity: 0.8, wireframe: true }),
+            new THREE.MeshStandardMaterial({ color: 0x000000, emissive: 0x00ff88, emissiveIntensity: 0.8, wireframe: true })
+        ];
+
+        // Spawn shapes along the height of the helix
+        for(let i = 0; i < 35; i++) {
+            const geo = shapeGeometries[Math.floor(Math.random() * shapeGeometries.length)];
+            const mat = shapeMaterials[Math.floor(Math.random() * shapeMaterials.length)];
+            const mesh = new THREE.Mesh(geo, mat);
+            
+            // Random scatter around the helix, extending up to heightMultiplier
+            const dist = radius + 2 + Math.random() * 8;
+            const theta = Math.random() * Math.PI * 2;
+            mesh.position.set(
+                Math.cos(theta) * dist,
+                (Math.random() * heightMultiplier) - 5,
+                Math.sin(theta) * dist
+            );
+            
+            mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+            scene.add(mesh);
+            
+            floatingShapes.push({
+                mesh: mesh,
+                rotSpeedX: (Math.random() - 0.5) * 0.03,
+                rotSpeedY: (Math.random() - 0.5) * 0.03
+            });
+        }
+
+        // Helper function for round particles
+        function createCircleTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 32; canvas.height = 32;
+            const context = canvas.getContext('2d');
+            context.beginPath();
+            context.arc(16, 16, 14, 0, Math.PI * 2);
+            context.fillStyle = '#ffffff';
+            context.fill();
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        // --- Add Floating Core Sphere at the Top ---
+        const sphereGeometry = new THREE.IcosahedronGeometry(3, 2); // Low poly look
+        const sphereMaterial = new THREE.MeshStandardMaterial({
+            color: 0x050510,
+            emissive: 0xaa00ff,
+            emissiveIntensity: 0.5,
+            wireframe: true,
+            transparent: true,
+            opacity: 0.9
+        });
+        const coreSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+        // Position it at the very top of the helix
+        const topHeight = heightMultiplier - 5;
+        coreSphere.position.set(0, topHeight, 0);
+        scene.add(coreSphere);
+
+        // Add a light inside the sphere
+        const sphereLight = new THREE.PointLight(0xff00ff, 2, 20);
+        coreSphere.add(sphereLight);
+
+
+
+        // --- Scroll Logic ---
+        const scrollProxy = document.getElementById('scroll-proxy');
+        const scrollDepthText = document.getElementById('scroll-depth');
+        const playScreenUI = document.getElementById('play-screen-ui');
+        const timelineUI = document.getElementById('timeline-ui');
+        const mainHeader = document.getElementById('main-header');
+        
+        // New UI nodes references
+        const mediaNodeUI = document.getElementById('media-node-ui');
+        const galleryNodeUI = document.getElementById('gallery-node-ui');
+        const theaterNodeUI = document.getElementById('theater-node-ui');
+        const editorNodeUI = document.getElementById('editor-node-ui');
+        const apexNodeUI = document.getElementById('apex-node-ui');
+
+        // Generate Timeline Nodes UI
+        TIMELINE_CONFIG.forEach((node, index) => {
+            const dot = document.createElement('div');
+            dot.className = 'w-4 h-4 rounded-full border-2 border-cyan-500 bg-[#020205] cursor-pointer transition-all hover:bg-cyan-400 group relative z-10';
+            dot.dataset.depth = node.depth;
+            
+            const label = document.createElement('div');
+            label.className = 'absolute right-8 top-1/2 -translate-y-1/2 text-xs font-mono text-cyan-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-black/50 px-2 py-1 rounded border border-cyan-900';
+            label.innerHTML = `<span class="font-bold">${node.label}</span> | ${node.desc}`;
+            dot.appendChild(label);
+
+            // Click node to scroll
+            dot.addEventListener('click', () => {
+                if(STATE.mode !== 'scroll') return;
+                const targetScrollY = (node.depth / 100) * (scrollProxy.scrollHeight - window.innerHeight);
+                window.scrollTo({ top: targetScrollY, behavior: 'smooth' });
+            });
+
+            timelineUI.appendChild(dot);
+        });
+
+        const timelineDots = timelineUI.querySelectorAll('.w-4');
+
+        window.addEventListener('scroll', () => {
+            if (STATE.mode !== 'scroll') return;
+
+            const scrollY = window.scrollY;
+            const maxScroll = scrollProxy.scrollHeight - window.innerHeight;
+            STATE.scrollProgress = Math.max(0, Math.min(1, scrollY / maxScroll));
+
+            updateScrollState();
+        });
+
+        // Show timeline shortly after load
+        setTimeout(() => {
+            timelineUI.classList.remove('hidden-fade');
+            timelineUI.classList.add('visible-fade');
+        }, 1000);
+
+        function updateScrollState() {
+            // Update Text
+            scrollDepthText.innerText = `DEPTH: ${Math.floor(STATE.scrollProgress * 100)}m`;
+
+            // Calculate Target Camera Y based on progress (0 to topHeight)
+            STATE.cameraTargetY = STATE.scrollProgress * topHeight;
+            
+            // As we go higher, rotate camera to look upwards slightly, and spin around the Y axis
+            STATE.cameraTargetRotY = STATE.scrollProgress * Math.PI * 6; // Spin more times due to taller helix
+            STATE.cameraTargetRotX = STATE.scrollProgress * 0.4; // tilt up
+
+            // Glow increases as you go up
+            bloomPass.strength = 1.0 + (STATE.scrollProgress * 1.5);
+            sphereMaterial.emissiveIntensity = 0.5 + (STATE.scrollProgress * 1.5);
+
+            // Update UI Dots
+            timelineDots.forEach(dot => {
+                const depth = parseFloat(dot.dataset.depth) / 100;
+                if (Math.abs(STATE.scrollProgress - depth) < 0.05) {
+                    dot.classList.add('bg-cyan-400', 'shadow-[0_0_10px_#00ffff]');
+                    dot.classList.remove('bg-[#020205]');
+                } else {
+                    dot.classList.remove('bg-cyan-400', 'shadow-[0_0_10px_#00ffff]');
+                    dot.classList.add('bg-[#020205]');
+                }
+            });
+
+            // Show Play Screen when at the top (progress > 0.95)
+            if (STATE.scrollProgress > 0.95 && STATE.mode === 'scroll') {
+                playScreenUI.classList.remove('hidden-fade');
+                playScreenUI.classList.add('visible-fade');
+                timelineUI.classList.add('opacity-30'); // dim timeline
+            } else {
+                playScreenUI.classList.add('hidden-fade');
+                playScreenUI.classList.remove('visible-fade');
+                timelineUI.classList.remove('opacity-30');
+            }
+
+            // Show Media Node around 15%
+            if (STATE.scrollProgress > 0.10 && STATE.scrollProgress < 0.20 && STATE.mode === 'scroll') {
+                mediaNodeUI.classList.remove('hidden-fade');
+                mediaNodeUI.classList.add('visible-fade');
+            } else if (mediaNodeUI) {
+                mediaNodeUI.classList.add('hidden-fade');
+                mediaNodeUI.classList.remove('visible-fade');
+            }
+
+            // Show Gallery Node around 30%
+            if (STATE.scrollProgress > 0.25 && STATE.scrollProgress < 0.35 && STATE.mode === 'scroll') {
+                galleryNodeUI.classList.remove('hidden-fade');
+                galleryNodeUI.classList.add('visible-fade');
+            } else if (galleryNodeUI) {
+                galleryNodeUI.classList.add('hidden-fade');
+                galleryNodeUI.classList.remove('visible-fade');
+            }
+            
+            // Show Theater Node around 45%
+            if (STATE.scrollProgress > 0.40 && STATE.scrollProgress < 0.50 && STATE.mode === 'scroll') {
+                theaterNodeUI.classList.remove('hidden-fade');
+                theaterNodeUI.classList.add('visible-fade');
+            } else if (theaterNodeUI) {
+                theaterNodeUI.classList.add('hidden-fade');
+                theaterNodeUI.classList.remove('visible-fade');
+            }
+
+            // Show Editor Node around 60%
+            if (STATE.scrollProgress > 0.55 && STATE.scrollProgress < 0.65 && STATE.mode === 'scroll') {
+                editorNodeUI.classList.remove('hidden-fade');
+                editorNodeUI.classList.add('visible-fade');
+            } else if (editorNodeUI) {
+                editorNodeUI.classList.add('hidden-fade');
+                editorNodeUI.classList.remove('visible-fade');
+            }
+
+            // Show Apex Minigame Node around 75%
+            if (STATE.scrollProgress > 0.70 && STATE.scrollProgress < 0.80 && STATE.mode === 'scroll') {
+                apexNodeUI.classList.remove('hidden-fade');
+                apexNodeUI.classList.add('visible-fade');
+            } else if (apexNodeUI) {
+                apexNodeUI.classList.add('hidden-fade');
+                apexNodeUI.classList.remove('visible-fade');
+            }
+        }
+
+        // Initialize state
+        updateScrollState();
+
+        
+        // --- Audio Context (Synthetic sounds for demo) ---
+        let audioCtx;
+        function playBeep(freq = 440, type = 'sine', duration = 0.5) {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+            
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // --- Cutscene Engine ---
+        const btnPlay = document.getElementById('btn-play-cutscene');
+        const cutsceneLayer = document.getElementById('cutscene-layer');
+        const dialogueBox = document.getElementById('dialogue-box');
+        const dialogueName = document.getElementById('dialogue-name');
+        const dialogueText = document.getElementById('dialogue-text');
+        const charImg = document.getElementById('cutscene-character-img');
+        const btnSkip = document.getElementById('btn-skip');
+        let cutsceneTimeouts = [];
+        let typeWriterInterval = null;
+
+        function startCutscene() {
+            STATE.mode = 'cinema';
+            document.body.style.overflow = 'hidden'; // lock scroll
+            
+            // Hide normal UI
+            playScreenUI.classList.remove('visible-fade');
+            playScreenUI.classList.add('hidden-fade');
+            timelineUI.classList.remove('visible-fade');
+            timelineUI.classList.add('hidden-fade');
+            mainHeader.style.opacity = '0';
+
+            // Show Cutscene Overlay
+            cutsceneLayer.classList.remove('hidden-fade');
+            cutsceneLayer.classList.add('visible-fade');
+
+            // Force camera to sphere
+            STATE.cameraTargetY = topHeight;
+            STATE.cameraTargetZ = 5; // zoom in
+
+            // Execute Script
+            CUTSCENE_SCRIPT.forEach(event => {
+                const to = setTimeout(() => {
+                    executeEvent(event);
+                }, event.time);
+                cutsceneTimeouts.push(to);
+            });
+        }
+
+        function executeEvent(event) {
+            if (event.type === 'audio') {
+                playBeep(event.freq, event.typeOSC, event.duration);
+            } 
+            else if (event.type === 'dialogue') {
+                // UI updates
+                dialogueBox.style.opacity = '1';
+                dialogueBox.style.transform = 'translateY(0)';
+                dialogueName.innerText = event.name;
+                
+                // Avatar
+                if (event.charImg && event.charImg !== 'none') {
+                    charImg.style.backgroundImage = `url('${event.charImg}')`;
+                    charImg.style.opacity = '1';
+                    if(event.name === 'THE WOLF') {
+                        charImg.style.left = 'auto';
+                        charImg.style.right = '8vw';
+                    } else {
+                        charImg.style.right = 'auto';
+                        charImg.style.left = '8vw';
+                    }
+                } else {
+                    charImg.style.opacity = '0';
+                }
+
+                // Typewriter effect
+                clearInterval(typeWriterInterval);
+                dialogueText.innerText = '';
+                let i = 0;
+                playBeep(800, 'square', 0.1); // UI beep
+                typeWriterInterval = setInterval(() => {
+                    if (i < event.text.length) {
+                        dialogueText.innerText += event.text.charAt(i);
+                        i++;
+                        if(i%3===0) playBeep(1200, 'triangle', 0.05); // typing sound
+                    } else {
+                        clearInterval(typeWriterInterval);
+                    }
+                }, 40);
+            }
+            else if (event.type === 'camera') {
+                if (event.target === 'zoom_in') {
+                    STATE.cameraTargetZ = -5; // Go inside sphere
+                    STATE.cameraTargetRotY += Math.PI;
+                    bloomPass.strength = 2.5;
+                } else if (event.target === 'pan_around') {
+                    STATE.cameraTargetZ = 8;
+                    STATE.cameraTargetRotY -= Math.PI / 2;
+                    STATE.cameraTargetRotX = -0.2;
+                } else if (event.target === 'reset') {
+                    STATE.cameraTargetZ = 10;
+                    STATE.cameraTargetRotY = 0;
+                    STATE.cameraTargetRotX = 0;
+                    bloomPass.strength = 1.0;
+                }
+            }
+            else if (event.type === 'glitch') {
+                document.body.style.filter = 'invert(1) hue-rotate(180deg)';
+                setTimeout(() => { document.body.style.filter = 'none'; }, 150);
+                setTimeout(() => { document.body.style.filter = 'invert(1)'; }, 200);
+                setTimeout(() => { document.body.style.filter = 'none'; }, 300);
+                playBeep(200, 'sawtooth', 0.3);
+            }
+            else if (event.type === 'end') {
+                endCutscene();
+            }
+        }
+
+        function endCutscene() {
+            // Clear running timers
+            cutsceneTimeouts.forEach(clearTimeout);
+            clearInterval(typeWriterInterval);
+            
+            cutsceneLayer.classList.remove('visible-fade');
+            cutsceneLayer.classList.add('hidden-fade');
+            
+            // Show Review Mode
+            STATE.mode = 'review';
+            const reviewLayer = document.getElementById('review-layer');
+            reviewLayer.classList.remove('hidden-fade');
+            reviewLayer.classList.add('visible-fade');
+            
+            // Adjust camera for background
+            STATE.cameraTargetZ = 20;
+            STATE.cameraTargetY = topHeight - 10;
+            bloomPass.strength = 0.5;
+        }
+
+        // Event Listeners for Cutscene
+        btnPlay.addEventListener('click', startCutscene);
+        btnSkip.addEventListener('click', endCutscene);
+
+        // ==============================================================================
+        // 🛠️ CREATOR STUDIO / EDITOR LOGIC
+        // ==============================================================================
+        
+        // Editor State (Links directly to Apex Minigame)
+        window.EDITOR_STATE = {
+            playerEmoji: '🐰',
+            playerColor: '#00ffff',
+            enemyEmoji: '🦍',
+            enemyColor: '#ff00ff',
+            playerName: 'The Neon Drifter',
+            story: 'A wanderer from the Kiez...',
+            stageTheme: 'cyber'
+        };
+
+        const creatorLayer = document.getElementById('creator-layer');
+        const btnOpenEditor = document.getElementById('btn-open-editor');
+        const btnCloseEditor = document.getElementById('btn-close-editor');
+        
+        // UI Refs for Preview
+        const previewPlayerEmoji = document.getElementById('preview-player-emoji');
+        const previewEnemyEmoji = document.getElementById('preview-enemy-emoji');
+        const previewPlayerName = document.getElementById('preview-player-name');
+        const previewLoreTitle = document.getElementById('preview-lore-title');
+        const previewLoreText = document.getElementById('preview-lore-text');
+        const loreNameInput = document.getElementById('lore-name');
+        const playerColorInput = document.getElementById('player-color');
+        const enemyColorInput = document.getElementById('enemy-color');
+        
+        // Open/Close
+        btnOpenEditor.addEventListener('click', () => {
+            STATE.mode = 'editor';
+            document.body.style.overflow = 'hidden';
+            mainHeader.style.opacity = '0';
+            timelineUI.classList.add('hidden-fade');
+            editorNodeUI.classList.add('hidden-fade');
+            creatorLayer.classList.remove('hidden-fade');
+            creatorLayer.classList.add('visible-fade');
+            playBeep(500, 'square', 0.1);
+        });
+
+        btnCloseEditor.addEventListener('click', () => {
+            STATE.mode = 'scroll';
+            document.body.style.overflow = 'auto';
+            mainHeader.style.opacity = '1';
+            timelineUI.classList.remove('hidden-fade');
+            creatorLayer.classList.add('hidden-fade');
+            creatorLayer.classList.remove('visible-fade');
+            updateScrollState();
+            playBeep(300, 'sine', 0.1);
+        });
+
+        // Tabs Logic
+        const editorTabs = document.querySelectorAll('.editor-tab');
+        const editorContents = document.querySelectorAll('.editor-content');
+        
+        editorTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                editorTabs.forEach(t => {
+                    t.classList.remove('active', 'text-cyan-400', 'font-bold');
+                    t.classList.add('text-gray-500');
+                });
+                tab.classList.add('active', 'text-cyan-400', 'font-bold');
+                tab.classList.remove('text-gray-500');
+                
+                editorContents.forEach(c => c.classList.add('hidden'));
+                document.getElementById(tab.getAttribute('data-target')).classList.remove('hidden');
+                playBeep(800, 'triangle', 0.05);
+            });
+        });
+
+        // Selection Logic (Exposed globally for inline onclick)
+        window.selectPlayer = function(emoji) {
+            window.EDITOR_STATE.playerEmoji = emoji;
+            previewPlayerEmoji.innerText = emoji;
+            // Update active states visually
+            document.querySelectorAll('#edit-player .emoji-btn').forEach(b => {
+                b.classList.toggle('active', b.innerText === emoji);
+            });
+            playBeep(600, 'sine', 0.05);
+        };
+
+        window.selectEnemy = function(emoji) {
+            window.EDITOR_STATE.enemyEmoji = emoji;
+            previewEnemyEmoji.innerText = emoji;
+            document.querySelectorAll('#edit-enemy .emoji-btn').forEach(b => {
+                b.classList.toggle('active', b.innerText === emoji);
+            });
+            playBeep(400, 'sawtooth', 0.05);
+        };
+
+        window.loadPreset = function(pEmoji, eEmoji, pColor, eColor, nameStr) {
+            window.selectPlayer(pEmoji);
+            window.selectEnemy(eEmoji);
+            
+            playerColorInput.value = pColor;
+            enemyColorInput.value = eColor;
+            
+            window.EDITOR_STATE.playerName = nameStr;
+            loreNameInput.value = nameStr;
+            previewPlayerName.innerText = nameStr;
+            previewLoreTitle.innerText = nameStr;
+            
+            updateColors();
+            
+            // Switch to player tab to show it updated
+            editorTabs[0].click();
+            playBeep(800, 'sine', 0.1);
+            playBeep(1200, 'sine', 0.1);
+        };
+
+        // Inputs Logic
+        const updateColors = () => {
+            const pCol = playerColorInput.value;
+            const eCol = enemyColorInput.value;
+            window.EDITOR_STATE.playerColor = pCol;
+            window.EDITOR_STATE.enemyColor = eCol;
+            previewPlayerEmoji.style.filter = `drop-shadow(0 0 15px ${pCol})`;
+            previewEnemyEmoji.style.filter = `drop-shadow(0 0 25px ${eCol})`;
+            document.getElementById('preview-player-name').style.color = pCol;
+        };
+        
+        playerColorInput.addEventListener('input', updateColors);
+        enemyColorInput.addEventListener('input', updateColors);
+        
+        loreNameInput.addEventListener('input', (e) => {
+            window.EDITOR_STATE.playerName = e.target.value;
+            previewPlayerName.innerText = e.target.value || 'Player';
+            previewLoreTitle.innerText = e.target.value || 'Unknown Entity';
+        });
+
+        document.getElementById('lore-story').addEventListener('input', (e) => {
+            window.EDITOR_STATE.story = e.target.value;
+            previewLoreText.innerText = e.target.value || 'No data.';
+        });
+
+        document.getElementById('stage-theme').addEventListener('change', (e) => {
+            window.EDITOR_STATE.stageTheme = e.target.value;
+            const bg = document.getElementById('preview-bg');
+            if(e.target.value === 'forest') {
+                bg.style.backgroundImage = "url('https://placehold.co/800x600/051005/22c55e?text=Zauberwald')";
+            } else if (e.target.value === 'theater') {
+                bg.style.backgroundImage = "url('https://placehold.co/800x600/2a0a18/f43f5e?text=Grand+Theater')";
+            } else {
+                bg.style.backgroundImage = "url('https://placehold.co/800x600/0a0f1e/1e293b?text=+')";
+            }
+        });
+
+        document.getElementById('btn-save-library').addEventListener('click', () => {
+            const list = document.getElementById('library-list');
+            const div = document.createElement('div');
+            div.className = "bg-gray-800/50 p-3 rounded border border-gray-700 flex justify-between items-center mt-2";
+            div.innerHTML = `
+                <div>
+                    <span class="text-2xl mr-2">${window.EDITOR_STATE.playerEmoji} vs ${window.EDITOR_STATE.enemyEmoji}</span>
+                    <span class="text-sm font-bold text-cyan-400">${window.EDITOR_STATE.playerName}</span>
+                </div>
+                <button class="text-xs text-gray-500 hover:text-white transition">SAVED</button>
+            `;
+            list.prepend(div);
+            playBeep(1000, 'sine', 0.2);
+            playBeep(1200, 'sine', 0.2);
+        });
+
+        // ==============================================================================
+        // 🎭 THEATER LOGIC
+        // ==============================================================================
+        const btnFloor1 = document.getElementById('btn-floor-1');
+        const btnFloor2 = document.getElementById('btn-floor-2');
+        const theaterStage = document.getElementById('theater-stage');
+
+        btnFloor1.addEventListener('click', () => {
+            btnFloor1.className = "px-3 py-1 bg-cyan-900/50 text-cyan-300 text-xs font-mono rounded hover:bg-cyan-500 hover:text-black transition";
+            btnFloor2.className = "px-3 py-1 bg-gray-800 text-gray-400 text-xs font-mono rounded hover:bg-fuchsia-500 hover:text-white transition";
+            theaterStage.innerHTML = `
+                <div class="text-6xl mb-4 animate-bounce">🎪</div>
+                <p class="text-cyan-400 font-mono text-center">MAIN STAGE (FLOOR 1)<br><span class="text-xs text-gray-500">Live Performance Feed.</span></p>
+            `;
+            theaterStage.style.borderColor = "#0891b2"; // cyan-600
+            playBeep(400, 'sine', 0.1);
+        });
+
+        btnFloor2.addEventListener('click', () => {
+            btnFloor2.className = "px-3 py-1 bg-fuchsia-900/50 text-fuchsia-300 text-xs font-mono rounded hover:bg-fuchsia-500 hover:text-black transition";
+            btnFloor1.className = "px-3 py-1 bg-gray-800 text-gray-400 text-xs font-mono rounded hover:bg-cyan-500 hover:text-white transition";
+            theaterStage.innerHTML = `
+                <div class="text-6xl mb-4 animate-pulse drop-shadow-[0_0_10px_#ff00ff]">🎭</div>
+                <p class="text-fuchsia-400 font-mono text-center">BALCONY / ARCHIVES (FLOOR 2)<br><span class="text-xs text-gray-500">Accessing Historical Scripts...</span></p>
+            `;
+            theaterStage.style.borderColor = "#c026d3"; // fuchsia-600
+            playBeep(600, 'triangle', 0.1);
+        });
+
+        // ==============================================================================
+        // 🎮 APEX MINIGAME: EMOJI BOSS FIGHT
+        // ==============================================================================
+        const btnPlayApex = document.getElementById('btn-play-apex');
+        const minigameLayer = document.getElementById('minigame-layer');
+        const btnExitApex = document.getElementById('btn-exit-apex');
+        const gameCanvas = document.getElementById('game-canvas');
+        const ctx = gameCanvas.getContext('2d');
+        
+        // UI Elements
+        const playerHpBar = document.getElementById('player-hp-bar');
+        const bossHpBar = document.getElementById('boss-hp-bar');
+        const leaderboardScreen = document.getElementById('leaderboard-screen');
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const btnRestartApex = document.getElementById('btn-restart-apex');
+        const gameResultTitle = document.getElementById('game-result-title');
+        const gameResultSub = document.getElementById('game-result-sub');
+
+        let minigameActive = false;
+        let gameLoopId;
+        
+        // Game State
+        const GRAVITY = 0.6;
+        const FLOOR = 350;
+        let loveCharges = 0; // Gained by jumping
+        
+        let player = { x: 100, y: FLOOR, vy: 0, hp: 100, maxHp: 100, isGrounded: true, emoji: '🐰' };
+        let boss = { x: 650, y: FLOOR - 30, vy: 0, hp: 200, maxHp: 200, state: 'angry', emoji: '🦍' };
+        let projectiles = [];
+        let particles = [];
+
+        // Projectile Types
+        const insultEmojis = ['💩', '🤡', '🗑️', '👎', '🥦'];
+        const loveEmojis = ['💖', '✨', '🌈', '🫶'];
+
+        // Leaderboard Data (In-memory for demo)
+        let leaderboardData = [
+            { name: 'R.HOOD', score: 9500 },
+            { name: 'WOLF', score: 8200 },
+            { name: 'X42', score: 4000 }
+        ];
+
+        function initMinigame() {
+            STATE.mode = 'minigame';
+            minigameActive = true;
+            document.body.style.overflow = 'hidden';
+            mainHeader.style.opacity = '0';
+            timelineUI.classList.add('hidden-fade');
+            timelineUI.classList.remove('visible-fade');
+            apexNodeUI.classList.add('hidden-fade');
+            apexNodeUI.classList.remove('visible-fade');
+            
+            minigameLayer.classList.remove('hidden-fade');
+            minigameLayer.classList.add('visible-fade');
+            leaderboardScreen.classList.add('hidden');
+            leaderboardScreen.classList.remove('opacity-100');
+
+            // --- Apply Editor State Customizations! ---
+            const pEmoji = window.EDITOR_STATE ? window.EDITOR_STATE.playerEmoji : '🐰';
+            const eEmoji = window.EDITOR_STATE ? window.EDITOR_STATE.enemyEmoji : '🦍';
+            const pColor = window.EDITOR_STATE ? window.EDITOR_STATE.playerColor : '#00ffff';
+            const eColor = window.EDITOR_STATE ? window.EDITOR_STATE.enemyColor : '#ff00ff';
+            const pName = window.EDITOR_STATE ? window.EDITOR_STATE.playerName.toUpperCase() : 'PLAYER';
+            
+            // Update UI Name Bars
+            document.querySelector('#player-hp-bar').parentElement.previousElementSibling.innerText = `${pName} (${pEmoji})`;
+            document.querySelector('#boss-hp-bar').parentElement.nextElementSibling.innerText = `BOSS (${eEmoji})`;
+            
+            // Apply Colors to HP Bars
+            document.querySelector('#player-hp-bar').style.backgroundColor = pColor;
+            document.querySelector('#boss-hp-bar').style.backgroundColor = eColor;
+            
+            // Change Background based on Stage Theme
+            const bgTheme = window.EDITOR_STATE ? window.EDITOR_STATE.stageTheme : 'cyber';
+            if (bgTheme === 'forest') gameCanvas.style.background = 'linear-gradient(180deg, #051005 0%, #002200 100%)';
+            else if (bgTheme === 'theater') gameCanvas.style.background = 'linear-gradient(180deg, #1a0510 0%, #3a0015 100%)';
+            else gameCanvas.style.background = 'linear-gradient(180deg, #050010 0%, #150030 100%)';
+
+            // Reset Game Stats
+            player = { x: 100, y: FLOOR, vy: 0, hp: 100, maxHp: 100, isGrounded: true, emoji: pEmoji };
+            boss = { x: 650, y: FLOOR - 30, vy: 0, hp: 200, maxHp: 200, state: 'angry', emoji: eEmoji };
+            projectiles = [];
+            particles = [];
+            loveCharges = 0;
+            
+            updateHpBars();
+            playBeep(300, 'square', 0.5); // Start sound
+            gameLoopId = requestAnimationFrame(updateGame);
+        }
+
+        function exitMinigame() {
+            minigameActive = false;
+            cancelAnimationFrame(gameLoopId);
+            STATE.mode = 'scroll';
+            document.body.style.overflow = 'auto';
+            mainHeader.style.opacity = '1';
+            timelineUI.classList.remove('hidden-fade');
+            timelineUI.classList.add('visible-fade');
+            
+            minigameLayer.classList.add('hidden-fade');
+            minigameLayer.classList.remove('visible-fade');
+        }
+
+        // Physics & Drawing Loop
+        function updateGame() {
+            if (!minigameActive) return;
+
+            // Clear Canvas
+            ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+            
+            // Draw floor glow
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ff00ff';
+            ctx.strokeStyle = 'rgba(255,0,255,0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, FLOOR + 10);
+            ctx.lineTo(800, FLOOR + 10);
+            ctx.stroke();
+
+            // Handle Player Physics
+            player.vy += GRAVITY;
+            player.y += player.vy;
+            if (player.y >= FLOOR) {
+                player.y = FLOOR;
+                player.vy = 0;
+                player.isGrounded = true;
+            }
+
+            // Handle Boss AI
+            if (boss.state === 'angry') {
+                // Boss jumps randomly
+                if (Math.random() < 0.02 && boss.y === FLOOR - 30) {
+                    boss.vy = -12;
+                }
+                // Boss shoots insults
+                if (Math.random() < 0.03) {
+                    spawnBossProjectile();
+                }
+            }
+            boss.vy += GRAVITY;
+            boss.y += boss.vy;
+            if (boss.y >= FLOOR - 30) boss.y = FLOOR - 30;
+
+            // Handle Projectiles
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                let p = projectiles[i];
+                p.x += p.vx;
+                
+                // Draw Projectile
+                ctx.font = p.size + 'px sans-serif';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = p.isLove ? '#00ffff' : '#ff0000';
+                ctx.fillText(p.emoji, p.x, p.y);
+
+                // Collision Logic (Simple radius overlap)
+                if (p.isLove) {
+                    // Check boss hit
+                    if (boss.state === 'angry' && Math.abs(p.x - boss.x) < 40 && Math.abs(p.y - boss.y) < 40) {
+                        boss.hp -= 10;
+                        createParticles(boss.x, boss.y, '#00ffff');
+                        playBeep(800, 'sine', 0.1);
+                        updateHpBars();
+                        projectiles.splice(i, 1);
+                        if (boss.hp <= 0) handleBossDefeat();
+                        continue;
+                    }
+                } else {
+                    // Check player hit
+                    if (Math.abs(p.x - player.x) < 30 && Math.abs(p.y - player.y) < 30) {
+                        player.hp -= 15;
+                        createParticles(player.x, player.y, '#ff0000');
+                        playBeep(150, 'sawtooth', 0.2);
+                        updateHpBars();
+                        projectiles.splice(i, 1);
+                        if (player.hp <= 0) handlePlayerDefeat();
+                        continue;
+                    }
+                }
+
+                // Remove off-screen
+                if (p.x < -50 || p.x > 850) {
+                    projectiles.splice(i, 1);
+                }
+            }
+
+            // Draw Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let pt = particles[i];
+                pt.x += pt.vx;
+                pt.y += pt.vy;
+                pt.life--;
+                ctx.fillStyle = pt.color;
+                ctx.globalAlpha = pt.life / 30;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = pt.color;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI*2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0; // reset
+                if (pt.life <= 0) particles.splice(i, 1);
+            }
+
+            // Draw Entities
+            ctx.shadowBlur = 20;
+            // Player
+            ctx.font = '50px sans-serif';
+            ctx.shadowColor = window.EDITOR_STATE ? window.EDITOR_STATE.playerColor : '#00ffff';
+            ctx.fillText(player.emoji, player.x - 25, player.y);
+            
+            // Boss
+            ctx.font = '70px sans-serif';
+            ctx.shadowColor = boss.state === 'angry' ? (window.EDITOR_STATE ? window.EDITOR_STATE.enemyColor : '#ff00ff') : '#00ff00';
+            ctx.fillText(boss.emoji, boss.x - 35, boss.y);
+
+            // Continue loop
+            gameLoopId = requestAnimationFrame(updateGame);
+        }
+
+        // Actions
+        function playerJump() {
+            if (player.isGrounded && player.hp > 0 && boss.hp > 0) {
+                player.vy = -16;
+                player.isGrounded = false;
+                loveCharges++;
+                createParticles(player.x, player.y + 20, '#00ffff');
+                playBeep(400, 'sine', 0.1);
+            }
+        }
+
+        function playerShoot() {
+            if (loveCharges > 0 && player.hp > 0 && boss.hp > 0) {
+                loveCharges--;
+                projectiles.push({
+                    x: player.x + 20,
+                    y: player.y - 20,
+                    vx: 10,
+                    emoji: loveEmojis[Math.floor(Math.random() * loveEmojis.length)],
+                    isLove: true,
+                    size: 30
+                });
+                playBeep(600, 'triangle', 0.1);
+            }
+        }
+
+        function spawnBossProjectile() {
+            projectiles.push({
+                x: boss.x - 40,
+                y: boss.y - 10 + (Math.random() * -30),
+                vx: -6 - (Math.random() * 4),
+                emoji: insultEmojis[Math.floor(Math.random() * insultEmojis.length)],
+                isLove: false,
+                size: 35
+            });
+        }
+
+        function createParticles(x, y, color) {
+            for(let i=0; i<10; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 30,
+                    color: color,
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+
+        function updateHpBars() {
+            playerHpBar.style.width = Math.max(0, (player.hp / player.maxHp) * 100) + '%';
+            bossHpBar.style.width = Math.max(0, (boss.hp / boss.maxHp) * 100) + '%';
+            if(player.hp < 30) playerHpBar.classList.replace('bg-cyan-500', 'bg-red-500');
+            else playerHpBar.classList.replace('bg-red-500', 'bg-cyan-500');
+        }
+
+        function handleBossDefeat() {
+            boss.state = 'sleep';
+            boss.emoji = '😴';
+            boss.y = FLOOR; // lay down
+            playBeep(900, 'sine', 1);
+            showLeaderboard(true);
+        }
+
+        function handlePlayerDefeat() {
+            player.emoji = '💀';
+            playBeep(100, 'sawtooth', 1.5);
+            showLeaderboard(false);
+        }
+
+        function showLeaderboard(win) {
+            leaderboardScreen.classList.remove('hidden');
+            setTimeout(() => leaderboardScreen.classList.add('opacity-100'), 100);
+            
+            if (win) {
+                gameResultTitle.innerText = "YOU WIN";
+                gameResultTitle.className = "arcade-text text-5xl text-cyan-400 mb-2";
+                gameResultSub.innerText = "Entity Pacified via Extreme Empathy.";
+                // Add score
+                let score = Math.floor(player.hp * 100 + loveCharges * 50);
+                leaderboardData.push({ name: 'USER', score: score });
+            } else {
+                gameResultTitle.innerText = "GAME OVER";
+                gameResultTitle.className = "arcade-text text-5xl text-red-500 mb-2";
+                gameResultSub.innerText = "Overwhelmed by toxicity.";
+            }
+
+            // Sort & Render Leaderboard
+            leaderboardData.sort((a, b) => b.score - a.score);
+            leaderboardList.innerHTML = '';
+            leaderboardData.slice(0, 5).forEach((entry, idx) => {
+                let li = document.createElement('li');
+                li.className = "flex justify-between border-b border-gray-800 py-1";
+                li.innerHTML = `<span class="${entry.name==='USER' ? 'text-fuchsia-400 font-bold' : 'text-gray-300'}">${idx+1}. ${entry.name}</span> 
+                                <span class="text-cyan-400">${entry.score}</span>`;
+                leaderboardList.appendChild(li);
+            });
+        }
+
+        // Input Bindings
+        window.addEventListener('keydown', (e) => {
+            if (!minigameActive) return;
+            if (e.code === 'Space') { e.preventDefault(); playerJump(); }
+            if (e.code === 'Enter') { e.preventDefault(); playerShoot(); }
+        });
+
+        gameCanvas.addEventListener('touchstart', (e) => {
+            e.preventDefault(); // prevent scroll
+            if (!minigameActive) return;
+            const touchX = e.touches[0].clientX;
+            const screenHalf = window.innerWidth / 2;
+            if (touchX < screenHalf) {
+                playerJump();
+            } else {
+                playerShoot();
+            }
+        }, {passive: false});
+        
+        // Minigame Buttons
+        btnPlayApex.addEventListener('click', initMinigame);
+        btnExitApex.addEventListener('click', exitMinigame);
+        btnRestartApex.addEventListener('click', initMinigame);
+        // ==============================================================================
+
+        // --- Review Mode Tabs Logic ---
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active styling from all
+                tabBtns.forEach(b => {
+                    b.classList.remove('active', 'text-fuchsia-400', 'font-bold');
+                    b.classList.add('text-gray-500');
+                });
+                // Add active to clicked
+                btn.classList.add('active', 'text-fuchsia-400', 'font-bold');
+                btn.classList.remove('text-gray-500');
+
+                // Hide all content
+                tabContents.forEach(c => c.classList.add('hidden'));
+                
+                // Show target content
+                const targetId = btn.getAttribute('data-target');
+                document.getElementById(targetId).classList.remove('hidden');
+                
+                playBeep(600, 'sine', 0.1); // Tab click sound
+            });
+        });
+
+        // Restart Logic
+        document.getElementById('btn-restart').addEventListener('click', () => {
+            // Reset to beginning
+            window.scrollTo(0,0);
+            location.reload(); // Simplest robust way to reset all state
+        });
+
+        // --- Main Animation Loop ---
+        const clock = new THREE.Clock();
+
+        // Helper Lerp function
+        function lerp(start, end, factor) {
+            return start + (end - start) * factor;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            // Animate Helix subtly
+            dnaParticles.rotation.y = time * 0.1;
+            
+            // Animate floating geometric shapes
+            if(typeof floatingShapes !== 'undefined') {
+                floatingShapes.forEach(shape => {
+                    shape.mesh.rotation.x += shape.rotSpeedX;
+                    shape.mesh.rotation.y += shape.rotSpeedY;
+                });
+            }
+
+            // Animate Sphere
+            coreSphere.rotation.y += 0.01;
+            coreSphere.rotation.x += 0.005;
+            
+            // Pulse sphere scale slightly
+            const scale = 1 + Math.sin(time * 2) * 0.05;
+            coreSphere.scale.set(scale, scale, scale);
+
+            // Lerp Camera Position (Smooth scrolling effect)
+            camera.position.y = lerp(camera.position.y, STATE.cameraTargetY, 0.05);
+            camera.position.z = lerp(camera.position.z, STATE.cameraTargetZ, 0.03);
+            
+            // Lerp Camera Rotation
+            // To orbit around the helix, we adjust position based on angle
+            if (STATE.mode === 'scroll') {
+                const currentRotY = lerp(camera.rotation.y, STATE.cameraTargetRotY, 0.05);
+                camera.rotation.set(STATE.cameraTargetRotX, 0, 0); // Tilt
+                // Apply orbit
+                const radiusX = 15;
+                const radiusZ = 15;
+                // We keep actual position Z fixed in scroll mode, but rotate the group or adjust x/z manually
+                // For simplicity and stability, we rotate the scene or the helix instead of moving camera X/Z wildly
+                scene.rotation.y = lerp(scene.rotation.y, -STATE.cameraTargetRotY, 0.05); 
+            } else if (STATE.mode === 'cinema' || STATE.mode === 'review') {
+                 // In cinema, we allow direct rotation control
+                 scene.rotation.y = lerp(scene.rotation.y, STATE.cameraTargetRotY, 0.02);
+                 camera.rotation.x = lerp(camera.rotation.x, STATE.cameraTargetRotX, 0.02);
+            }
+
+            composer.render();
+        }
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+            
+            // Adjust scroll logic based on new height
+            if(STATE.mode === 'scroll') updateScrollState();
+        });
+
+        // Start Loop
+        animate();
+
+    </script>
+</body>
+</html>
