@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>G.A.me - Cyber Helix Presentation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #020205;
+            color: #fff;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
+        }
+        body::-webkit-scrollbar {
+            display: none;
+        }
+        
+        h1, h2, h3, .cyber-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        #scroll-proxy {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 600vh;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .clickable {
+            pointer-events: auto;
+        }
+
+        .glitch-text {
+            position: relative;
+            display: inline-block;
+        }
+        .glitch-text::before, .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.8;
+        }
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 red;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim 3s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -1px 0 cyan;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(24px, 9999px, 14px, 0); }
+            20% { clip: rect(85px, 9999px, 114px, 0); }
+            40% { clip: rect(15px, 9999px, 90px, 0); }
+            60% { clip: rect(104px, 9999px, 45px, 0); }
+            80% { clip: rect(4px, 9999px, 80px, 0); }
+            100% { clip: rect(50px, 9999px, 30px, 0); }
+        }
+
+        .glass-panel {
+            background: rgba(10, 15, 30, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 255, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+        }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0,255,255,0.2) 50%, rgba(0,0,0,0) 100%);
+            opacity: 0.1;
+            position: absolute;
+            bottom: 100%;
+            animation: scanline 8s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes scanline {
+            0% { bottom: 100%; }
+            100% { bottom: -100px; }
+        }
+
+        .hidden-fade {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        .visible-fade {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        #minigame-layer {
+            background: rgba(10, 5, 20, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+        
+        .arcade-text {
+            font-family: 'Orbitron', sans-serif;
+            text-transform: uppercase;
+            text-shadow: 0 0 10px #ff00ff, 0 0 20px #00ffff;
+        }
+
+        #game-canvas {
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.2), inset 0 0 20px rgba(0, 255, 255, 0.2);
+            border-radius: 8px;
+            background: linear-gradient(180deg, #050010 0%, #150030 100%);
+        }
+
+        .carousel-track {
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            gap: 1.5rem;
+            padding-bottom: 1rem;
+            scrollbar-width: thin;
+            scrollbar-color: #00ffff rgba(10,15,30,0.5);
+        }
+        .carousel-track::-webkit-scrollbar { height: 6px; }
+        .carousel-track::-webkit-scrollbar-track { background: rgba(10,15,30,0.5); }
+        .carousel-track::-webkit-scrollbar-thumb { background: #00ffff; border-radius: 3px; }
+        
+        .carousel-item {
+            scroll-snap-align: center;
+            flex: 0 0 85%;
+            max-width: 280px;
+            transition: transform 0.3s;
+        }
+        .carousel-item:hover { transform: translateY(-5px); }
+        
+        .emoji-btn {
+            font-size: 2rem;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #374151;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .emoji-btn:hover, .emoji-btn.active {
+            border-color: #00ffff;
+            background: rgba(0, 255, 255, 0.1);
+            transform: scale(1.1);
+        }
+    </style>
+
+    <!-- Import Map for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+    <div class="scanline z-50"></div>
+    <div id="scroll-proxy"></div>
+
+    <div id="ui-layer">
+        
+        <!-- Top Header -->
+        <header class="p-6 flex justify-between items-start transition-opacity duration-500" id="main-header">
+            <div>
+                <h1 class="text-3xl font-black text-cyan-400 glitch-text tracking-widest" data-text="G.A.me">G.A.me</h1>
+                <p class="text-xs tracking-[0.3em] text-cyan-200 opacity-70">SYSTEM.PROTOCOL.X42</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs text-fuchsia-400 font-mono" id="scroll-depth">DEPTH: 0m</p>
+                <p class="text-[10px] text-gray-500 font-mono">SCROLL TO ASCEND</p>
+            </div>
+        </header>
+
+        <!-- Right Side Timeline -->
+        <div class="absolute right-6 top-1/2 transform -translate-y-1/2 flex flex-col gap-6 items-center clickable hidden-fade" id="timeline-ui">
+            <div class="w-px h-full bg-cyan-900 absolute left-1/2 transform -translate-x-1/2 -z-10"></div>
+        </div>
+
+        <!-- Center Interaction -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center clickable hidden-fade" id="play-screen-ui">
+            <h2 class="text-2xl md:text-4xl font-bold text-fuchsia-400 mb-6 cyber-font text-center shadow-fuchsia-500 drop-shadow-lg">
+                CORE SPHERE REACHED
+            </h2>
+            <button id="btn-play-cutscene" class="group relative px-8 py-4 bg-transparent overflow-hidden rounded-sm border border-cyan-500 hover:border-fuchsia-500 transition-colors duration-300">
+                <div class="absolute inset-0 bg-cyan-500/20 group-hover:bg-fuchsia-500/20 transition-colors duration-300 blur-md"></div>
+                <span class="relative cyber-font text-cyan-400 group-hover:text-fuchsia-400 text-xl font-bold tracking-widest">
+                    INITIALIZE PLAYBACK
+                </span>
+            </button>
+            <p class="mt-4 text-xs font-mono text-gray-400 text-center max-w-sm">
+                Warning: Initiating cutscene will override manual controls. Ensure audio systems are online.
+            </p>
+        </div>
+
+        <!-- MEDIA NODE (Depth 20) -->
+        <div class="absolute top-1/3 left-1/2 transform -translate-x-1/2 w-11/12 max-w-2xl clickable hidden-fade" id="media-node-ui">
+            <div class="glass-panel p-6 rounded-lg border-l-4 border-cyan-500">
+                <h3 class="text-xl cyber-font text-cyan-400 mb-2">EXTERNAL MEDIA STREAM</h3>
+                <p class="text-sm text-gray-300 font-mono mb-4">
+                    [SYSTEM_GUIDE]: Integrated immersive framework ready.
+                </p>
+                <div class="w-full aspect-video bg-black/80 rounded border border-cyan-900 flex items-center justify-center relative overflow-hidden">
+                    <p class="text-cyan-800 font-mono animate-pulse absolute z-0">[MEDIA FRAME READY]</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- GALLERY NODE (Depth 30) -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-4xl clickable hidden-fade" id="gallery-node-ui">
+            <h3 class="text-2xl cyber-font text-cyan-400 mb-4 text-center">CIRCULATING GALLERY</h3>
+            <div class="carousel-track">
+                <div class="carousel-item glass-panel p-4 rounded-lg border-t-2 border-fuchsia-500">
+                    <div class="h-32 bg-gray-900 rounded mb-4 flex items-center justify-center text-4xl">🧬</div>
+                    <h4 class="text-fuchsia-400 font-bold cyber-font">Project: HELIX</h4>
+                    <p class="text-xs text-gray-400 mt-2">Core presentation layer. Active development. DNA data integration.</p>
+                </div>
+                <div class="carousel-item glass-panel p-4 rounded-lg border-t-2 border-cyan-500">
+                    <div class="h-32 bg-gray-900 rounded mb-4 flex items-center justify-center text-4xl">🎭</div>
+                    <h4 class="text-cyan-400 font-bold cyber-font">Project: RENEW</h4>
+                    <p class="text-xs text-gray-400 mt-2">Theatrical integration and interactive library system. Status: Online.</p>
+                </div>
+                <div class="carousel-item glass-panel p-4 rounded-lg border-t-2 border-green-500">
+                    <div class="h-32 bg-gray-900 rounded mb-4 flex items-center justify-center text-4xl">🦍</div>
+                    <h4 class="text-green-400 font-bold cyber-font">APEX Combat</h4>
+                    <p class="text-xs text-gray-400 mt-2">Empathy-based conflict resolution simulation via emoji avatar system.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- THEATER NODE (Depth 45) -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-3xl clickable hidden-fade" id="theater-node-ui">
+            <div class="glass-panel p-6 rounded-lg">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-700 pb-2">
+                    <h3 class="text-xl cyber-font text-cyan-400">NEON THEATER</h3>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 bg-cyan-900/50 text-cyan-300 text-xs font-mono rounded hover:bg-cyan-500 hover:text-black transition" id="btn-floor-1">FLOOR 1</button>
+                        <button class="px-3 py-1 bg-gray-800 text-gray-400 text-xs font-mono rounded hover:bg-fuchsia-500 hover:text-white transition" id="btn-floor-2">FLOOR 2</button>
+                    </div>
+                </div>
+                <div id="theater-stage" class="w-full aspect-video bg-black/80 rounded border border-cyan-900 flex flex-col items-center justify-center relative overflow-hidden transition-all duration-500">
+                    <div class="text-6xl mb-4 animate-bounce">🎪</div>
+                    <p class="text-cyan-400 font-mono text-center">MAIN STAGE (FLOOR 1)<br><span class="text-xs text-gray-500">Awaiting Performance Data...</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- EDITOR NODE (Depth 60) -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center clickable hidden-fade" id="editor-node-ui">
+            <h2 class="text-3xl font-bold text-cyan-400 mb-2 cyber-font text-center glitch-text" data-text="CREATOR STUDIO">
+                CREATOR STUDIO
+            </h2>
+            <p class="text-gray-300 font-mono text-sm mb-6 text-center max-w-md">
+                Access the Character Library, design custom entities (Myths, Heroes, Animals), and build stage backgrounds for the APEX arena.
+            </p>
+            <button id="btn-open-editor" class="px-8 py-3 bg-cyan-900/40 border-2 border-cyan-500 rounded text-white font-bold cyber-font hover:bg-cyan-600 transition-colors shadow-[0_0_15px_#00ffff]">
+                INITIALIZE EDITOR
+            </button>
+        </div>
+
+        <!-- APEX MINIGAME NODE (Depth 75) -->
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center clickable hidden-fade" id="apex-node-ui">
+            <h2 class="text-3xl font-bold text-fuchsia-400 mb-2 cyber-font text-center glitch-text" data-text="APEX ARENA">
+                APEX ARENA
+            </h2>
+            <p class="text-cyan-300 font-mono text-sm mb-6 text-center max-w-sm">
+                Warning: Hostile entity detected. Neutralize with high-frequency empathy blasts.
+            </p>
+            <button id="btn-play-apex" class="px-8 py-3 bg-fuchsia-900/40 border-2 border-fuchsia-500 rounded text-white font-bold cyber-font hover:bg-fuchsia-600 transition-colors shadow-[0_0_15px_#ff00ff]">
+                ENTER COMBAT
+            </button>
+        </div>
+        
+        <!-- APEX MINIGAME OVERLAY -->
+        <div class="fixed inset-0 hidden-fade flex-col items-center justify-center clickable" id="minigame-layer">
+            <div class="w-full max-w-4xl px-4 relative flex flex-col items-center">
+                
+                <div class="w-full flex justify-between items-center mb-2 px-4">
+                    <div class="flex flex-col gap-1 w-1/3">
+                        <span class="text-cyan-400 font-bold cyber-font text-sm md:text-base">PLAYER (🐰)</span>
+                        <div class="w-full h-4 bg-gray-900 rounded overflow-hidden border border-cyan-900">
+                            <div id="player-hp-bar" class="h-full bg-cyan-500 w-full transition-all duration-300"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex flex-col items-center">
+                        <h3 class="text-fuchsia-500 font-bold arcade-text text-xl md:text-3xl tracking-widest text-center">APEX</h3>
+                        <div id="active-powerup-badge" class="text-[10px] font-mono text-yellow-400 bg-yellow-950/80 border border-yellow-600 px-2 py-0.5 rounded mt-1 hidden">CARD: NONE</div>
+                    </div>
+                    
+                    <div class="flex flex-col gap-1 w-1/3 text-right">
+                        <span class="text-fuchsia-400 font-bold cyber-font text-sm md:text-base">BOSS (🦍)</span>
+                        <div class="w-full h-4 bg-gray-900 rounded overflow-hidden border border-fuchsia-900 flex justify-end">
+                            <div id="boss-hp-bar" class="h-full bg-fuchsia-500 w-full transition-all duration-300"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <canvas id="game-canvas" width="800" height="400" class="max-w-full h-auto touch-none"></canvas>
+                
+                <p class="text-gray-400 font-mono text-xs mt-3 text-center">
+                    [DESKTOP]: Space/Up to Jump, Enter to Shoot | [MOBILE]: Tap Left Side to Jump, Tap Right Side to Shoot<br>
+                    *Catch falling glowing Cards (♠ ♥ ♣ ♦) by jumping into them to gain special combat effects!*
+                </p>
+
+                <button id="btn-exit-apex" class="absolute -top-12 right-4 text-gray-500 hover:text-white font-mono border border-gray-800 px-3 py-1 rounded">EXIT MODULE</button>
+
+                <div id="leaderboard-screen" class="absolute inset-0 bg-black/90 flex flex-col items-center justify-center hidden opacity-0 transition-opacity duration-500 z-50 rounded-lg">
+                    <h2 class="arcade-text text-4xl text-cyan-400 mb-2" id="game-result-title">YOU WIN</h2>
+                    <p class="text-fuchsia-400 font-mono mb-8" id="game-result-sub">The entity has been pacified.</p>
+                    
+                    <div class="glass-panel p-6 rounded w-full max-w-sm mb-6">
+                        <h3 class="text-center text-white cyber-font mb-4 border-b border-gray-700 pb-2">RANKINGS</h3>
+                        <ul id="leaderboard-list" class="font-mono text-sm space-y-2"></ul>
+                    </div>
+                    
+                    <button id="btn-restart-apex" class="px-6 py-2 bg-transparent border border-cyan-500 text-cyan-400 hover:bg-cyan-500 hover:text-black font-bold cyber-font transition-colors">
+                        PLAY AGAIN
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CREATOR STUDIO OVERLAY -->
+        <div class="fixed inset-0 hidden-fade bg-black/95 flex-col items-center justify-center clickable z-[150] p-4 md:p-8" id="creator-layer">
+            <div class="w-full max-w-6xl h-full flex flex-col glass-panel rounded-xl overflow-hidden border border-cyan-500/50 relative">
+                
+                <div class="p-4 border-b border-cyan-900/50 flex justify-between items-center bg-gray-900/50">
+                    <h2 class="text-2xl cyber-font text-cyan-400">ENTITY EDITOR & LIBRARY</h2>
+                    <button id="btn-close-editor" class="text-gray-400 hover:text-fuchsia-400 font-mono text-sm px-3 py-1 border border-gray-700 rounded transition">EXIT</button>
+                </div>
+
+                <div class="flex-1 overflow-hidden flex flex-col md:flex-row">
+                    <div class="w-full md:w-1/2 lg:w-2/5 p-6 overflow-y-auto border-r border-cyan-900/50">
+                        <div class="flex gap-2 mb-6 border-b border-gray-700 pb-2 overflow-x-auto scrollbar-hide">
+                            <button class="editor-tab active text-cyan-400 font-bold font-mono text-sm px-2 py-1 whitespace-nowrap" data-target="edit-player">PLAYER</button>
+                            <button class="editor-tab text-gray-500 hover:text-cyan-400 font-mono text-sm px-2 py-1 whitespace-nowrap transition" data-target="edit-enemy">ENEMY</button>
+                            <button class="editor-tab text-gray-500 hover:text-cyan-400 font-mono text-sm px-2 py-1 whitespace-nowrap transition" data-target="edit-stage">STAGE & STORY</button>
+                        </div>
+
+                        <div id="edit-player" class="editor-content block">
+                            <h3 class="text-fuchsia-400 font-bold cyber-font mb-4">SELECT PLAYER CLASS</h3>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <button class="emoji-btn active" onclick="selectPlayer('🐰')">🐰</button>
+                                <button class="emoji-btn" onclick="selectPlayer('🦊')">🦊</button>
+                                <button class="emoji-btn" onclick="selectPlayer('🦸')">🦸</button>
+                                <button class="emoji-btn" onclick="selectPlayer('🥷')">🥷</button>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-xs text-gray-400 font-mono mb-2">Neon Aura Color</label>
+                                <input type="color" id="player-color" value="#00ffff" class="w-full h-10 rounded cursor-pointer bg-transparent border border-gray-700">
+                            </div>
+                        </div>
+
+                        <div id="edit-enemy" class="editor-content hidden">
+                            <h3 class="text-fuchsia-400 font-bold cyber-font mb-4">SELECT ENEMY ENTITY</h3>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <button class="emoji-btn active" onclick="selectEnemy('🦍')">🦍</button>
+                                <button class="emoji-btn" onclick="selectEnemy('🐺')">🐺</button>
+                                <button class="emoji-btn" onclick="selectEnemy('👹')">👹</button>
+                                <button class="emoji-btn" onclick="selectEnemy('👽')">👽</button>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-xs text-gray-400 font-mono mb-2">Corruption Color</label>
+                                <input type="color" id="enemy-color" value="#ff00ff" class="w-full h-10 rounded cursor-pointer bg-transparent border border-gray-700">
+                            </div>
+                        </div>
+
+                        <div id="edit-stage" class="editor-content hidden">
+                            <h3 class="text-fuchsia-400 font-bold cyber-font mb-4">LORE & STAGE DESIGN</h3>
+                            <label class="block text-xs text-gray-400 font-mono mb-1">Entity Name</label>
+                            <input type="text" id="lore-name" value="The Neon Drifter" class="w-full bg-black/50 border border-gray-700 rounded p-2 text-white mb-4 focus:border-cyan-500 outline-none">
+                            <label class="block text-xs text-gray-400 font-mono mb-1">Stage Theme</label>
+                            <select id="stage-theme" class="w-full bg-black/50 border border-gray-700 rounded p-2 text-white mb-4 outline-none">
+                                <option value="cyber">Cyber Grid (Default)</option>
+                                <option value="forest">Zauberwald (Neon Forest)</option>
+                                <option value="theater">Grand Theater (Stage)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="w-full md:w-1/2 lg:w-3/5 p-6 bg-black/60 flex flex-col items-center justify-center relative border-t md:border-t-0 md:border-l border-cyan-900/50">
+                        <h3 class="text-gray-400 font-mono text-sm mb-8 relative z-10 tracking-[0.3em]">LIVE STAGE PREVIEW</h3>
+                        <div class="flex items-end justify-center gap-8 md:gap-16 w-full max-w-lg relative z-10 border-b-2 border-cyan-900 pb-4">
+                            <div class="flex flex-col items-center gap-4">
+                                <div class="text-xs font-mono px-2 py-1 rounded bg-cyan-900/50 text-cyan-300">Player</div>
+                                <div class="text-7xl md:text-8xl drop-shadow-[0_0_15px_#00ffff]" id="preview-player-emoji">🐰</div>
+                            </div>
+                            <div class="text-2xl font-black text-fuchsia-500 italic pb-6 md:pb-8">VS</div>
+                            <div class="flex flex-col items-center gap-4">
+                                <div class="text-xs font-mono px-2 py-1 rounded bg-fuchsia-900/50 text-fuchsia-300">Enemy</div>
+                                <div class="text-7xl md:text-8xl drop-shadow-[0_0_15px_#ff00ff]" id="preview-enemy-emoji">🦍</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cutscene & Review Layers -->
+        <div class="absolute inset-0 hidden-fade bg-black/40 flex flex-col justify-end p-8 md:p-16" id="cutscene-layer">
+            <div class="glass-panel p-6 rounded-lg max-w-3xl ml-auto mr-auto w-full mb-8 relative" id="dialogue-box">
+                <div class="absolute -top-3 left-6 bg-[#0a0f1e] px-2 text-cyan-400 font-bold cyber-font text-sm border border-cyan-900 rounded" id="dialogue-name">SYSTEM</div>
+                <p class="text-lg md:text-2xl font-light text-gray-100" id="dialogue-text"></p>
+            </div>
+        </div>
+
+        <div class="absolute inset-0 hidden-fade p-6 md:p-12 flex flex-col" id="review-layer">
+            <h2 class="text-3xl cyber-font text-cyan-400 mb-6">X42 DATABANK <span class="text-sm text-gray-500 ml-4">ACCESS GRANTED</span></h2>
+            <div class="flex-1 relative overflow-hidden glass-panel rounded-lg p-6 clickable">
+                <h3 class="text-cyan-400 font-bold text-xl mb-4">SYSTEM ARCHIVE RECORDINGS</h3>
+                <p class="text-sm text-gray-300">All subsystems operational. Decentralized St. Pauli Kiez node architecture verified.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        // Global State variables
+        window.EDITOR_STATE = {
+            playerEmoji: '🐰',
+            enemyEmoji: '🦍',
+            playerColor: '#00ffff',
+            enemyColor: '#ff00ff',
+            playerName: 'Player',
+            stageTheme: 'cyber'
+        };
+
+        window.selectPlayer = function(emoji) {
+            window.EDITOR_STATE.playerEmoji = emoji;
+            document.getElementById('preview-player-emoji').innerText = emoji;
+            document.querySelectorAll('#edit-player .emoji-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        };
+
+        window.selectEnemy = function(emoji) {
+            window.EDITOR_STATE.enemyEmoji = emoji;
+            document.getElementById('preview-enemy-emoji').innerText = emoji;
+            document.querySelectorAll('#edit-enemy .emoji-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        };
+
+        const STATE = {
+            mode: 'scroll',
+            scrollProgress: 0,
+            cameraTargetY: 0,
+            cameraTargetZ: 30,
+            cameraTargetRotX: 0,
+            cameraTargetRotY: 0
+        };
+
+        // Setup Three.js Scene
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x020205, 0.035);
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 30);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        // Postprocessing Bloom
+        const renderScene = new RenderPass(scene, camera);
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.5, 0.4, 0.85);
+        bloomPass.threshold = 0.1;
+        bloomPass.strength = 1.2;
+        bloomPass.radius = 0.5;
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(renderScene);
+        composer.addPass(bloomPass);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const pointLight1 = new THREE.PointLight(0x00ffff, 3, 50);
+        pointLight1.position.set(10, 10, 10);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0xff00ff, 3, 50);
+        pointLight2.position.set(-10, -10, 10);
+        scene.add(pointLight2);
+
+        // Build Cyber Helix & Core Sphere structures
+        const dnaGroup = new THREE.Group();
+        scene.add(dnaGroup);
+
+        const particleCount = 300;
+        const geometry = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+
+        for (let i = 0; i < particleCount * 3; i += 3) {
+            const t = (i / 3) * 0.2;
+            positions[i] = Math.sin(t) * 6;
+            positions[i+1] = (i / 3) * 0.5 - 25;
+            positions[i+2] = Math.cos(t) * 6;
+
+            colors[i] = 0.0;
+            colors[i+1] = 0.8;
+            colors[i+2] = 1.0;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+        const particleMaterial = new THREE.PointsMaterial({
+            size: 0.6,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending
+        });
+
+        const dnaParticles = new THREE.Points(geometry, particleMaterial);
+        dnaGroup.add(dnaParticles);
+
+        // Core Sphere at bottom
+        const sphereGeo = new THREE.SphereGeometry(4, 32, 32);
+        const sphereMat = new THREE.MeshStandardMaterial({
+            color: 0x110022,
+            emissive: 0xff00ff,
+            emissiveIntensity: 0.6,
+            wireframe: true,
+            roughness: 0.2
+        });
+        const coreSphere = new THREE.Mesh(sphereGeo, sphereMat);
+        coreSphere.position.set(0, -60, 0);
+        scene.add(coreSphere);
+
+        // Floating geometric shapes
+        const floatingShapes = [];
+        const shapeGeos = [new THREE.BoxGeometry(2,2,2), new THREE.OctahedronGeometry(2), new THREE.TetrahedronGeometry(2)];
+        for (let i = 0; i < 15; i++) {
+            const mat = new THREE.MeshStandardMaterial({
+                color: i % 2 === 0 ? 0x00ffff : 0xff00ff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.5
+            });
+            const mesh = new THREE.Mesh(shapeGeos[i % shapeGeos.length], mat);
+            mesh.position.set(
+                (Math.random() - 0.5) * 30,
+                (Math.random() - 0.5) * 100,
+                (Math.random() - 0.5) * 20
+            );
+            scene.add(mesh);
+            floatingShapes.push({
+                mesh: mesh,
+                rotSpeedX: (Math.random() - 0.5) * 0.02,
+                rotSpeedY: (Math.random() - 0.5) * 0.02
+            });
+        }
+
+        // Scroll Handling
+        const scrollProxy = document.getElementById('scroll-proxy');
+        const scrollDepthElem = document.getElementById('scroll-depth');
+        const timelineUI = document.getElementById('timeline-ui');
+        const playScreenUI = document.getElementById('play-screen-ui');
+        const mediaNodeUI = document.getElementById('media-node-ui');
+        const galleryNodeUI = document.getElementById('gallery-node-ui');
+        const theaterNodeUI = document.getElementById('theater-node-ui');
+        const editorNodeUI = document.getElementById('editor-node-ui');
+        const apexNodeUI = document.getElementById('apex-node-ui');
+
+        window.addEventListener('scroll', () => {
+            if (STATE.mode !== 'scroll') return;
+            const scrollTop = window.scrollY;
+            const maxScroll = scrollProxy.clientHeight - window.innerHeight;
+            const progress = Math.min(1, Math.max(0, scrollTop / maxScroll));
+            STATE.scrollProgress = progress;
+
+            const depthMeters = Math.floor(progress * 100);
+            scrollDepthElem.innerText = `DEPTH: ${depthMeters}m`;
+
+            // Camera moves down along Y axis through helix
+            STATE.cameraTargetY = -progress * 60;
+            STATE.cameraTargetRotY = progress * Math.PI * 4;
+
+            // UI Node visibility based on scroll depth
+            mediaNodeUI.className = progress > 0.15 && progress < 0.35 ? 'absolute top-1/3 left-1/2 transform -translate-x-1/2 w-11/12 max-w-2xl clickable visible-fade' : 'absolute top-1/3 left-1/2 transform -translate-x-1/2 w-11/12 max-w-2xl clickable hidden-fade';
+            
+            galleryNodeUI.className = progress > 0.35 && progress < 0.55 ? 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-4xl clickable visible-fade' : 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-4xl clickable hidden-fade';
+
+            theaterNodeUI.className = progress > 0.55 && progress < 0.75 ? 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-3xl clickable visible-fade' : 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-11/12 max-w-3xl clickable hidden-fade';
+
+            editorNodeUI.className = progress > 0.75 && progress < 0.9 ? 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center clickable visible-fade' : 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center clickable hidden-fade';
+
+            apexNodeUI.className = progress >= 0.9 ? 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center clickable visible-fade' : 'absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center clickable hidden-fade';
+        });
+
+        // Audio helper
+        function playBeep(freq, type, duration) {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        // Editor modal toggles
+        const creatorLayer = document.getElementById('creator-layer');
+        document.getElementById('btn-open-editor').addEventListener('click', () => {
+            creatorLayer.classList.remove('hidden-fade');
+            creatorLayer.classList.add('visible-fade');
+        });
+        document.getElementById('btn-close-editor').addEventListener('click', () => {
+            creatorLayer.classList.add('hidden-fade');
+            creatorLayer.classList.remove('visible-fade');
+        });
+
+        // ==============================================================================
+        // 🎮 APEX MINIGAME: EMOJI BOSS FIGHT WITH CARD MECHANIC
+        // ==============================================================================
+        const btnPlayApex = document.getElementById('btn-play-apex');
+        const minigameLayer = document.getElementById('minigame-layer');
+        const btnExitApex = document.getElementById('btn-exit-apex');
+        const gameCanvas = document.getElementById('game-canvas');
+        const ctx = gameCanvas.getContext('2d');
+        
+        const playerHpBar = document.getElementById('player-hp-bar');
+        const bossHpBar = document.getElementById('boss-hp-bar');
+        const activePowerupBadge = document.getElementById('active-powerup-badge');
+        const leaderboardScreen = document.getElementById('leaderboard-screen');
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const btnRestartApex = document.getElementById('btn-restart-apex');
+        const gameResultTitle = document.getElementById('game-result-title');
+        const gameResultSub = document.getElementById('game-result-sub');
+
+        let minigameActive = false;
+        let gameLoopId;
+        
+        const GRAVITY = 0.6;
+        const FLOOR = 350;
+        let loveCharges = 0; 
+        
+        let player = { x: 100, y: FLOOR, vy: 0, hp: 100, maxHp: 100, isGrounded: true, emoji: '🐰' };
+        let boss = { x: 650, y: FLOOR - 30, vy: 0, hp: 200, maxHp: 200, state: 'angry', emoji: '🦍', speedMultiplier: 1, poisonedTimer: 0 };
+        let projectiles = [];
+        let collectibleCards = [];
+        let particles = [];
+        let activeCardEffect = null;
+
+        const CARD_TYPES = [
+            { symbol: '♠', name: 'SPADE (Slow/Freeze)', color: '#94a3b8', effect: 'slow' },
+            { symbol: '♥', name: 'HEART (Heal/Pulse)', color: '#f43f5e', effect: 'heal' },
+            { symbol: '♣', name: 'CLUB (Toxic Toxin)', color: '#22c55e', effect: 'toxic' },
+            { symbol: '♦', name: 'DIAMOND (Double Damage)', color: '#0ea5e9', effect: 'power' }
+        ];
+
+        const insultEmojis = ['💩', '🤡', '🗑️', '👎', '🥦'];
+        let leaderboardData = [
+            { name: 'R.HOOD', score: 9500 },
+            { name: 'WOLF', score: 8200 },
+            { name: 'X42', score: 4000 }
+        ];
+
+        function initMinigame() {
+            minigameActive = true;
+            document.body.style.overflow = 'hidden';
+            minigameLayer.classList.remove('hidden-fade');
+            minigameLayer.classList.add('visible-fade');
+            leaderboardScreen.classList.add('hidden');
+            leaderboardScreen.classList.remove('opacity-100');
+
+            player = { x: 100, y: FLOOR, vy: 0, hp: 100, maxHp: 100, isGrounded: true, emoji: window.EDITOR_STATE.playerEmoji };
+            boss = { x: 650, y: FLOOR - 30, vy: 0, hp: 200, maxHp: 200, state: 'angry', emoji: window.EDITOR_STATE.enemyEmoji, speedMultiplier: 1, poisonedTimer: 0 };
+            projectiles = [];
+            collectibleCards = [];
+            particles = [];
+            loveCharges = 0;
+            activeCardEffect = null;
+            activePowerupBadge.classList.add('hidden');
+            
+            updateHpBars();
+            playBeep(300, 'square', 0.5);
+            gameLoopId = requestAnimationFrame(updateGame);
+        }
+
+        function exitMinigame() {
+            minigameActive = false;
+            cancelAnimationFrame(gameLoopId);
+            document.body.style.overflow = 'auto';
+            minigameLayer.classList.add('hidden-fade');
+            minigameLayer.classList.remove('visible-fade');
+        }
+
+        function updateGame() {
+            if (!minigameActive) return;
+
+            ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+            
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#ff00ff';
+            ctx.strokeStyle = 'rgba(255,0,255,0.5)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(0, FLOOR + 10);
+            ctx.lineTo(800, FLOOR + 10);
+            ctx.stroke();
+
+            player.vy += GRAVITY;
+            player.y += player.vy;
+            if (player.y >= FLOOR) {
+                player.y = FLOOR;
+                player.vy = 0;
+                player.isGrounded = true;
+            }
+
+            if (boss.poisonedTimer > 0) {
+                boss.poisonedTimer--;
+                if (boss.poisonedTimer % 30 === 0) {
+                    boss.hp -= 3;
+                    createParticles(boss.x, boss.y, '#22c55e');
+                    updateHpBars();
+                    if (boss.hp <= 0) { handleBossDefeat(); return; }
+                }
+            }
+
+            if (boss.state === 'angry') {
+                if (Math.random() < 0.02 * boss.speedMultiplier && boss.y === FLOOR - 30) {
+                    boss.vy = -12;
+                }
+                if (Math.random() < 0.03 * boss.speedMultiplier) {
+                    spawnBossProjectile();
+                }
+            }
+            boss.vy += GRAVITY;
+            boss.y += boss.vy;
+            if (boss.y >= FLOOR - 30) boss.y = FLOOR - 30;
+
+            if (Math.random() < 0.008 && collectibleCards.length < 2) {
+                const randomCard = CARD_TYPES[Math.floor(Math.random() * CARD_TYPES.length)];
+                collectibleCards.push({
+                    x: Math.random() * 400 + 200,
+                    y: FLOOR - 120 - Math.random() * 60,
+                    vy: 0,
+                    ...randomCard
+                });
+            }
+
+            for (let i = collectibleCards.length - 1; i >= 0; i--) {
+                let c = collectibleCards[i];
+                c.y += Math.sin(Date.now() * 0.005) * 0.5;
+                
+                ctx.save();
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = c.color;
+                ctx.fillStyle = '#0a0f1e';
+                ctx.strokeStyle = c.color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(c.x - 18, c.y - 25, 36, 50, 6);
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.font = '24px sans-serif';
+                ctx.fillStyle = c.color;
+                ctx.textAlign = 'center';
+                ctx.fillText(c.symbol, c.x, c.y + 8);
+                ctx.restore();
+
+                if (Math.hypot(player.x - c.x, player.y - c.y) < 40) {
+                    activateCardEffect(c);
+                    createParticles(c.x, c.y, c.color);
+                    playBeep(1000, 'sine', 0.2);
+                    collectibleCards.splice(i, 1);
+                }
+            }
+
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                let p = projectiles[i];
+                p.x += p.vx;
+                
+                ctx.font = p.size + 'px sans-serif';
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = p.isLove ? '#00ffff' : '#ff0000';
+                ctx.fillText(p.emoji, p.x, p.y);
+
+                if (p.isLove) {
+                    if (boss.state === 'angry' && Math.abs(p.x - boss.x) < 40 && Math.abs(p.y - boss.y) < 40) {
+                        boss.hp -= p.damage || 10;
+                        createParticles(boss.x, boss.y, '#00ffff');
+                        playBeep(800, 'sine', 0.1);
+                        updateHpBars();
+                        projectiles.splice(i, 1);
+                        if (boss.hp <= 0) handleBossDefeat();
+                        continue;
+                    }
+                } else {
+                    if (Math.abs(p.x - player.x) < 30 && Math.abs(p.y - player.y) < 30) {
+                        player.hp -= 15;
+                        createParticles(player.x, player.y, '#ff0000');
+                        playBeep(150, 'sawtooth', 0.2);
+                        updateHpBars();
+                        projectiles.splice(i, 1);
+                        if (player.hp <= 0) handlePlayerDefeat();
+                        continue;
+                    }
+                }
+
+                if (p.x < -50 || p.x > 850) projectiles.splice(i, 1);
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let pt = particles[i];
+                pt.x += pt.vx;
+                pt.y += pt.vy;
+                pt.life--;
+                ctx.fillStyle = pt.color;
+                ctx.globalAlpha = pt.life / 30;
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI*2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                if (pt.life <= 0) particles.splice(i, 1);
+            }
+
+            ctx.shadowBlur = 20;
+            ctx.font = '50px sans-serif';
+            ctx.shadowColor = '#00ffff';
+            ctx.fillText(player.emoji, player.x - 25, player.y);
+            
+            ctx.font = '70px sans-serif';
+            ctx.shadowColor = boss.state === 'angry' ? '#ff00ff' : '#00ff00';
+            ctx.fillText(boss.emoji, boss.x - 35, boss.y);
+
+            gameLoopId = requestAnimationFrame(updateGame);
+        }
+
+        function activateCardEffect(card) {
+            activeCardEffect = card;
+            activePowerupBadge.innerText = `ACTIVE: ${card.name}`;
+            activePowerupBadge.classList.remove('hidden');
+
+            if (card.effect === 'slow') boss.speedMultiplier = 0.4;
+            else if (card.effect === 'heal') {
+                player.hp = Math.min(player.maxHp, player.hp + 35);
+                updateHpBars();
+            } else if (card.effect === 'toxic') boss.poisonedTimer = 300;
+            else if (card.effect === 'power') loveCharges += 3;
+
+            setTimeout(() => { if(activeCardEffect === card) { boss.speedMultiplier = 1; activeCardEffect = null; activePowerupBadge.classList.add('hidden'); } }, 6000);
+        }
+
+        function playerJump() {
+            if (player.isGrounded && player.hp > 0 && boss.hp > 0) {
+                player.vy = -16;
+                player.isGrounded = false;
+                loveCharges++;
+                createParticles(player.x, player.y + 20, '#00ffff');
+                playBeep(400, 'sine', 0.1);
+            }
+        }
+
+        function playerShoot() {
+            if (loveCharges > 0 && player.hp > 0 && boss.hp > 0) {
+                loveCharges--;
+                let damage = (activeCardEffect && activeCardEffect.effect === 'power') ? 22 : 10;
+                projectiles.push({
+                    x: player.x + 20,
+                    y: player.y - 20,
+                    vx: 10,
+                    emoji: (activeCardEffect && activeCardEffect.effect === 'toxic') ? '🟢' : '💖',
+                    isLove: true,
+                    damage: damage,
+                    size: 30
+                });
+                playBeep(600, 'triangle', 0.1);
+            }
+        }
+
+        function spawnBossProjectile() {
+            projectiles.push({
+                x: boss.x - 40,
+                y: boss.y - 10 + (Math.random() * -30),
+                vx: -6 - (Math.random() * 4),
+                emoji: insultEmojis[Math.floor(Math.random() * insultEmojis.length)],
+                isLove: false,
+                size: 35
+            });
+        }
+
+        function createParticles(x, y, color) {
+            for(let i=0; i<10; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 30,
+                    color: color,
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+
+        function updateHpBars() {
+            playerHpBar.style.width = Math.max(0, (player.hp / player.maxHp) * 100) + '%';
+            bossHpBar.style.width = Math.max(0, (boss.hp / boss.maxHp) * 100) + '%';
+        }
+
+        function handleBossDefeat() {
+            boss.state = 'sleep';
+            boss.emoji = '😴';
+            boss.y = FLOOR;
+            playBeep(900, 'sine', 1);
+            showLeaderboard(true);
+        }
+
+        function handlePlayerDefeat() {
+            player.emoji = '💀';
+            playBeep(100, 'sawtooth', 1.5);
+            showLeaderboard(false);
+        }
+
+        function showLeaderboard(win) {
+            leaderboardScreen.classList.remove('hidden');
+            setTimeout(() => leaderboardScreen.classList.add('opacity-100'), 100);
+            gameResultTitle.innerText = win ? "YOU WIN" : "GAME OVER";
+            gameResultTitle.className = win ? "arcade-text text-5xl text-cyan-400 mb-2" : "arcade-text text-5xl text-red-500 mb-2";
+            
+            leaderboardList.innerHTML = '';
+            leaderboardData.slice(0, 5).forEach((entry, idx) => {
+                let li = document.createElement('li');
+                li.className = "flex justify-between border-b border-gray-800 py-1";
+                li.innerHTML = `<span>${idx+1}. ${entry.name}</span> <span class="text-cyan-400">${entry.score}</span>`;
+                leaderboardList.appendChild(li);
+            });
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (!minigameActive) return;
+            if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); playerJump(); }
+            if (e.code === 'Enter') { e.preventDefault(); playerShoot(); }
+        });
+
+        gameCanvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (!minigameActive) return;
+            if (e.touches[0].clientX < window.innerWidth / 2) playerJump();
+            else playerShoot();
+        }, {passive: false});
+        
+        btnPlayApex.addEventListener('click', initMinigame);
+        btnExitApex.addEventListener('click', exitMinigame);
+        btnRestartApex.addEventListener('click', initMinigame);
+        // ==============================================================================
+
+        // Main Animation Loop
+        const clock = new THREE.Clock();
+
+        function lerp(start, end, factor) {
+            return start + (end - start) * factor;
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            if (typeof dnaParticles !== 'undefined') {
+                dnaParticles.rotation.y = time * 0.1;
+            }
+            
+            if (typeof floatingShapes !== 'undefined') {
+                floatingShapes.forEach(shape => {
+                    shape.mesh.rotation.x += shape.rotSpeedX;
+                    shape.mesh.rotation.y += shape.rotSpeedY;
+                });
+            }
+
+            if (typeof coreSphere !== 'undefined') {
+                coreSphere.rotation.y += 0.01;
+                coreSphere.rotation.x += 0.005;
+                const scale = 1 + Math.sin(time * 2) * 0.05;
+                coreSphere.scale.set(scale, scale, scale);
+            }
+
+            if (typeof camera !== 'undefined') {
+                camera.position.y = lerp(camera.position.y, STATE.cameraTargetY, 0.05);
+                camera.position.z = lerp(camera.position.z, STATE.cameraTargetZ, 0.03);
+                
+                if (STATE.mode === 'scroll') {
+                    scene.rotation.y = lerp(scene.rotation.y, -STATE.cameraTargetRotY, 0.05); 
+                }
+            }
+
+            if (typeof composer !== 'undefined') {
+                composer.render();
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            if (typeof camera !== 'undefined' && typeof renderer !== 'undefined' && typeof composer !== 'undefined') {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                composer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+
+        animate();
+
+    </script>
+</body>
+</html>
