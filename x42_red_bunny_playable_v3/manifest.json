@@ -1,0 +1,79 @@
+{
+  "format": "X42-OneSheet-Playtest/0.4",
+  "masterSheet": {
+    "file": "assets/one_sheet.png",
+    "sourceSize": "1024x1536"
+  },
+  "coordinateRule": "All runtime sprites use fixed 260x360 frame canvases with bottom-center pivot.",
+  "characters": {
+    "C01": {
+      "name": "Red Bunny",
+      "source": "one_sheet:C01",
+      "frameSize": [
+        260,
+        360
+      ],
+      "animations": {
+        "idle": {
+          "frames": 6,
+          "fps": 8,
+          "path": "assets/frames/C01_idle_{00}.png"
+        },
+        "walk": {
+          "frames": 6,
+          "fps": 12,
+          "path": "assets/frames/C01_walk_{00}.png"
+        },
+        "attack": {
+          "frames": 6,
+          "fps": 14,
+          "path": "assets/frames/C01_attack_{00}.png"
+        },
+        "hit": {
+          "frames": 4,
+          "fps": 10,
+          "path": "assets/frames/C01_hit_{00}.png"
+        }
+      }
+    },
+    "E01": {
+      "name": "NETWORK Hunter",
+      "source": "one_sheet:E01",
+      "preview": "assets/showcase/enemies.jpg"
+    },
+    "N01": {
+      "name": "Mika",
+      "source": "one_sheet:N01",
+      "preview": "assets/showcase/npcs.jpg"
+    }
+  },
+  "maps": {
+    "BG01": {
+      "name": "St. Paulian Rain",
+      "file": "assets/worlds/st_paulian_rain.jpg"
+    },
+    "BG02": {
+      "name": "Harbor Night",
+      "file": "assets/worlds/harbor_night.jpg"
+    },
+    "BG03": {
+      "name": "Bermuda District",
+      "file": "assets/worlds/bermuda_district.jpg"
+    },
+    "BG04": {
+      "name": "Utopia City",
+      "file": "assets/worlds/utopia_city.jpg"
+    }
+  },
+  "equipment": {
+    "W17": "Signal Baton",
+    "W21": "Cyber Blade",
+    "I01": "Encrypted Drive",
+    "V01": "Signal Bike"
+  },
+  "skills": {
+    "S07": "Signal Burst",
+    "S12": "Shadow Dash",
+    "S31": "Network Jam"
+  }
+}

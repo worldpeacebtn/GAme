@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>X42 Red Bunny — One Sheet Showcase</title>
+<style>
+:root{--bg:#070a12;--panel:rgba(8,12,25,.88);--line:#3b4d72;--cyan:#66eaff;--pink:#ff5bdc;--green:#65f4b0;--red:#ff5474;--txt:#f2f6ff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#050811;color:var(--txt);font-family:Inter,system-ui,sans-serif}
+button,input,textarea{font:inherit}button{color:var(--txt);background:#0c1425dd;border:1px solid var(--line);border-radius:16px}
+#game{position:relative;width:100%;height:100dvh;overflow:hidden}
+#world{position:absolute;inset:0;background:#111 center/cover no-repeat url("assets/worlds/bermuda_district.jpg");transition:background-image .35s}
+#world:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,7,18,.12),rgba(2,5,12,.5))}
+#hud{position:absolute;z-index:20;left:12px;right:12px;top:12px;display:flex;justify-content:space-between;gap:10px;pointer-events:none}
+.card{background:var(--panel);border:1px solid var(--line);box-shadow:0 10px 35px #0009;backdrop-filter:blur(13px)}
+.title{pointer-events:auto;padding:10px 13px;border-radius:17px;font-weight:900;font-size:13px;letter-spacing:.05em}.title b{color:var(--pink)}
+.stats{padding:9px 11px;border-radius:17px;width:150px;font-size:11px}.bar{height:5px;background:#263149;border-radius:99px;margin:3px 0 7px;overflow:hidden}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));width:78%}
+#zone{position:absolute;z-index:8;left:50%;top:88px;transform:translateX(-50%);font-size:11px;padding:7px 12px;border-radius:999px;white-space:nowrap}
+.entity{position:absolute;z-index:8;transform:translate(-50%,-100%);text-align:center;pointer-events:none}.tag{display:inline-block;background:#090e1ddd;border:1px solid var(--line);border-radius:9px;padding:3px 7px;font-size:9px;margin-bottom:4px}.tag.pink{border-color:var(--pink)}.tag.green{border-color:var(--green)}.tag.red{border-color:var(--red)}
+.sprite{display:block;margin:auto;object-fit:contain;filter:drop-shadow(0 12px 9px #000b)}
+#bunnyEntity{left:48%;top:65%;width:150px}.bunnySprite{width:150px;height:208px}
+#npcEntity{left:27%;top:69%;width:100px}.npcSprite{width:75px;height:145px;object-fit:contain}
+#enemyEntity{left:74%;top:68%;width:120px}.enemySprite{width:105px;height:155px;object-fit:contain;opacity:.96}
+#vehicle{position:absolute;z-index:4;left:64%;top:76%;width:120px;display:none;filter:drop-shadow(0 10px 10px #000)}
+#actions{position:absolute;z-index:30;right:12px;bottom:16px;display:flex;flex-direction:column;gap:8px}
+.action{width:62px;height:62px;border-radius:20px;font-size:21px;background:#091121e8}.action small{display:block;font-size:8px;color:#aebbd2;margin-top:2px}
+#joystick{position:absolute;z-index:30;left:15px;bottom:17px;width:154px;height:154px;border-radius:50%;background:#081021b8;border:1px solid #526889;box-shadow:inset 0 0 0 10px #0a1223aa;touch-action:none}
+#stick{position:absolute;left:50%;top:50%;width:66px;height:66px;margin:-33px;border-radius:50%;background:#111d36;border:1px solid var(--cyan);box-shadow:0 0 25px #55e8ff33}
+#joystick:before,#joystick:after{content:"";position:absolute;left:50%;top:50%;background:#405477}.joystick:before{width:70px;height:1px}.joystick:after{width:1px;height:70px}
+#dialog{position:absolute;z-index:40;left:5%;right:5%;bottom:92px;padding:14px;border-radius:18px;display:none}.show{display:block!important}.speaker{font-weight:900;color:var(--green);font-size:12px}.line{margin-top:5px;line-height:1.4;font-size:13px}
+#editor{position:absolute;z-index:50;right:10px;top:64px;width:min(390px,calc(100% - 20px));max-height:calc(100dvh - 75px);overflow:auto;padding:12px;border-radius:18px;display:none}
+.tabs{display:flex;gap:5px;overflow:auto;margin-bottom:9px}.tabs button{padding:7px 9px;font-size:10px;white-space:nowrap}.section{border-top:1px solid #2b3851;padding-top:10px;margin-top:10px}.muted{color:#9aa9c2;font-size:10px;line-height:1.45}
+.mapgrid,.assetgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.mapgrid button,.assetgrid button{text-align:left;padding:9px;font-size:10px}.mapgrid b,.assetgrid b{display:block;color:var(--cyan);font-size:11px}
+#sheet{width:100%;border-radius:12px;border:1px solid #34415d;margin-top:7px}
+textarea{width:100%;min-height:130px;background:#070b15;color:#eef5ff;border:1px solid #3b4d6c;border-radius:11px;padding:9px;font:11px ui-monospace,monospace}
+#combat{position:absolute;z-index:35;left:50%;top:15%;transform:translateX(-50%);width:min(350px,calc(100% - 30px));padding:12px;border-radius:17px;display:none}.enemyhp{height:8px;background:#2b1521;border-radius:9px;overflow:hidden}.enemyhp i{display:block;height:100%;background:var(--red);width:100%}
+#toast{position:absolute;z-index:60;left:50%;top:75px;transform:translateX(-50%);padding:8px 12px;border-radius:999px;background:#071020ee;border:1px solid var(--cyan);font-size:10px;opacity:0;transition:.2s;pointer-events:none}.on{opacity:1!important}
+@media(max-width:700px){#hud{top:8px;left:8px;right:8px}.title{font-size:11px}.stats{width:135px}#bunnyEntity{width:125px}.bunnySprite{width:125px;height:185px}#joystick{width:138px;height:138px;left:12px;bottom:13px}#stick{width:60px;height:60px;margin:-30px}.action{width:58px;height:58px}.actions{right:9px;bottom:12px}#editor{top:auto;bottom:9px;right:7px;width:calc(100% - 14px);max-height:68dvh}.dialog{bottom:84px}}
+</style>
+</head>
+<body>
+<div id="game">
+ <div id="world"></div>
+ <div id="hud">
+  <div class="title card">🐇 <b>X42</b> RED BUNNY · ONE-SHEET SHOWCASE</div>
+  <div class="stats card">HP <strong id="hp">120</strong><div class="bar"><i id="hpbar"></i></div>FOCUS <strong>85</strong><div class="bar"><i style="width:68%"></i></div></div>
+ </div>
+ <div id="zone" class="card">BERMUDA DREIECK · NIGHT</div>
+
+ <div id="bunnyEntity" class="entity"><div class="tag pink">C01 · RED BUNNY</div><img id="bunnySprite" class="sprite bunnySprite" src="assets/frames/C01_idle_00.png"></div>
+ <div id="npcEntity" class="entity"><div class="tag green">N01 · MIKA</div><img class="sprite npcSprite" src="assets/showcase/npcs.jpg"></div>
+ <div id="enemyEntity" class="entity"><div class="tag red">E01 · NETWORK HUNTER</div><img class="sprite enemySprite" src="assets/showcase/enemies.jpg"></div>
+ <img id="vehicle" src="assets/showcase/items_props.jpg" alt="Signal Bike preview">
+
+ <div id="joystick"><div id="stick"></div></div>
+ <div id="actions">
+   <button class="action" onclick="meet()">💬<small>MEET</small></button>
+   <button class="action" onclick="startFight()">⚔<small>FIGHT</small></button>
+   <button class="action" onclick="useSkill()">✦<small>SKILL</small></button>
+   <button class="action" onclick="equip()">🎒<small>EQUIP</small></button>
+   <button class="action" onclick="toggleEditor()">☰<small>EDIT</small></button>
+ </div>
+
+ <div id="dialog" class="card">
+   <div id="speaker" class="speaker">Mika</div><div id="line" class="line">Die Firewall ist fast geknackt. Komm — wir müssen zum Funkmast.</div>
+   <button style="padding:7px 10px;margin-top:9px" onclick="nextDialogue()">Weiter →</button>
+   <button style="padding:7px 10px;margin-top:9px" onclick="closeDialog()">×</button>
+ </div>
+
+ <div id="combat" class="card">
+   <b>NETWORK HUNTER · E01</b>
+   <div class="muted">Fight demo — the Bunny keeps her animation sequence while combat runs.</div>
+   <div style="margin:7px 0" class="enemyhp"><i id="enemyhp"></i></div>
+   <button onclick="hitEnemy()" style="padding:8px 11px">⚔ Attack</button>
+   <button onclick="useSkill()" style="padding:8px 11px">✦ Network Jam</button>
+   <button onclick="resetFight()" style="padding:8px 11px">↻ Reset</button>
+ </div>
+
+ <div id="editor" class="card">
+  <div class="tabs">
+   <button onclick="editorTab('map')">MAP</button><button onclick="editorTab('story')">STORY</button><button onclick="editorTab('assets')">ASSETS</button><button onclick="editorTab('sheet')">SHEET</button>
+  </div>
+  <div id="editorBody"></div>
+ </div>
+ <div id="toast"></div>
+</div>
+<script>
+const M={"format": "X42-OneSheet-Playtest/0.4", "masterSheet": {"file": "assets/one_sheet.png", "sourceSize": "1024x1536"}, "coordinateRule": "All runtime sprites use fixed 260x360 frame canvases with bottom-center pivot.", "characters": {"C01": {"name": "Red Bunny", "source": "one_sheet:C01", "frameSize": [260, 360], "animations": {"idle": {"frames": 6, "fps": 8, "path": "assets/frames/C01_idle_{00}.png"}, "walk": {"frames": 6, "fps": 12, "path": "assets/frames/C01_walk_{00}.png"}, "attack": {"frames": 6, "fps": 14, "path": "assets/frames/C01_attack_{00}.png"}, "hit": {"frames": 4, "fps": 10, "path": "assets/frames/C01_hit_{00}.png"}}}, "E01": {"name": "NETWORK Hunter", "source": "one_sheet:E01", "preview": "assets/showcase/enemies.jpg"}, "N01": {"name": "Mika", "source": "one_sheet:N01", "preview": "assets/showcase/npcs.jpg"}}, "maps": {"BG01": {"name": "St. Paulian Rain", "file": "assets/worlds/st_paulian_rain.jpg"}, "BG02": {"name": "Harbor Night", "file": "assets/worlds/harbor_night.jpg"}, "BG03": {"name": "Bermuda District", "file": "assets/worlds/bermuda_district.jpg"}, "BG04": {"name": "Utopia City", "file": "assets/worlds/utopia_city.jpg"}}, "equipment": {"W17": "Signal Baton", "W21": "Cyber Blade", "I01": "Encrypted Drive", "V01": "Signal Bike"}, "skills": {"S07": "Signal Burst", "S12": "Shadow Dash", "S31": "Network Jam"}};
+const maps=M.maps;
+let state={x:.48,y:.65,dir:0,anim:'idle',frame:0,enemyHP:100,equipped:'W17'};
+let lines=[
+ ["Mika","Die Firewall ist fast geknackt. Komm — wir müssen zum Funkmast."],
+ ["Red Bunny","Erst Signal-Key, dann verschwinden wir."],
+ ["Mika","Der Hunter kommt. Wir nehmen den Hafenweg."],
+ ["Red Bunny","Dann los."]
+], li=0;
+const bunny=document.getElementById('bunnySprite');
+const bunnyFrames={idle:6,walk:6,attack:6,hit:4};
+function setAnim(a){state.anim=a;state.frame=0}
+setInterval(()=>{state.frame=(state.frame+1)%bunnyFrames[state.anim];bunny.src=`assets/frames/C01_${state.anim}_${String(state.frame).padStart(2,'0')}.png`},1000/10);
+function place(){document.getElementById('bunnyEntity').style.left=(state.x*100)+'%';document.getElementById('bunnyEntity').style.top=(state.y*100)+'%'}
+function walk(dx,dy){state.x=Math.max(.09,Math.min(.91,state.x+dx));state.y=Math.max(.22,Math.min(.9,state.y+dy));setAnim('walk');place();if(Math.abs(dx)>.001) bunny.style.transform=dx<0?'scaleX(-1)':'scaleX(1)';clearTimeout(window.walkTimer);window.walkTimer=setTimeout(()=>setAnim('idle'),180)}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowUp')walk(0,-.025);if(e.key==='ArrowDown')walk(0,.025);if(e.key==='ArrowLeft')walk(-.025,0);if(e.key==='ArrowRight')walk(.025,0)});
+let joy={on:false,id:null,cx:0,cy:0};
+const joyEl=document.getElementById('joystick'), stick=document.getElementById('stick');
+function joyMove(e){if(!joy.on)return;const r=joyEl.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let dx=e.clientX-cx,dy=e.clientY-cy;const d=Math.hypot(dx,dy),max=r.width*.30;if(d>max){dx*=max/d;dy*=max/d}stick.style.transform=`translate(${dx}px,${dy}px)`;if(d>8)walk(dx/r.width*.06,dy/r.height*.06)}
+joyEl.addEventListener('pointerdown',e=>{joy.on=true;joyEl.setPointerCapture(e.pointerId);joyMove(e)});joyEl.addEventListener('pointermove',joyMove);joyEl.addEventListener('pointerup',()=>{joy.on=false;stick.style.transform='translate(0,0)'});
+function pulse(t){const x=document.getElementById('toast');x.textContent=t;x.classList.add('on');setTimeout(()=>x.classList.remove('on'),800)}
+function meet(){document.getElementById('dialog').classList.add('show');renderLine()}
+function renderLine(){document.getElementById('speaker').textContent=lines[li][0];document.getElementById('line').textContent=lines[li][1]}
+function nextDialogue(){li=(li+1)%lines.length;renderLine()}
+function closeDialog(){document.getElementById('dialog').classList.remove('show')}
+function startFight(){document.getElementById('combat').classList.add('show');pulse('FIGHT STARTED');setAnim('attack')}
+function hitEnemy(){state.enemyHP=Math.max(0,state.enemyHP-25);document.getElementById('enemyhp').style.width=state.enemyHP+'%';setAnim('attack');if(state.enemyHP===0)pulse('HUNTER DEFEATED')}
+function resetFight(){state.enemyHP=100;document.getElementById('enemyhp').style.width='100%';setAnim('idle')}
+function useSkill(){pulse('S31 · NETWORK JAM');state.enemyHP=Math.max(0,state.enemyHP-35);document.getElementById('enemyhp').style.width=state.enemyHP+'%';setAnim('attack')}
+function equip(){state.equipped=state.equipped==='W17'?'W21':'W17';pulse((state.equipped==='W17'?'W17 · SIGNAL BATON':'W21 · CYBER BLADE')+' EQUIPPED')}
+function changeMap(id){document.getElementById('world').style.backgroundImage=`url("${maps[id].file}")`;document.getElementById('zone').textContent=maps[id].name.toUpperCase();pulse('MAP → '+maps[id].name)}
+function uploadBg(e){const f=e.target.files[0];if(!f)return;const u=URL.createObjectURL(f);document.getElementById('world').style.backgroundImage=`url("${u}")`;pulse('CUSTOM BACKGROUND LOADED')}
+function editorTab(t){const b=document.getElementById('editorBody');if(t==='map')b.innerHTML='<h3>Stage / Map</h3><div class="muted">Run the Bunny through different scenes. These are actual background presets from the showcase pack.</div><div class="mapgrid">'+Object.entries(maps).map(([id,m])=>`<button onclick="changeMap('${id}')"><b>${id}</b>${m.name}</button>`).join('')+'</div><div class="section"><input type="file" accept="image/*" onchange="uploadBg(event)"><div class="muted">Or upload your own background.</div></div>';
+if(t==='story')b.innerHTML='<h3>Story / Dialogue</h3><div class="muted">Only story data changes here — sprite animation stays untouched.</div><textarea id="storyEdit">'+lines.map(a=>a[0]+': '+a[1]).join('\\n')+'</textarea><button style="width:100%;margin-top:7px;padding:9px" onclick="saveStory()">SAVE</button>';
+if(t==='assets')b.innerHTML='<h3>Everything from the sheet</h3><div class="assetgrid">'+[['C01','Animated Red Bunny'],['E01','NETWORK Hunter'],['N01','Mika NPC'],['W17','Signal Baton'],['W21','Cyber Blade'],['I01','Encrypted Drive'],['V01','Signal Bike'],['S07','Signal Burst'],['S12','Shadow Dash'],['S31','Network Jam'],['BG01','Rain Stage'],['BG02','Harbor Stage']].map(a=>`<button onclick="pulse('${a[0]} · ${a[1]}')"><b>${a[0]}</b>${a[1]}</button>`).join('')+'</div><div class="section"><img src="assets/showcase/enemies.jpg" style="width:100%;border-radius:10px"><img src="assets/showcase/npcs.jpg" style="width:100%;border-radius:10px;margin-top:6px"><img src="assets/showcase/items_props.jpg" style="width:100%;border-radius:10px;margin-top:6px"></div>';
+if(t==='sheet')b.innerHTML='<h3>Master one-sheet</h3><div class="muted">The source artwork remains one sheet. Runtime animation uses extracted, fixed-pivot frame images so the whole sheet is never swapped in as a sprite.</div><img id="sheet" src="assets/one_sheet.png"><div class="section"><b>Runtime atlas</b><img id="sheet" src="assets/C01_animation_atlas.png"></div>'}
+function saveStory(){const raw=document.getElementById('storyEdit').value.split('\\n').filter(Boolean);raw.forEach((s,i)=>{const k=s.indexOf(':');if(k>0&&lines[i])lines[i]=[s.slice(0,k),s.slice(k+1).trim()]});pulse('STORY SAVED');renderLine()}
+function toggleEditor(){document.getElementById('editor').classList.toggle('show');editorTab('map')}
+place();
+</script>
+</body>
+</html>
