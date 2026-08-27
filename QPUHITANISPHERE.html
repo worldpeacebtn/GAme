@@ -1,0 +1,1123 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quantum Paperdoll Cyberthriller: Gamified 3D Room & Vault V2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#07040d',
+                            card: '#120b24',
+                            border: '#2a1752',
+                            cyan: '#00f0ff',
+                            magenta: '#ff007f',
+                            purple: '#9d00ff',
+                            glow: '#00f0ff55'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js and OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #07040d;
+            color: #e2e8f0;
+            overflow: hidden;
+            touch-action: none;
+            width: 100vw;
+            height: 100vh;
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .cyber-border {
+            border: 1px solid rgba(0, 240, 255, 0.35);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15), inset 0 0 15px rgba(0, 240, 255, 0.05);
+        }
+        .cyber-border-magenta {
+            border: 1px solid rgba(255, 0, 127, 0.45);
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.2), inset 0 0 15px rgba(255, 0, 127, 0.05);
+        }
+        .glass-panel {
+            background: rgba(18, 11, 36, 0.92);
+            backdrop-filter: blur(16px);
+        }
+        ::-webkit-scrollbar { width: 3px; height: 3px; }
+        ::-webkit-scrollbar-track { background: #0a0612; }
+        ::-webkit-scrollbar-thumb { background: #2a1752; border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00f0ff; }
+        .app-icon { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .app-icon:active { transform: scale(0.92); }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.7; }
+        }
+        .animate-pulse-glow { animation: pulseGlow 2s infinite ease-in-out; }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col select-none relative overflow-hidden">
+
+    <header class="w-full bg-cyber-card/95 backdrop-blur-md border-b border-cyber-border px-3 py-2 flex items-center justify-between gap-2 z-30 shrink-0">
+        <div class="flex items-center space-x-2">
+            <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-cyber-cyan to-cyber-magenta p-0.5 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                <div class="w-full h-full bg-cyber-dark rounded-[6px] flex items-center justify-center">
+                    <i class="fa-solid fa-cube text-cyber-cyan text-xs"></i>
+                </div>
+            </div>
+            <div>
+                <h1 class="font-mono text-[10px] sm:text-[11px] font-bold tracking-wider bg-gradient-to-r from-cyber-cyan via-purple-400 to-cyber-magenta bg-clip-text text-transparent truncate max-w-[180px] sm:max-w-none">
+                    QUANTUM PAPERDOLL: GAMIFIED 3D ENGINE V2
+                </h1>
+                <p class="text-[7px] text-slate-400 font-mono">RESTORED HITBOXES • TEMPLATES • QUESTS • AUDIO SYNTH</p>
+            </div>
+        </div>
+
+        <!-- Top Right Action Controls -->
+        <div class="flex items-center space-x-1.5">
+            <button onclick="toggleHitboxes()" id="hitboxToggleBtn" class="px-2.5 py-1 bg-cyber-dark hover:bg-cyber-border border border-cyan-500/50 text-cyber-cyan text-xs font-mono rounded-lg transition flex items-center space-x-1 shadow-sm" title="Toggle Hitboxes / Orbits">
+                <i class="fa-solid fa-vector-square text-xs"></i>
+                <span class="hidden sm:inline">Hitboxes: ON</span>
+            </button>
+            <button onclick="toggleGameMode()" id="gameModeToggleBtn" class="px-2.5 py-1 bg-cyber-dark hover:bg-cyber-border border border-cyber-cyan/50 text-cyber-cyan text-xs font-mono rounded-lg transition flex items-center space-x-1 shadow-sm">
+                <i class="fa-solid fa-gamepad text-xs"></i>
+                <span class="hidden sm:inline" id="gameModeLabel">Game Mode: OFF</span>
+            </button>
+            <button onclick="openAppMenu('templates')" class="px-2.5 py-1 bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/40 text-purple-300 text-xs font-mono rounded-lg transition flex items-center space-x-1">
+                <i class="fa-solid fa-shapes text-xs"></i>
+                <span class="hidden sm:inline">Presets</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 w-full h-full relative overflow-hidden flex flex-col bg-cyber-dark">
+        <div class="flex-1 relative w-full h-full overflow-hidden">
+            <div id="canvasContainer" class="w-full h-full absolute inset-0 cursor-grab active:cursor-grabbing"></div>
+
+            <!-- Floating Status Banner -->
+            <div class="absolute top-3 left-3 z-10 bg-cyber-card/85 backdrop-blur-md px-3 py-1 rounded-lg border border-cyan-500/30 text-[10px] font-mono text-cyber-cyan flex items-center space-x-2 shadow-lg pointer-events-none">
+                <span class="w-2 h-2 rounded-full bg-cyber-cyan animate-ping"></span>
+                <span id="canvasStatusText">BUILDER MODE: TAP FLOOR TO PLACE ASSETS OR HITBOXES</span>
+            </div>
+
+            <!-- Floating Gamified Quests Widget -->
+            <div id="questWidget" class="absolute top-14 left-3 z-10 bg-cyber-card/90 backdrop-blur-md p-2.5 rounded-xl border border-cyber-magenta/40 text-[10px] font-mono shadow-xl max-w-[220px]">
+                <div class="flex justify-between items-center text-cyber-magenta font-bold mb-1">
+                    <span><i class="fa-solid fa-bullseye mr-1"></i> Cyber Quests</span>
+                    <span id="questProgressCount" class="text-[9px] bg-magenta-950 px-1.5 py-0.5 rounded text-cyber-magenta">0/3</span>
+                </div>
+                <div id="questList" class="space-y-1 text-slate-300">
+                    <div id="quest-1" class="flex items-center space-x-1.5"><i class="fa-regular fa-square text-cyber-magenta text-[9px]"></i><span class="truncate">Spawn a Hacker Desk</span></div>
+                    <div id="quest-2" class="flex items-center space-x-1.5"><i class="fa-regular fa-square text-cyber-magenta text-[9px]"></i><span class="truncate">Turn Game Mode ON & Walk</span></div>
+                    <div id="quest-3" class="flex items-center space-x-1.5"><i class="fa-regular fa-square text-cyber-magenta text-[9px]"></i><span class="truncate">Trigger Loft Stair Vector</span></div>
+                </div>
+            </div>
+
+            <!-- Spherical Joystick & Quick Actions Widget -->
+            <div id="joystickWidget" class="absolute bottom-20 right-3 sm:bottom-20 sm:right-6 z-20 bg-cyber-card/95 backdrop-blur-md p-2 rounded-2xl cyber-border flex flex-col items-center space-y-1 shadow-2xl">
+                <div class="text-[8px] font-mono text-cyber-cyan uppercase tracking-wider" id="joystickTitle">Spherical Pad</div>
+                <div class="relative w-20 h-20 bg-cyber-dark/90 rounded-full border border-cyber-border flex items-center justify-center touch-none" id="joystickPad">
+                    <div class="absolute inset-0 flex items-center justify-center opacity-30 pointer-events-none">
+                        <i class="fa-solid fa-arrows-up-down-left-right text-cyber-cyan text-sm"></i>
+                    </div>
+                    <div id="joystickKnob" class="absolute w-7 h-7 bg-gradient-to-br from-cyber-cyan to-cyber-magenta rounded-full shadow-lg shadow-cyan-500/50 cursor-pointer transition-transform duration-75"></div>
+                </div>
+                <div class="flex space-x-1 w-full pt-0.5">
+                    <button onclick="rotateSelectedAsset(-Math.PI/8)" class="flex-1 py-1 bg-cyber-dark hover:bg-cyber-border border border-cyber-border text-[9px] font-mono text-slate-300 rounded" title="Rotate Left"><i class="fa-solid fa-rotate-left"></i></button>
+                    <button onclick="rotateSelectedAsset(Math.PI/8)" class="flex-1 py-1 bg-cyber-dark hover:bg-cyber-border border border-cyber-border text-[9px] font-mono text-slate-300 rounded" title="Rotate Right"><i class="fa-solid fa-rotate-right"></i></button>
+                    <button onclick="triggerSelectedSpecialAnim()" class="flex-1 py-1 bg-magenta-950 hover:bg-magenta-900 border border-cyber-magenta/50 text-[9px] font-mono text-cyber-magenta rounded" title="Special Action"><i class="fa-solid fa-bolt"></i></button>
+                </div>
+            </div>
+
+            <!-- Floating Notification Toast -->
+            <div id="toastNotification" class="absolute top-14 left-1/2 transform -translate-x-1/2 z-40 bg-cyber-card/95 border border-cyber-cyan text-cyber-cyan text-xs font-mono px-4 py-2 rounded-xl shadow-2xl transition-all duration-300 opacity-0 pointer-events-none">
+                Notification Message
+            </div>
+        </div>
+
+        <nav class="absolute bottom-2 left-1/2 transform -translate-x-1/2 z-30 bg-cyber-card/95 backdrop-blur-xl px-3 py-1.5 rounded-2xl cyber-border flex items-center space-x-3 sm:space-x-4 shadow-2xl shrink-0">
+            <button onclick="openAppMenu('builder')" class="app-icon flex flex-col items-center space-y-0.5 text-slate-400 hover:text-cyber-cyan group">
+                <div class="w-8 h-8 rounded-xl bg-cyber-dark border border-cyber-border flex items-center justify-center group-hover:border-cyber-cyan group-hover:shadow-[0_0_10px_rgba(0,240,255,0.3)]">
+                    <i class="fa-solid fa-couch text-cyber-cyan text-xs"></i>
+                </div>
+                <span class="text-[8px] font-mono">Builder</span>
+            </button>
+            <button onclick="openAppMenu('vault')" class="app-icon flex flex-col items-center space-y-0.5 text-slate-400 hover:text-cyber-magenta group">
+                <div class="w-8 h-8 rounded-xl bg-cyber-dark border border-cyber-border flex items-center justify-center group-hover:border-cyber-magenta group-hover:shadow-[0_0_10px_rgba(255,0,127,0.3)]">
+                    <i class="fa-solid fa-folder-open text-cyber-magenta text-xs"></i>
+                </div>
+                <span class="text-[8px] font-mono">Vault</span>
+            </button>
+            <button onclick="openAppMenu('walls')" class="app-icon flex flex-col items-center space-y-0.5 text-slate-400 hover:text-purple-400 group">
+                <div class="w-8 h-8 rounded-xl bg-cyber-dark border border-cyber-border flex items-center justify-center group-hover:border-purple-500 group-hover:shadow-[0_0_10px_rgba(157,0,255,0.3)]">
+                    <i class="fa-solid fa-wall text-purple-400 text-xs"></i>
+                </div>
+                <span class="text-[8px] font-mono">Walls</span>
+            </button>
+            <button onclick="openAppMenu('audio')" class="app-icon flex flex-col items-center space-y-0.5 text-slate-400 hover:text-emerald-400 group">
+                <div class="w-8 h-8 rounded-xl bg-cyber-dark border border-cyber-border flex items-center justify-center group-hover:border-emerald-500 group-hover:shadow-[0_0_10px_rgba(16,185,129,0.3)]">
+                    <i class="fa-solid fa-wave-square text-emerald-400 text-xs"></i>
+                </div>
+                <span class="text-[8px] font-mono">Audio</span>
+            </button>
+            <button onclick="openAppMenu('script')" class="app-icon flex flex-col items-center space-y-0.5 text-slate-400 hover:text-amber-400 group">
+                <div class="w-8 h-8 rounded-xl bg-cyber-dark border border-cyber-border flex items-center justify-center group-hover:border-amber-500 group-hover:shadow-[0_0_10px_rgba(245,158,11,0.3)]">
+                    <i class="fa-solid fa-book-open text-amber-400 text-xs"></i>
+                </div>
+                <span class="text-[8px] font-mono">Script</span>
+            </button>
+        </nav>
+    </main>
+
+    <div id="appModalOverlay" class="fixed inset-0 z-50 bg-cyber-dark/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        
+        <!-- BUILDER MENU MODAL -->
+        <div id="modal-builder" class="app-modal hidden w-full max-w-sm bg-cyber-card rounded-2xl cyber-border p-4 space-y-3 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-cyber-border pb-2">
+                <h2 class="text-xs font-mono font-bold text-cyber-cyan uppercase tracking-wider flex items-center space-x-1.5">
+                    <i class="fa-solid fa-couch"></i><span>Spawn Cyber Asset / Hitbox</span>
+                </h2>
+                <button onclick="closeAppMenu()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <p class="text-[10px] text-slate-400">Click any asset below to activate placement mode. Hitboxes will surround placed assets instantly!</p>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="startPlacement('desk'); closeAppMenu();" class="p-2.5 bg-cyber-dark hover:bg-cyan-950/40 border border-cyan-500/30 rounded-xl text-left transition group">
+                    <div class="text-cyber-cyan text-xs font-bold group-hover:underline"><i class="fa-solid fa-computer mr-1"></i> Hacker Desk</div>
+                    <div class="text-[9px] text-slate-400">Workstation & Monitors</div>
+                </button>
+                <button onclick="startPlacement('couch'); closeAppMenu();" class="p-2.5 bg-cyber-dark hover:bg-magenta-950/40 border border-magenta-500/30 rounded-xl text-left transition group">
+                    <div class="text-cyber-magenta text-xs font-bold group-hover:underline"><i class="fa-solid fa-chair mr-1"></i> Lounge Sofa</div>
+                    <div class="text-[9px] text-slate-400">Plush neon seating</div>
+                </button>
+                <button onclick="startPlacement('bookshelf'); closeAppMenu();" class="p-2.5 bg-cyber-dark hover:bg-purple-950/40 border border-purple-500/30 rounded-xl text-left transition group">
+                    <div class="text-purple-400 text-xs font-bold group-hover:underline"><i class="fa-solid fa-book mr-1"></i> Bookshelf</div>
+                    <div class="text-[9px] text-slate-400">Storage & evidence</div>
+                </button>
+                <button onclick="startPlacement('plant'); closeAppMenu();" class="p-2.5 bg-cyber-dark hover:bg-emerald-950/40 border border-emerald-500/30 rounded-xl text-left transition group">
+                    <div class="text-emerald-400 text-xs font-bold group-hover:underline"><i class="fa-solid fa-seedling mr-1"></i> Neon Flora</div>
+                    <div class="text-[9px] text-slate-400">Cyberpunk plant</div>
+                </button>
+                <button onclick="startPlacement('character'); closeAppMenu();" class="p-2.5 bg-cyber-dark hover:bg-amber-950/40 border border-amber-500/30 rounded-xl text-left transition group">
+                    <div class="text-amber-400 text-xs font-bold group-hover:underline"><i class="fa-solid fa-user-ninja mr-1"></i> Paperdoll Avatar</div>
+                    <div class="text-[9px] text-slate-400">Playable character</div>
+                </button>
+                <button onclick="startPlacement('stairs'); closeAppMenu();" class="p-2.5 bg-cyber-dark hover:bg-blue-950/40 border border-blue-500/30 rounded-xl text-left transition group">
+                    <div class="text-blue-400 text-xs font-bold group-hover:underline"><i class="fa-solid fa-stairs mr-1"></i> Loft Stairs</div>
+                    <div class="text-[9px] text-slate-400">Dual top/bottom triggers</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- VAULT MODAL -->
+        <div id="modal-vault" class="app-modal hidden w-full max-w-lg bg-cyber-card rounded-2xl cyber-border-magenta p-4 space-y-3 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-cyber-border pb-2">
+                <h2 class="text-xs font-mono font-bold text-cyber-magenta uppercase tracking-wider flex items-center space-x-1.5">
+                    <i class="fa-solid fa-folder-open"></i><span>Universal Auto-Sorted Vault</span>
+                </h2>
+                <div class="flex items-center space-x-2">
+                    <label class="px-2.5 py-1 bg-magenta-950 hover:bg-magenta-900 border border-cyber-magenta text-cyber-magenta text-[10px] font-mono rounded-lg cursor-pointer transition flex items-center space-x-1">
+                        <i class="fa-solid fa-upload"></i><span>Upload Any File</span>
+                        <input type="file" id="mediaUploadInput" multiple onchange="handleUniversalUpload(event)" class="hidden">
+                    </label>
+                    <button onclick="closeAppMenu()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
+                </div>
+            </div>
+            <div class="flex space-x-1 border-b border-cyber-border pb-2 text-[10px] font-mono overflow-x-auto">
+                <button onclick="filterVault('all')" id="tab-all" class="px-2.5 py-1 rounded bg-magenta-950 text-cyber-magenta border border-cyber-magenta/50">All (<span id="count-all">0</span>)</button>
+                <button onclick="filterVault('image')" id="tab-image" class="px-2.5 py-1 rounded bg-cyber-dark text-slate-300 hover:text-white">Avatars (<span id="count-image">0</span>)</button>
+                <button onclick="filterVault('audio')" id="tab-audio" class="px-2.5 py-1 rounded bg-cyber-dark text-slate-300 hover:text-white">Audio (<span id="count-audio">0</span>)</button>
+                <button onclick="filterVault('model')" id="tab-model" class="px-2.5 py-1 rounded bg-cyber-dark text-slate-300 hover:text-white">3D Models (<span id="count-model">0</span>)</button>
+                <button onclick="filterVault('doc')" id="tab-doc" class="px-2.5 py-1 rounded bg-cyber-dark text-slate-300 hover:text-white">Docs (<span id="count-doc">0</span>)</button>
+            </div>
+            <div id="vaultVisualGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1"></div>
+        </div>
+
+        <!-- WALL ARCHITECTURE MODAL -->
+        <div id="modal-walls" class="app-modal hidden w-full max-w-sm bg-cyber-card rounded-2xl cyber-border p-4 space-y-3 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-cyber-border pb-2">
+                <h2 class="text-xs font-mono font-bold text-purple-400 uppercase tracking-wider flex items-center space-x-1.5">
+                    <i class="fa-solid fa-wall"></i><span>Wall & Room Architecture</span>
+                </h2>
+                <button onclick="closeAppMenu()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <div class="space-y-3 text-xs font-mono">
+                <div>
+                    <label class="text-slate-400 block mb-1.5">Wall Color Themes:</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="updateWallTheme(0x120b24)" class="p-2.5 bg-[#120b24] border border-cyan-500 rounded-xl text-cyan-400 text-center font-bold">Cyber Dark</button>
+                        <button onclick="updateWallTheme(0x1a0f1f)" class="p-2.5 bg-[#1a0f1f] border border-magenta-500 rounded-xl text-magenta-400 text-center font-bold">Neon Noir</button>
+                        <button onclick="updateWallTheme(0x0a192f)" class="p-2.5 bg-[#0a192f] border border-blue-500 rounded-xl text-blue-400 text-center font-bold">Matrix Blue</button>
+                        <button onclick="updateWallTheme(0x111827)" class="p-2.5 bg-[#111827] border border-emerald-500 rounded-xl text-emerald-400 text-center font-bold">Matrix Green</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AUDIO & WEB AUDIO SYNTH MODAL -->
+        <div id="modal-audio" class="app-modal hidden w-full max-w-sm bg-cyber-card rounded-2xl cyber-border p-4 space-y-3 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-cyber-border pb-2">
+                <h2 class="text-xs font-mono font-bold text-emerald-400 uppercase tracking-wider flex items-center space-x-1.5">
+                    <i class="fa-solid fa-wave-square"></i><span>Web Audio Synth & Aura</span>
+                </h2>
+                <button onclick="closeAppMenu()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <div class="space-y-3 text-xs font-mono">
+                <div class="bg-cyber-dark p-3 rounded-xl border border-cyber-border space-y-2">
+                    <div class="flex justify-between items-center text-slate-300">
+                        <span>Cyber Synth Pulse:</span>
+                        <button onclick="toggleSynthArp()" id="synthBtn" class="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded border border-emerald-500/40 hover:bg-emerald-500/30 transition">
+                            <i class="fa-solid fa-play mr-1"></i> Start Synth
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-slate-400">Play real-time synthesized cyberpunk arpeggios that react with 3D particles and hitbox pulsing!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SCRIPT MODAL -->
+        <div id="modal-script" class="app-modal hidden w-full max-w-sm bg-cyber-card rounded-2xl cyber-border p-4 space-y-3 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-cyber-border pb-2">
+                <h2 class="text-xs font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center space-x-1.5">
+                    <i class="fa-solid fa-book-open"></i><span>Game Logic & Triggers</span>
+                </h2>
+                <button onclick="closeAppMenu()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <div class="space-y-3 text-xs font-mono">
+                <div class="bg-cyber-dark p-3 rounded-xl border border-cyber-border text-slate-300 space-y-1.5">
+                    <div class="text-cyber-cyan font-bold flex items-center justify-between">
+                        <span>System Script:</span>
+                        <button onclick="triggerAllSpecialActions()" class="px-2 py-0.5 bg-cyan-950 text-cyan-300 rounded border border-cyan-500 text-[9px]">Trigger All FX</button>
+                    </div>
+                    <p class="text-[10px] text-slate-400">"Hitboxes are fully visible as glowing wireframe spheres around assets. Toggle them in the top header. Complete your quests and walk into stair diamonds to trigger vector paths!"</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROOM PRESETS TEMPLATES MODAL -->
+        <div id="modal-templates" class="app-modal hidden w-full max-w-sm bg-cyber-card rounded-2xl cyber-border p-4 space-y-3 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-cyber-border pb-2">
+                <h2 class="text-xs font-mono font-bold text-purple-400 uppercase tracking-wider flex items-center space-x-1.5">
+                    <i class="fa-solid fa-shapes"></i><span>Instant Room Templates</span>
+                </h2>
+                <button onclick="closeAppMenu()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <div class="space-y-2 text-xs font-mono">
+                <button onclick="loadRoomTemplate('den'); closeAppMenu();" class="w-full p-2.5 bg-cyber-dark hover:bg-purple-950/40 border border-purple-500/30 rounded-xl text-left transition">
+                    <div class="text-purple-400 font-bold"><i class="fa-solid fa-terminal mr-1"></i> Cyber Hacker Den</div>
+                    <div class="text-[9px] text-slate-400">Desks, monitors, and servers configured</div>
+                </button>
+                <button onclick="loadRoomTemplate('lounge'); closeAppMenu();" class="w-full p-2.5 bg-cyber-dark hover:bg-magenta-950/40 border border-magenta-500/30 rounded-xl text-left transition">
+                    <div class="text-cyber-magenta font-bold"><i class="fa-solid fa-couch mr-1"></i> Neon Lounge</div>
+                    <div class="text-[9px] text-slate-400">Plush couches and ambient lighting</div>
+                </button>
+                <button onclick="loadRoomTemplate('vault'); closeAppMenu();" class="w-full p-2.5 bg-cyber-dark hover:bg-cyan-950/40 border border-cyan-500/30 rounded-xl text-left transition">
+                    <div class="text-cyber-cyan font-bold"><i class="fa-solid fa-vault mr-1"></i> Secure Evidence Vault</div>
+                    <div class="text-[9px] text-slate-400">Bookshelf archives and dual stairs</div>
+                </button>
+            </div>
+        </div>
+
+        <!-- OBJECT INSPECTOR MODAL -->
+        <div id="modal-inspector" class="app-modal hidden w-full max-w-sm bg-cyber-card rounded-2xl cyber-border p-4 space-y-3 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-cyber-border pb-2">
+                <h2 class="text-xs font-mono font-bold text-cyber-cyan uppercase tracking-wider flex items-center space-x-1.5">
+                    <i class="fa-solid fa-sliders"></i><span id="inspectorTitle">Object Inspector</span>
+                </h2>
+                <button onclick="closeAppMenu()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark text-sm"></i></button>
+            </div>
+            <div id="inspectorContent" class="space-y-3 text-xs font-mono"></div>
+        </div>
+
+    </div>
+
+    <script>
+        let scene, camera, renderer, controls;
+        let roomGroup, wallMeshGroup;
+        let placedAssets = [];
+        let selectedAsset = null;
+        let activePlacementType = null;
+        let floorPlane;
+        let showHitboxes = true;
+        let isGameMode = false;
+        let activeCharacter = null;
+        let activeVectorLine = null;
+        let keysPressed = {};
+        
+        let mediaVault = [
+            { id: 'avatar_lucy', name: 'Lucy Avatar.png', type: 'image', url: 'https://placehold.co/300x400/120b24/00f0ff?text=Lucy+Avatar' },
+            { id: 'avatar_maya', name: 'Maya Analyst.png', type: 'image', url: 'https://placehold.co/1a0f1f/ff007f?text=Maya+Avatar' },
+            { id: 'evidence_log', name: 'Utopia_Hackers_Log.txt', type: 'doc', url: '', content: 'UTOPIA HACKERS NETWORK LOG #904' }
+        ];
+        let selectedVaultSkin = 'avatar_lucy';
+        let currentVaultFilter = 'all';
+
+        let audioCtx = null;
+        let synthInterval = null;
+        let isSynthPlaying = false;
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let musicNoteParticles;
+        let particleGeo, particleMat;
+
+        let questsState = {
+            deskSpawned: false,
+            gameModeOn: false,
+            stairTriggered: false
+        };
+
+        function applyTextureToMesh(mesh, skinId) {
+            const item = mediaVault.find(m => m.id === skinId);
+            if (item && item.url) {
+                const loader = new THREE.TextureLoader();
+                loader.crossOrigin = 'anonymous';
+                loader.load(item.url, (texture) => {
+                    mesh.material.map = texture;
+                    mesh.material.color.setHex(0xffffff);
+                    mesh.material.needsUpdate = true;
+                }, undefined, (err) => {
+                    console.warn('Texture load fallback used:', err);
+                });
+            }
+        }
+
+        function initThree() {
+            const container = document.getElementById('canvasContainer');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x07040d);
+            scene.fog = new THREE.FogExp2(0x07040d, 0.015);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(16, 14, 18);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 - 0.02;
+            controls.minDistance = 4;
+            controls.maxDistance = 45;
+            controls.target.set(0, 3, 0);
+
+            const ambientLight = new THREE.AmbientLight(0x2a1752, 1.8);
+            scene.add(ambientLight);
+
+            const cyanLight = new THREE.PointLight(0x00f0ff, 2.5, 30);
+            cyanLight.position.set(-8, 10, 6);
+            scene.add(cyanLight);
+
+            const magentaLight = new THREE.PointLight(0xff007f, 2.5, 30);
+            magentaLight.position.set(8, 10, -6);
+            scene.add(magentaLight);
+
+            buildRoomArchitecture();
+            initMusicNoteParticles();
+            spawnInitialRoomSetup();
+
+            window.addEventListener('resize', onWindowResize);
+            container.addEventListener('pointerdown', handleCanvasPointerDown);
+
+            window.addEventListener('keydown', (e) => { keysPressed[e.key.toLowerCase()] = true; });
+            window.addEventListener('keyup', (e) => { keysPressed[e.key.toLowerCase()] = false; });
+
+            initJoystick();
+            renderVaultGrid();
+            updateQuestUI();
+            animate();
+        }
+
+        function initMusicNoteParticles() {
+            const count = 60;
+            particleGeo = new THREE.BufferGeometry();
+            const positions = new Float32Array(count * 3);
+            for (let i = 0; i < count * 3; i += 3) {
+                positions[i] = (Math.random() - 0.5) * 18;
+                positions[i+1] = Math.random() * 8;
+                positions[i+2] = (Math.random() - 0.5) * 18;
+            }
+            particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            particleMat = new THREE.PointsMaterial({
+                color: 0x00f0ff,
+                size: 0.35,
+                transparent: true,
+                opacity: 0.7,
+                blending: THREE.AdditiveBlending
+            });
+            musicNoteParticles = new THREE.Points(particleGeo, particleMat);
+            scene.add(musicNoteParticles);
+        }
+
+        function buildRoomArchitecture() {
+            if (roomGroup) scene.remove(roomGroup);
+            roomGroup = new THREE.Group();
+
+            const gridHelper = new THREE.GridHelper(20, 20, 0xff007f, 0x00f0ff);
+            gridHelper.position.y = 0;
+            roomGroup.add(gridHelper);
+
+            const floorGeo = new THREE.PlaneGeometry(20, 20);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x0a0612, roughness: 0.2, metalness: 0.8 });
+            floorPlane = new THREE.Mesh(floorGeo, floorMat);
+            floorPlane.rotation.x = -Math.PI / 2;
+            floorPlane.receiveShadow = true;
+            roomGroup.add(floorPlane);
+
+            const loftGeo = new THREE.BoxGeometry(10, 0.4, 10);
+            const loftMat = new THREE.MeshStandardMaterial({ color: 0x120b24, roughness: 0.5 });
+            const loft = new THREE.Mesh(loftGeo, loftMat);
+            loft.position.set(0, 5, -1);
+            loft.receiveShadow = true;
+            loft.castShadow = true;
+            roomGroup.add(loft);
+
+            wallMeshGroup = new THREE.Group();
+            const wallMat = new THREE.MeshStandardMaterial({ color: 0x120b24, roughness: 0.8, side: THREE.DoubleSide });
+
+            const backWall = new THREE.Mesh(new THREE.PlaneGeometry(20, 12), wallMat);
+            backWall.position.set(0, 6, -10);
+            backWall.receiveShadow = true;
+            wallMeshGroup.add(backWall);
+
+            const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(20, 12), wallMat);
+            leftWall.position.set(-10, 6, 0);
+            leftWall.rotation.y = Math.PI / 2;
+            leftWall.receiveShadow = true;
+            wallMeshGroup.add(leftWall);
+
+            roomGroup.add(wallMeshGroup);
+            scene.add(roomGroup);
+        }
+
+        function spawnInitialRoomSetup() {
+            spawnAssetAt('desk', new THREE.Vector3(-2, 0, 2), new THREE.Euler(0, Math.PI/4, 0));
+            spawnAssetAt('stairs', new THREE.Vector3(3, 0, 0), new THREE.Euler(0, -Math.PI/2, 0));
+            let char = spawnAssetAt('character', new THREE.Vector3(1, 0, 1), new THREE.Euler(0, 0, 0), { name: 'Lucy Avatar', skin: 'avatar_lucy' });
+            activeCharacter = char;
+            questsState.deskSpawned = true;
+            updateQuestUI();
+        }
+
+        function createAssetMesh(type, skinId) {
+            const group = new THREE.Group();
+            const darkMat = new THREE.MeshStandardMaterial({ color: 0x1f1638, roughness: 0.7 });
+            const cyanMat = new THREE.MeshStandardMaterial({ color: 0x00f0ff, roughness: 0.3, emissive: 0x00f0ff, emissiveIntensity: 0.3 });
+            const magentaMat = new THREE.MeshStandardMaterial({ color: 0xff007f, roughness: 0.3, emissive: 0xff007f, emissiveIntensity: 0.3 });
+
+            let mesh;
+            if (type === 'desk') {
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(3, 1.2, 1.5), darkMat);
+                mesh.position.y = 0.6;
+                mesh.castShadow = true;
+                group.add(mesh);
+                const mon = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1, 0.1), cyanMat);
+                mon.position.set(0, 1.8, -0.5);
+                group.add(mon);
+            } else if (type === 'couch') {
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(3, 1, 1.2), magentaMat);
+                mesh.position.y = 0.5;
+                mesh.castShadow = true;
+                group.add(mesh);
+            } else if (type === 'bookshelf') {
+                mesh = new THREE.Mesh(new THREE.BoxGeometry(2.5, 3.5, 1), darkMat);
+                mesh.position.y = 1.75;
+                mesh.castShadow = true;
+                group.add(mesh);
+            } else if (type === 'plant') {
+                mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.3, 0.8, 8), darkMat);
+                mesh.position.y = 0.4;
+                group.add(mesh);
+                const leaves = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 8), new THREE.MeshStandardMaterial({ color: 0x10b981 }));
+                leaves.position.y = 1.1;
+                group.add(leaves);
+            } else if (type === 'character') {
+                const charMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, side: THREE.DoubleSide, transparent: true });
+                mesh = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 3), charMat);
+                mesh.position.y = 1.5;
+                group.add(mesh);
+                applyTextureToMesh(mesh, skinId || selectedVaultSkin);
+            } else if (type === 'stairs') {
+                for (let i = 0; i < 6; i++) {
+                    const step = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.2, 0.6), cyanMat);
+                    step.position.set(0, i * 0.5 + 0.1, i * 0.5);
+                    group.add(step);
+                }
+                const diamondGeo = new THREE.OctahedronGeometry(0.35);
+                const diamondMatBottom = new THREE.MeshStandardMaterial({ color: 0x00f0ff, emissive: 0x00f0ff, emissiveIntensity: 0.9, roughness: 0.2 });
+                const bottomTrigger = new THREE.Mesh(diamondGeo, diamondMatBottom);
+                bottomTrigger.position.set(0, 0.4, 0);
+                bottomTrigger.userData = { isStairsTrigger: true, direction: 'up', targetY: 5.2 };
+                group.add(bottomTrigger);
+
+                const diamondMatTop = new THREE.MeshStandardMaterial({ color: 0xff007f, emissive: 0xff007f, emissiveIntensity: 0.9, roughness: 0.2 });
+                const topTrigger = new THREE.Mesh(diamondGeo, diamondMatTop);
+                topTrigger.position.set(0, 3.5, 2.5);
+                topTrigger.userData = { isStairsTrigger: true, direction: 'down', targetY: 0 };
+                group.add(topTrigger);
+            }
+            return group;
+        }
+
+        function spawnAssetAt(type, position, rotation, meta = {}) {
+            let assetGroup = createAssetMesh(type, meta.skin);
+            assetGroup.position.copy(position);
+            assetGroup.rotation.copy(rotation);
+            
+            const uniqueId = 'asset_' + Math.random().toString(36).substring(2, 9);
+            assetGroup.userData = {
+                id: uniqueId,
+                type: type,
+                name: meta.name || (type.charAt(0).toUpperCase() + type.slice(1)),
+                skin: meta.skin || selectedVaultSkin,
+                orbitSize: 2.2
+            };
+
+            if (type === 'character' && !activeCharacter) {
+                activeCharacter = assetGroup;
+            }
+
+            if (type !== 'stairs') {
+                const orbitGeo = new THREE.SphereGeometry(2.2, 16, 16);
+                const orbitMat = new THREE.MeshBasicMaterial({ color: 0x00f0ff, wireframe: true, transparent: true, opacity: showHitboxes ? 0.35 : 0.0 });
+                const orbitMesh = new THREE.Mesh(orbitGeo, orbitMat);
+                orbitMesh.position.y = 1.2;
+                orbitMesh.userData = { isOrbitSphere: true, parentAsset: assetGroup };
+                assetGroup.add(orbitMesh);
+                assetGroup.userData.orbitMesh = orbitMesh;
+            }
+
+            scene.add(assetGroup);
+            placedAssets.push(assetGroup);
+
+            if (type === 'desk') {
+                questsState.deskSpawned = true;
+                updateQuestUI();
+            }
+
+            return assetGroup;
+        }
+
+        function startPlacement(type) {
+            activePlacementType = type;
+            document.getElementById('canvasStatusText').textContent = 'CLICK/TOUCH FLOOR TO PLACE ' + type.toUpperCase();
+            showToast('Placement Mode Active: Tap room floor!');
+        }
+
+        function toggleHitboxes() {
+            showHitboxes = !showHitboxes;
+            const btn = document.getElementById('hitboxToggleBtn');
+            btn.innerHTML = `<i class="fa-solid fa-vector-square text-xs"></i><span class="hidden sm:inline">Hitboxes: ${showHitboxes ? 'ON' : 'OFF'}</span>`;
+            
+            placedAssets.forEach(a => {
+                if (a.userData.orbitMesh) {
+                    a.userData.orbitMesh.material.opacity = showHitboxes ? 0.35 : 0.0;
+                    a.userData.orbitMesh.visible = showHitboxes;
+                }
+            });
+            showToast('Hitboxes & collision spheres: ' + (showHitboxes ? 'VISIBLE' : 'HIDDEN'));
+        }
+
+        function toggleGameMode() {
+            isGameMode = !isGameMode;
+            const btn = document.getElementById('gameModeToggleBtn');
+            const label = document.getElementById('gameModeLabel');
+            const joystickTitle = document.getElementById('joystickTitle');
+            
+            if (isGameMode) {
+                btn.className = 'px-2.5 py-1 bg-magenta-950/80 hover:bg-magenta-900 border border-cyber-magenta text-cyber-magenta text-xs font-mono rounded-lg transition flex items-center space-x-1.5 shadow-sm';
+                label.textContent = 'Game Mode: ON';
+                joystickTitle.textContent = 'Character Pad';
+                document.getElementById('canvasStatusText').textContent = 'GAME MODE ACTIVE • USE WASD OR JOYSTICK TO WALK & TRIGGER STAIRS';
+                showToast('Game Mode Activated! Control paperdoll avatar.');
+                if (activeCharacter) controls.target.copy(activeCharacter.position);
+                questsState.gameModeOn = true;
+                updateQuestUI();
+            } else {
+                btn.className = 'px-2.5 py-1 bg-cyber-dark hover:bg-cyber-border border border-cyber-cyan/50 text-cyber-cyan text-xs font-mono rounded-lg transition flex items-center space-x-1.5 shadow-sm';
+                label.textContent = 'Game Mode: OFF';
+                joystickTitle.textContent = 'Spherical Pad';
+                document.getElementById('canvasStatusText').textContent = 'BUILDER MODE ACTIVE • TAP ORBIT HITBOXES';
+                showToast('Builder Mode Activated.');
+                clearVectorPath();
+            }
+        }
+
+        function handleCanvasPointerDown(event) {
+            const container = document.getElementById('canvasContainer');
+            const rect = container.getBoundingClientRect();
+            
+            const clientX = event.clientX !== undefined ? event.clientX : (event.touches ? event.touches[0].clientX : 0);
+            const clientY = event.clientY !== undefined ? event.clientY : (event.touches ? event.touches[0].clientY : 0);
+
+            mouse.x = ((clientX - rect.left) / container.clientWidth) * 2 - 1;
+            mouse.y = -((clientY - rect.top) / container.clientHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            if (activePlacementType) {
+                const intersects = raycaster.intersectObject(floorPlane);
+                if (intersects.length > 0) {
+                    const pt = intersects[0].point;
+                    spawnAssetAt(activePlacementType, pt, new THREE.Euler(0, 0, 0), { skin: selectedVaultSkin });
+                    activePlacementType = null;
+                    document.getElementById('canvasStatusText').textContent = isGameMode ? 'GAME MODE ACTIVE • WALK & TRIGGER STAIRS' : 'BUILDER MODE ACTIVE • TAP ORBIT HITBOXES';
+                    showToast('Asset spawned successfully!');
+                }
+                return;
+            }
+
+            const intersects = raycaster.intersectObjects(scene.children, true);
+            if (intersects.length > 0) {
+                let hit = intersects[0].object;
+
+                if (hit.userData && hit.userData.isStairsTrigger) {
+                    triggerStairsAction(hit);
+                    return;
+                }
+
+                if (hit.userData && hit.userData.isOrbitSphere) {
+                    triggerOrbitAction(hit.userData.parentAsset);
+                    return;
+                }
+
+                let obj = hit;
+                while (obj.parent && !placedAssets.includes(obj)) {
+                    obj = obj.parent;
+                }
+                if (placedAssets.includes(obj)) {
+                    selectAsset(obj);
+                    if (!isGameMode) openAppMenu('inspector');
+                }
+            }
+        }
+
+        function triggerOrbitAction(assetGroup) {
+            showToast('Hitbox aura triggered for ' + assetGroup.userData.name);
+            let startY = assetGroup.position.y;
+            let startTime = Date.now();
+            function pulseAnim() {
+                let elapsed = (Date.now() - startTime) / 1000;
+                let t = Math.min(1, elapsed / 0.6);
+                assetGroup.position.y = startY + Math.sin(t * Math.PI) * 1.0;
+                if (assetGroup.userData.orbitMesh) {
+                    let s = 2.2 + Math.sin(t * Math.PI * 2) * 0.4;
+                    assetGroup.userData.orbitMesh.scale.set(s, s, s);
+                }
+                if (t < 1) requestAnimationFrame(pulseAnim);
+                else {
+                    assetGroup.position.y = startY;
+                    if (assetGroup.userData.orbitMesh) assetGroup.userData.orbitMesh.scale.set(1, 1, 1);
+                }
+            }
+            pulseAnim();
+        }
+
+        function triggerStairsAction(triggerMesh) {
+            if (!activeCharacter) {
+                showToast('No active paperdoll character found in room!');
+                return;
+            }
+
+            const targetY = triggerMesh.userData.targetY;
+            const startPos = activeCharacter.position.clone();
+            const endPos = new THREE.Vector3(startPos.x, targetY, startPos.z + (triggerMesh.userData.direction === 'up' ? 1.5 : -1.5));
+
+            showToast('Stair Trigger Activated (' + triggerMesh.userData.direction.toUpperCase() + ')!');
+            visualizeMovementVector(startPos, endPos, triggerMesh.userData.direction === 'up' ? 0x00f0ff : 0xff007f);
+
+            questsState.stairTriggered = true;
+            updateQuestUI();
+
+            let startTime = Date.now();
+            function walkPath() {
+                let elapsed = (Date.now() - startTime) / 1000;
+                let t = Math.min(1, elapsed / 1.0);
+                activeCharacter.position.lerpVectors(startPos, endPos, t);
+                activeCharacter.position.y += Math.sin(t * Math.PI * 3) * 0.25;
+                if (t < 1) {
+                    requestAnimationFrame(walkPath);
+                } else {
+                    activeCharacter.position.copy(endPos);
+                    showToast('Character successfully transitioned floor levels!');
+                    setTimeout(clearVectorPath, 1500);
+                }
+            }
+            walkPath();
+        }
+
+        function visualizeMovementVector(from, to, colorHex) {
+            clearVectorPath();
+            const points = [
+                from.clone().add(new THREE.Vector3(0, 0.2, 0)),
+                new THREE.Vector3(from.x, Math.max(from.y, to.y) + 1.2, from.z),
+                to.clone().add(new THREE.Vector3(0, 0.2, 0))
+            ];
+            const curve = new THREE.QuadraticBezierCurve3(points[0], points[1], points[2]);
+            const sampledPoints = curve.getPoints(30);
+            const geometry = new THREE.BufferGeometry().setFromPoints(sampledPoints);
+            const material = new THREE.LineBasicMaterial({ color: colorHex, linewidth: 3, transparent: true, opacity: 0.9 });
+            activeVectorLine = new THREE.Line(geometry, material);
+            scene.add(activeVectorLine);
+        }
+
+        function clearVectorPath() {
+            if (activeVectorLine) {
+                scene.remove(activeVectorLine);
+                activeVectorLine.geometry.dispose();
+                activeVectorLine.material.dispose();
+                activeVectorLine = null;
+            }
+        }
+
+        function checkCharacterProximityTriggers() {
+            if (!activeCharacter) return;
+            placedAssets.forEach(asset => {
+                if (asset.userData.type === 'stairs') {
+                    asset.children.forEach(child => {
+                        if (child.userData && child.userData.isStairsTrigger) {
+                            const worldPos = new THREE.Vector3();
+                            child.getWorldPosition(worldPos);
+                            if (activeCharacter.position.distanceTo(worldPos) < 1.2) {
+                                triggerStairsAction(child);
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+        function selectAsset(assetGroup) {
+            selectedAsset = assetGroup;
+            document.getElementById('inspectorTitle').textContent = 'Inspect: ' + assetGroup.userData.name;
+            
+            const content = document.getElementById('inspectorContent');
+            content.innerHTML = `
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-slate-400 block mb-1">Object Name:</label>
+                        <input type="text" value="${assetGroup.userData.name}" onchange="updateAssetProp('name', this.value)" class="w-full bg-cyber-dark border border-cyber-border rounded px-2.5 py-1.5 text-slate-200">
+                    </div>
+                    ${assetGroup.userData.type !== 'stairs' ? `
+                    <div>
+                        <label class="text-slate-400 block mb-1">Hitbox / Orbit Radius:</label>
+                        <input type="range" min="1.0" max="4.5" step="0.2" value="${assetGroup.userData.orbitSize || 2.2}" oninput="updateOrbitSize(this.value)" class="w-full accent-cyber-cyan bg-cyber-dark cursor-pointer">
+                    </div>
+                    ` : ''}
+                    <div class="flex space-x-2 pt-2">
+                        ${assetGroup.userData.type !== 'stairs' ? `<button onclick="triggerOrbitAction(selectedAsset)" class="flex-1 py-1.5 bg-magenta-950 hover:bg-magenta-900 border border-cyber-magenta text-cyber-magenta rounded text-xs"><i class="fa-solid fa-bolt mr-1"></i> Pulse Hitbox</button>` : ''}
+                        <button onclick="deleteSelectedAsset()" class="flex-1 py-1.5 bg-red-950 hover:bg-red-900 border border-red-500 text-red-300 rounded text-xs"><i class="fa-solid fa-trash mr-1"></i> Delete</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateOrbitSize(val) {
+            if (!selectedAsset || !selectedAsset.userData.orbitMesh) return;
+            let sz = parseFloat(val);
+            selectedAsset.userData.orbitSize = sz;
+            selectedAsset.userData.orbitMesh.geometry.dispose();
+            selectedAsset.userData.orbitMesh.geometry = new THREE.SphereGeometry(sz, 16, 16);
+            showToast('Hitbox orbit radius set to ' + sz);
+        }
+
+        function updateAssetProp(prop, val) {
+            if (selectedAsset) selectedAsset.userData[prop] = val;
+        }
+
+        function deleteSelectedAsset() {
+            if (!selectedAsset) return;
+            scene.remove(selectedAsset);
+            placedAssets = placedAssets.filter(a => a !== selectedAsset);
+            if (activeCharacter === selectedAsset) activeCharacter = placedAssets.find(a => a.userData.type === 'character') || null;
+            selectedAsset = null;
+            closeAppMenu();
+            showToast('Asset removed.');
+        }
+
+        function loadRoomTemplate(templateKey) {
+            // Clear current placed assets except character if present
+            placedAssets.forEach(a => scene.remove(a));
+            placedAssets = [];
+            activeCharacter = null;
+
+            if (templateKey === 'den') {
+                spawnAssetAt('desk', new THREE.Vector3(-2, 0, 1), new THREE.Euler(0, 0, 0));
+                spawnAssetAt('desk', new THREE.Vector3(2, 0, 1), new THREE.Euler(0, Math.PI, 0));
+                spawnAssetAt('bookshelf', new THREE.Vector3(-4, 0, -3), new THREE.Euler(0, 0, 0));
+                let char = spawnAssetAt('character', new THREE.Vector3(0, 0, 2), new THREE.Euler(0, 0, 0), { name: 'Hacker Leader' });
+                activeCharacter = char;
+            } else if (templateKey === 'lounge') {
+                spawnAssetAt('couch', new THREE.Vector3(0, 0, 1), new THREE.Euler(0, 0, 0));
+                spawnAssetAt('plant', new THREE.Vector3(-3, 0, 2), new THREE.Euler(0, 0, 0));
+                spawnAssetAt('plant', new THREE.Vector3(3, 0, 2), new THREE.Euler(0, 0, 0));
+                let char = spawnAssetAt('character', new THREE.Vector3(0, 0, 3), new THREE.Euler(0, 0, 0), { name: 'Lounge Guest' });
+                activeCharacter = char;
+            } else if (templateKey === 'vault') {
+                spawnAssetAt('stairs', new THREE.Vector3(3, 0, 0), new THREE.Euler(0, -Math.PI/2, 0));
+                spawnAssetAt('bookshelf', new THREE.Vector3(-4, 0, -3), new THREE.Euler(0, 0, 0));
+                spawnAssetAt('desk', new THREE.Vector3(-2, 0, -2), new THREE.Euler(0, 0, 0));
+                let char = spawnAssetAt('character', new THREE.Vector3(1, 0, 1), new THREE.Euler(0, 0, 0), { name: 'Vault Guard' });
+                activeCharacter = char;
+            }
+            showToast('Room preset template loaded successfully!');
+            questsState.deskSpawned = true;
+            updateQuestUI();
+        }
+
+        function handleUniversalUpload(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            for (let file of files) {
+                const url = URL.createObjectURL(file);
+                const ext = file.name.split('.').pop().toLowerCase();
+                let type = 'doc';
+
+                if (['png', 'jpg', 'jpeg', 'webp', 'gif'].includes(ext) || file.type.startsWith('image/')) {
+                    type = 'image';
+                } else if (['mp3', 'wav', 'ogg'].includes(ext) || file.type.startsWith('audio/')) {
+                    type = 'audio';
+                }
+
+                mediaVault.push({
+                    id: 'vault_' + Math.random().toString(36).substring(2, 9),
+                    name: file.name,
+                    type: type,
+                    url: url
+                });
+            }
+            renderVaultGrid();
+            showToast('Files uploaded & classified into Vault!');
+        }
+
+        function filterVault(category) {
+            currentVaultFilter = category;
+            ['all', 'image', 'audio', 'model', 'doc'].forEach(cat => {
+                const btn = document.getElementById('tab-' + cat);
+                if (!btn) return;
+                btn.className = cat === category ? 'px-2.5 py-1 rounded bg-magenta-950 text-cyber-magenta border border-cyber-magenta/50' : 'px-2.5 py-1 rounded bg-cyber-dark text-slate-300 hover:text-white';
+            });
+            renderVaultGrid();
+        }
+
+        function renderVaultGrid() {
+            document.getElementById('count-all').textContent = mediaVault.length;
+            ['image', 'audio', 'model', 'doc'].forEach(cat => {
+                const el = document.getElementById('count-' + cat);
+                if (el) el.textContent = mediaVault.filter(m => m.type === cat).length;
+            });
+
+            const grid = document.getElementById('vaultVisualGrid');
+            if (!grid) return;
+
+            const filtered = currentVaultFilter === 'all' ? mediaVault : mediaVault.filter(m => m.type === currentVaultFilter);
+            grid.innerHTML = filtered.map(m => `
+                <div class="bg-cyber-dark rounded-xl p-2.5 border border-cyber-border hover:border-cyber-magenta transition flex flex-col items-center">
+                    <div class="w-full h-16 bg-cyber-card rounded-lg flex items-center justify-center text-cyber-cyan overflow-hidden">
+                        ${m.type === 'image' ? `<img src="${m.url}" class="w-full h-full object-cover">` : `<i class="fa-solid ${m.type === 'audio' ? 'fa-music' : 'fa-file-lines'} text-xl"></i>`}
+                    </div>
+                    <span class="text-[9px] font-mono text-slate-300 truncate w-full text-center mt-1.5">${m.name}</span>
+                    <button onclick="spawnAssetAt('character', new THREE.Vector3(0,0,0), new THREE.Euler(0,0,0), {skin: '${m.id}', name: '${m.name}'}); closeAppMenu();" class="w-full mt-1.5 py-1 bg-cyber-card hover:bg-cyber-border border border-cyber-border text-[9px] font-mono text-cyber-cyan rounded">Spawn Avatar</button>
+                </div>
+            `).join('');
+        }
+
+        function updateWallTheme(colorHex) {
+            wallMeshGroup.children.forEach(wall => wall.material.color.setHex(colorHex));
+            showToast('Wall architecture theme updated!');
+        }
+
+        function toggleSynthArp() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (isSynthPlaying) {
+                clearInterval(synthInterval);
+                isSynthPlaying = false;
+                document.getElementById('synthBtn').innerHTML = '<i class="fa-solid fa-play mr-1"></i> Start Synth';
+                showToast('Cyber Synth stopped.');
+            } else {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                isSynthPlaying = true;
+                document.getElementById('synthBtn').innerHTML = '<i class="fa-solid fa-stop mr-1"></i> Stop Synth';
+                showToast('Cyber Synth arpeggio active!');
+                const notes = [220, 261.63, 329.63, 392.00, 440, 523.25];
+                synthInterval = setInterval(() => {
+                    if (!isSynthPlaying) return;
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(notes[Math.floor(Math.random() * notes.length)], audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                }, 250);
+            }
+        }
+
+        function updateQuestUI() {
+            const q1 = document.getElementById('quest-1');
+            const q2 = document.getElementById('quest-2');
+            const q3 = document.getElementById('quest-3');
+            
+            let count = 0;
+            if (questsState.deskSpawned) { q1.innerHTML = '<i class="fa-solid fa-square-check text-emerald-400 text-[9px]"></i><span class="text-emerald-400 line-through">Spawn a Hacker Desk</span>'; count++; }
+            if (questsState.gameModeOn) { q2.innerHTML = '<i class="fa-solid fa-square-check text-emerald-400 text-[9px]"></i><span class="text-emerald-400 line-through">Turn Game Mode ON & Walk</span>'; count++; }
+            if (questsState.stairTriggered) { q3.innerHTML = '<i class="fa-solid fa-square-check text-emerald-400 text-[9px]"></i><span class="text-emerald-400 line-through">Trigger Loft Stair Vector</span>'; count++; }
+            
+            document.getElementById('questProgressCount').textContent = count + '/3';
+            if (count === 3) showToast('🎉 All Cyber Quests Completed! Master Hacker Achieved!');
+        }
+
+        function triggerSelectedSpecialAnim() {
+            if (selectedAsset) triggerOrbitAction(selectedAsset);
+            else if (placedAssets.length > 0) triggerOrbitAction(placedAssets[0]);
+        }
+
+        function triggerAllSpecialActions() {
+            placedAssets.forEach(a => {
+                if (a.userData.orbitMesh) triggerOrbitAction(a);
+            });
+            showToast('All hitbox auras pulsed!');
+        }
+
+        function rotateSelectedAsset(angle) {
+            if (selectedAsset) selectedAsset.rotation.y += angle;
+            else if (isGameMode && activeCharacter) activeCharacter.rotation.y += angle;
+        }
+
+        function initJoystick() {
+            const pad = document.getElementById('joystickPad');
+            const knob = document.getElementById('joystickKnob');
+            let isDragging = false;
+            let center = { x: 40, y: 40 };
+            let maxRadius = 28;
+
+            const handleStart = (e) => { isDragging = true; updateMove(e); };
+            const handleMove = (e) => { if (!isDragging) return; e.preventDefault(); updateMove(e); };
+            const handleEnd = () => { isDragging = false; knob.style.transform = `translate(0px, 0px)`; };
+
+            pad.addEventListener('mousedown', handleStart);
+            window.addEventListener('mousemove', handleMove);
+            window.addEventListener('mouseup', handleEnd);
+            pad.addEventListener('touchstart', handleStart);
+            window.addEventListener('touchmove', handleMove);
+            window.addEventListener('touchend', handleEnd);
+
+            function updateMove(e) {
+                const rect = pad.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                let dx = clientX - (rect.left + center.x);
+                let dy = clientY - (rect.top + center.y);
+                let dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > maxRadius) { dx = (dx / dist) * maxRadius; dy = (dy / dist) * maxRadius; }
+                knob.style.transform = `translate(${dx}px, ${dy}px)`;
+
+                const speed = 0.08;
+                const moveX = (dx / maxRadius) * speed;
+                const moveZ = (dy / maxRadius) * speed;
+
+                if (isGameMode && activeCharacter) {
+                    activeCharacter.position.x += moveX;
+                    activeCharacter.position.z += moveZ;
+                    controls.target.copy(activeCharacter.position);
+                    checkCharacterProximityTriggers();
+                } else if (selectedAsset) {
+                    selectedAsset.position.x += moveX;
+                    selectedAsset.position.z += moveZ;
+                } else if (camera) {
+                    camera.position.x += moveX * 2;
+                    camera.position.z += moveZ * 2;
+                }
+            }
+        }
+
+        function openAppMenu(menuName) {
+            const overlay = document.getElementById('appModalOverlay');
+            overlay.classList.remove('hidden');
+            document.querySelectorAll('.app-modal').forEach(m => m.classList.add('hidden'));
+            document.getElementById('modal-' + menuName).classList.remove('hidden');
+        }
+
+        function closeAppMenu() {
+            document.getElementById('appModalOverlay').classList.add('hidden');
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastNotification');
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvasContainer');
+            if (!container) return;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+
+            if (isGameMode && activeCharacter) {
+                const moveSpeed = 0.08;
+                if (keysPressed['w'] || keysPressed['arrowup']) activeCharacter.position.z -= moveSpeed;
+                if (keysPressed['s'] || keysPressed['arrowdown']) activeCharacter.position.z += moveSpeed;
+                if (keysPressed['a'] || keysPressed['arrowleft']) activeCharacter.position.x -= moveSpeed;
+                if (keysPressed['d'] || keysPressed['arrowright']) activeCharacter.position.x += moveSpeed;
+                controls.target.copy(activeCharacter.position);
+                checkCharacterProximityTriggers();
+            }
+
+            if (musicNoteParticles) {
+                const positions = musicNoteParticles.geometry.attributes.position.array;
+                for (let i = 1; i < positions.length; i += 3) {
+                    positions[i] += isSynthPlaying ? 0.04 : 0.01;
+                    if (positions[i] > 10) positions[i] = 0;
+                }
+                musicNoteParticles.geometry.attributes.position.needsUpdate = true;
+                musicNoteParticles.rotation.y += 0.002;
+            }
+
+            placedAssets.forEach(a => {
+                if (a.userData.orbitMesh && showHitboxes) {
+                    a.userData.orbitMesh.rotation.y += 0.01;
+                }
+                if (a.userData.type === 'stairs') {
+                    a.children.forEach(child => {
+                        if (child.userData && child.userData.isStairsTrigger) {
+                            child.rotation.y += 0.02;
+                            child.position.y += Math.sin(Date.now() * 0.005) * 0.001;
+                        }
+                    });
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        window.onload = function() {
+            initThree();
+        };
+    </script>
+</body>
+</html>
