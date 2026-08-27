@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OmniStage Ultimate: Game Asset Creator Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#030305',
+                        panelbg: '#0a0a0f',
+                        accent: '#8b5cf6',
+                        neoncyan: '#06b6d4',
+                        neonpink: '#ec4899',
+                        neongreen: '#10b981'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Three.js for 3D game asset rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Three.js Exporters & Loaders -->
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+    <!-- Tone.js for Sound FX and game audio -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; touch-action: none; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 0px; height: 0px; background: transparent; }
+        .glass-panel { background: rgba(10, 10, 15, 0.94); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .glow-shadow { box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.35); }
+        canvas { display: block; outline: none; }
+        .tool-btn { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .tool-btn:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-darkbg text-slate-100 h-screen w-screen overflow-hidden flex flex-col select-none">
+
+    <header class="flex items-center justify-between px-4 py-2.5 glass-panel z-40 border-b border-slate-800/80 shrink-0">
+        <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                <i class="fa-solid fa-gamepad text-white text-sm"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-xs tracking-tight text-white flex items-center gap-2">
+                    OmniStage <span class="bg-gradient-to-r from-violet-400 to-pink-400 bg-clip-text text-transparent">ULTIMATE</span> 
+                    <span class="text-[9px] px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 border border-violet-500/30 font-bold">GAME STUDIO 🎮</span>
+                </h1>
+                <p class="text-[10px] text-slate-400">Zero limits • Sculpt, shader, animate & export for any game engine</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <button onclick="toggleAudioEngine()" id="audioToggleBtn" class="px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 flex items-center gap-1.5 border border-slate-800 text-[11px] transition" title="Toggle Sound FX">
+                <i class="fa-solid fa-volume-high text-xs text-emerald-400"></i> <span id="audioStatusText">SFX: On</span>
+            </button>
+            <button onclick="toggleAutoRotate()" id="rotateToggleBtn" class="px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 flex items-center gap-1.5 border border-slate-800 text-[11px] transition" title="Toggle Auto Rotation">
+                <i class="fa-solid fa-rotate text-xs"></i> <span id="rotateStatusText">Rotate: Off</span>
+            </button>
+            <button onclick="exportGameAsset()" class="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white flex items-center gap-1.5 text-[11px] font-bold shadow-lg shadow-violet-500/30 transition">
+                <i class="fa-solid fa-download text-xs"></i> Export .GLB
+            </button>
+        </div>
+    </header>
+
+    <main class="relative flex-1 w-full h-full overflow-hidden flex">
+        
+        <!-- Three.js Canvas Container -->
+        <div id="canvasContainer" class="absolute inset-0 w-full h-full cursor-crosshair"></div>
+
+        <!-- Telemetry Badge & Active Asset Info -->
+        <div class="absolute top-3 left-3 pointer-events-none z-30 flex flex-col gap-1.5 transition-all">
+            <div class="glass-panel px-3 py-1.5 rounded-xl text-[11px] text-slate-200 flex items-center gap-2 shadow-lg border border-violet-500/20">
+                <span class="w-2.5 h-2.5 rounded-full bg-violet-500 animate-pulse"></span>
+                <span id="activeAssetLabel" class="font-bold">Asset: Cyberpunk Mech Hero</span>
+            </div>
+            <div class="glass-panel px-3 py-1.5 rounded-xl text-[10px] text-violet-300 flex items-center gap-2 shadow-lg">
+                <i class="fa-solid fa-wand-magic-sparkles text-pink-400"></i> Shader: <span id="shaderLabel" class="text-white font-semibold">Neon Hologram</span>
+            </div>
+        </div>
+
+        <!-- Universal Game Creator Circular Dock & Radial Submenus -->
+        <div id="sphericalHudMaster" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-35 flex flex-col items-center gap-3 transition-all duration-300">
+            
+            <!-- Active Sub-Menu Ring -->
+            <div id="radialSubMenu" class="glass-panel p-3 rounded-3xl shadow-2xl border border-violet-500/40 flex items-center gap-3 scale-95 opacity-0 pointer-events-none transition-all duration-300 max-w-xl overflow-x-auto">
+                <div id="radialSubMenuContent" class="flex items-center gap-2"></div>
+            </div>
+
+            <!-- Main Circular Navigation Dock with Emojis & Clear Labels -->
+            <div class="glass-panel px-6 py-3 rounded-full shadow-2xl border border-violet-500/50 flex items-center gap-3 bg-slate-950/90 backdrop-blur-2xl">
+                
+                <button onclick="openRadialCategory('forms')" id="navBtnForms" class="tool-btn w-12 h-12 rounded-full bg-slate-900 hover:bg-violet-600 hover:text-white text-slate-200 flex flex-col items-center justify-center text-xs border border-slate-800 shadow-md group" title="Game Forms & Characters">
+                    <span class="text-base group-hover:scale-125 transition">🤖</span>
+                    <span class="text-[7px] font-bold tracking-tighter mt-0.5">Forms</span>
+                </button>
+
+                <button onclick="openRadialCategory('shaders')" id="navBtnShaders" class="tool-btn w-12 h-12 rounded-full bg-slate-900 hover:bg-violet-600 hover:text-white text-slate-200 flex flex-col items-center justify-center text-xs border border-slate-800 shadow-md group" title="Shaders & Materials">
+                    <span class="text-base group-hover:scale-125 transition">✨</span>
+                    <span class="text-[7px] font-bold tracking-tighter mt-0.5">Shaders</span>
+                </button>
+
+                <button onclick="openRadialCategory('brushes')" id="navBtnBrushes" class="tool-btn w-12 h-12 rounded-full bg-slate-900 hover:bg-violet-600 hover:text-white text-slate-200 flex flex-col items-center justify-center text-xs border border-slate-800 shadow-md group" title="Sculpting Brushes">
+                    <span class="text-base group-hover:scale-125 transition">🎨</span>
+                    <span class="text-[7px] font-bold tracking-tighter mt-0.5">Sculpt</span>
+                </button>
+
+                <button onclick="openRadialCategory('animation')" id="navBtnAnimation" class="tool-btn w-12 h-12 rounded-full bg-slate-900 hover:bg-violet-600 hover:text-white text-slate-200 flex flex-col items-center justify-center text-xs border border-slate-800 shadow-md group" title="Game Animations & Rigging">
+                    <span class="text-base group-hover:scale-125 transition">⚡</span>
+                    <span class="text-[7px] font-bold tracking-tighter mt-0.5">Animate</span>
+                </button>
+
+                <button onclick="openRadialCategory('audio')" id="navBtnAudio" class="tool-btn w-12 h-12 rounded-full bg-slate-900 hover:bg-violet-600 hover:text-white text-slate-200 flex flex-col items-center justify-center text-xs border border-slate-800 shadow-md group" title="Game Sound FX & Music">
+                    <span class="text-base group-hover:scale-125 transition">🎵</span>
+                    <span class="text-[7px] font-bold tracking-tighter mt-0.5">Audio</span>
+                </button>
+
+                <button onclick="openRadialCategory('ai')" id="navBtnAi" class="tool-btn w-12 h-12 rounded-full bg-gradient-to-tr from-violet-600 to-pink-500 text-white flex flex-col items-center justify-center text-xs border border-violet-400/50 shadow-lg shadow-violet-500/40 group" title="Gemini AI Asset Creator">
+                    <span class="text-base group-hover:scale-125 transition">🔮</span>
+                    <span class="text-[7px] font-bold tracking-tighter mt-0.5">AI Gen</span>
+                </button>
+
+                <button onclick="openRadialCategory('hub')" id="navBtnHub" class="tool-btn w-12 h-12 rounded-full bg-slate-900 hover:bg-violet-600 hover:text-white text-slate-200 flex flex-col items-center justify-center text-xs border border-slate-800 shadow-md group" title="Universal Hub & File Importer">
+                    <span class="text-base group-hover:scale-125 transition">📂</span>
+                    <span class="text-[7px] font-bold tracking-tighter mt-0.5">Hub</span>
+                </button>
+
+            </div>
+        </div>
+
+        <div id="universalHubModal" class="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+            <div class="glass-panel w-full max-w-2xl max-h-[85vh] rounded-3xl p-6 flex flex-col shadow-2xl border border-violet-500/40">
+                <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-folder-open text-violet-400"></i>
+                        <h3 class="font-bold text-sm text-white">Universal Game Asset Hub & Importer (.GLB, .OBJ, Audio, Textures)</h3>
+                    </div>
+                    <button onclick="closeUniversalHub()" class="w-8 h-8 rounded-full bg-slate-900 hover:bg-slate-800 text-slate-300 flex items-center justify-center transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <!-- Upload Drag-Drop Box -->
+                <div class="py-4">
+                    <label class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-violet-600/20 to-pink-600/20 hover:from-violet-600/30 hover:to-pink-600/30 border border-violet-500/40 text-violet-200 flex flex-col items-center justify-center gap-2 cursor-pointer transition shadow-lg">
+                        <i class="fa-solid fa-cloud-arrow-up text-2xl text-violet-400"></i>
+                        <span class="font-bold text-xs">Drop any 3D Game Model, Texture, Sound, or Image File here</span>
+                        <span class="text-[10px] text-slate-400">Supports .GLB, .OBJ, .MP3, .WAV, .PNG, .JPG</span>
+                        <input type="file" id="universalFileInput" multiple onchange="handleUniversalFileUpload(this)" class="hidden">
+                    </label>
+                </div>
+
+                <!-- Asset List -->
+                <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="hubFilesListContainer">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toastMessage" class="absolute top-16 left-1/2 -translate-x-1/2 z-60 px-4 py-2 rounded-2xl glass-panel text-xs text-violet-200 border border-violet-500/40 shadow-2xl opacity-0 pointer-events-none transition-opacity duration-300 font-semibold">
+            Action executed successfully
+        </div>
+
+    </main>
+
+    <script>
+        let scene, camera, renderer, assetGroup, skyboxMesh;
+        let isAutoRotate = false;
+        let isAudioEnabled = true;
+        let currentAnimation = 'none'; // 'none', 'spin', 'hover', 'bounce', 'attack'
+        let animationTime = 0;
+        let activeAssetType = 'mech';
+        let universalFilesHub = [];
+
+        // Raycasting & Sculpting state
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let isPointerDown = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let cameraAngleX = 0, cameraAngleY = 0.4, cameraRadius = 14;
+
+        let brushConfig = {
+            mode: 'push', // 'push', 'inflate', 'twist', 'smooth'
+            radius: 1.5,
+            intensity: 0.4
+        };
+
+        // Sound FX Synthesizer using Tone.js
+        let synth = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initAudio();
+            init3DScene();
+            loadGameAsset('mech');
+            setupInteractions();
+            window.addEventListener('resize', onWindowResize);
+            
+            window.addEventListener('wheel', (e) => {
+                if (e.target.closest('#sphericalHudMaster') || e.target.closest('#universalHubModal')) return;
+                zoomCamera(e.deltaY > 0 ? 1 : -1);
+            }, { passive: true });
+        });
+
+        function initAudio() {
+            try {
+                synth = new Tone.Synth({
+                    oscillator: { type: 'triangle' },
+                    envelope: { attack: 0.005, decay: 0.1, sustain: 0.0, release: 0.1 }
+                }).toDestination();
+            } catch(e) {
+                console.log("Audio init deferred", e);
+            }
+        }
+
+        function playSound(note = 'C5', duration = '8n') {
+            if (!isAudioEnabled || !synth) return;
+            try {
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+                synth.triggerAttackRelease(note, duration);
+            } catch(e) {}
+        }
+
+        function toggleAudioEngine() {
+            isAudioEnabled = !isAudioEnabled;
+            document.getElementById('audioStatusText').innerText = isAudioEnabled ? 'SFX: On' : 'SFX: Off';
+            showToast(isAudioEnabled ? 'Game sound FX enabled 🔊' : 'Game sound FX muted 🔇');
+        }
+
+        function init3DScene() {
+            const container = document.getElementById('canvasContainer');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x030305);
+
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            updateCameraPosition();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0x8b5cf6, 3.2);
+            dirLight.position.set(15, 25, 15);
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0x06b6d4, 5.0, 40);
+            pointLight.position.set(-15, 10, 10);
+            scene.add(pointLight);
+
+            // Game Stage Floor Pedestal
+            const floorGeo = new THREE.CylinderGeometry(9, 10, 0.6, 64);
+            const floorMat = new THREE.MeshStandardMaterial({ 
+                color: 0x0a0a0f, 
+                roughness: 0.15, 
+                metalness: 0.9,
+                emissive: 0x1e1b4b,
+                emissiveIntensity: 0.4
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.position.y = -3.0;
+            scene.add(floor);
+
+            assetGroup = new THREE.Group();
+            scene.add(assetGroup);
+
+            createSkybox('cyber');
+            animate();
+        }
+
+        function createSkybox(theme) {
+            if (skyboxMesh) {
+                scene.remove(skyboxMesh);
+                skyboxMesh.geometry.dispose();
+                skyboxMesh.material.dispose();
+            }
+            const sphereGeo = new THREE.SphereGeometry(180, 32, 32);
+            let color = 0x1e1b4b;
+            if (theme === 'matrix') color = 0x022c22;
+            else if (theme === 'sunset') color = 0x581c87;
+            else if (theme === 'space') color = 0x020617;
+
+            const mat = new THREE.MeshBasicMaterial({ color: color, wireframe: true, transparent: true, opacity: 0.3 });
+            skyboxMesh = new THREE.Mesh(sphereGeo, mat);
+            skyboxMesh.material.side = THREE.BackSide;
+            scene.add(skyboxMesh);
+        }
+
+        function toggleAutoRotate() {
+            isAutoRotate = !isAutoRotate;
+            document.getElementById('rotateStatusText').innerText = isAutoRotate ? 'Rotate: On' : 'Rotate: Off';
+            showToast(isAutoRotate ? 'Auto-rotation started 🌀' : 'Auto-rotation paused ⏸️');
+            playSound('G4', '16n');
+        }
+
+        function zoomCamera(direction) {
+            cameraRadius = Math.max(5, Math.min(30, cameraRadius + direction * 1.5));
+            updateCameraPosition();
+        }
+
+        function updateCameraPosition() {
+            camera.position.x = cameraRadius * Math.sin(cameraAngleX) * Math.cos(cameraAngleY);
+            camera.position.y = cameraRadius * Math.sin(cameraAngleY);
+            camera.position.z = cameraRadius * Math.cos(cameraAngleX) * Math.cos(cameraAngleY);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function openRadialCategory(category) {
+            playSound('E5', '32n');
+            const subMenu = document.getElementById('radialSubMenu');
+            const content = document.getElementById('radialSubMenuContent');
+            
+            if (subMenu.dataset.activeCategory === category && subMenu.classList.contains('opacity-100')) {
+                closeRadialSubMenu();
+                return;
+            }
+
+            subMenu.dataset.activeCategory = category;
+            content.innerHTML = '';
+
+            if (category === 'forms') {
+                content.innerHTML = `
+                    <div class="text-[10px] font-bold text-violet-300 px-1">🤖 Forms:</div>
+                    <button onclick="loadGameAsset('mech')" class="px-2.5 py-1.5 rounded-xl bg-violet-600 text-white font-semibold text-[10px] flex items-center gap-1">🤖 Mech</button>
+                    <button onclick="loadGameAsset('monster')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-[10px] flex items-center gap-1">👾 Monster</button>
+                    <button onclick="loadGameAsset('weapon')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-[10px] flex items-center gap-1">⚔️ Blaster</button>
+                    <button onclick="loadGameAsset('crystal')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-[10px] flex items-center gap-1">💎 Crystal</button>
+                    <button onclick="loadGameAsset('spaceship')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-[10px] flex items-center gap-1">🚀 Starfighter</button>
+                    <button onclick="loadGameAsset('platform')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-[10px] flex items-center gap-1">🏝️ Island</button>
+                `;
+            } else if (category === 'shaders') {
+                content.innerHTML = `
+                    <div class="text-[10px] font-bold text-violet-300 px-1">✨ Shaders:</div>
+                    <button onclick="applyShader('hologram')" class="px-2.5 py-1.5 rounded-xl bg-cyan-600 text-white font-semibold text-[10px]">🌀 Hologram</button>
+                    <button onclick="applyShader('chrome')" class="px-2.5 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-[10px]">🦾 Chrome</button>
+                    <button onclick="applyShader('neon')" class="px-2.5 py-1.5 rounded-xl bg-pink-600 text-white font-semibold text-[10px]">💖 Neon Pink</button>
+                    <button onclick="applyShader('gold')" class="px-2.5 py-1.5 rounded-xl bg-amber-600 text-white font-semibold text-[10px]">👑 Gold Relic</button>
+                    <button onclick="applyShader('lava')" class="px-2.5 py-1.5 rounded-xl bg-red-600 text-white font-semibold text-[10px]">🔥 Molten Lava</button>
+                    <button onclick="applyShader('matrix')" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 text-white font-semibold text-[10px]">🟩 Matrix Wire</button>
+                `;
+            } else if (category === 'brushes') {
+                content.innerHTML = `
+                    <div class="text-[10px] font-bold text-violet-300 px-1">🎨 Sculpt:</div>
+                    <button onclick="setBrushMode('push')" class="px-2.5 py-1.5 rounded-xl bg-violet-600 text-white font-semibold text-[10px]">🔺 Push</button>
+                    <button onclick="setBrushMode('inflate')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-[10px]">🎈 Inflate</button>
+                    <button onclick="setBrushMode('twist')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-[10px]">🌀 Twist</button>
+                    <button onclick="setBrushMode('smooth')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-[10px]">🌊 Smooth</button>
+                `;
+            } else if (category === 'animation') {
+                content.innerHTML = `
+                    <div class="text-[10px] font-bold text-violet-300 px-1">⚡ Rigging & Motion:</div>
+                    <button onclick="setAnimation('none')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-[10px]">🛑 Stop</button>
+                    <button onclick="setAnimation('spin')" class="px-2.5 py-1.5 rounded-xl bg-violet-600 text-white font-semibold text-[10px]">🔄 Spin</button>
+                    <button onclick="setAnimation('hover')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-[10px]">🛸 Hover</button>
+                    <button onclick="setAnimation('bounce')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-[10px]">⚽ Bounce</button>
+                    <button onclick="setAnimation('attack')" class="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-200 text-[10px]">⚔️ Slash</button>
+                `;
+            } else if (category === 'audio') {
+                content.innerHTML = `
+                    <div class="text-[10px] font-bold text-violet-300 px-1">🎵 Game Audio & SFX:</div>
+                    <button onclick="playSound('C4','4n')" class="px-2.5 py-1.5 rounded-xl bg-emerald-600 text-white font-semibold text-[10px]">💥 Hit SFX</button>
+                    <button onclick="playSound('E4','4n')" class="px-2.5 py-1.5 rounded-xl bg-cyan-600 text-white font-semibold text-[10px]">⚡ Laser SFX</button>
+                    <button onclick="playSound('G4','4n')" class="px-2.5 py-1.5 rounded-xl bg-pink-600 text-white font-semibold text-[10px]">✨ Powerup</button>
+                    <button onclick="playSound('C5','2n')" class="px-2.5 py-1.5 rounded-xl bg-violet-600 text-white font-semibold text-[10px]">🏆 Victory Chime</button>
+                `;
+            } else if (category === 'ai') {
+                content.innerHTML = `
+                    <div class="text-[10px] font-bold text-violet-300 px-1">🔮 Gemini AI Asset Generator:</div>
+                    <input type="text" id="aiPrompt" placeholder="e.g. Cyber Dragon, Laser Sword..." class="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-violet-500 w-48">
+                    <button onclick="generateAiAsset()" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-pink-500 text-white font-bold text-[10px] shadow">Generate</button>
+                `;
+            } else if (category === 'hub') {
+                document.getElementById('universalHubModal').classList.remove('hidden');
+                renderHubFilesList();
+                closeRadialSubMenu();
+                return;
+            }
+
+            subMenu.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');
+            subMenu.classList.add('opacity-100', 'scale-100');
+        }
+
+        function closeRadialSubMenu() {
+            const subMenu = document.getElementById('radialSubMenu');
+            if (subMenu) {
+                subMenu.classList.add('opacity-0', 'pointer-events-none', 'scale-95');
+                subMenu.classList.remove('opacity-100', 'scale-100');
+                subMenu.dataset.activeCategory = '';
+            }
+        }
+
+        function closeUniversalHub() {
+            document.getElementById('universalHubModal').classList.add('hidden');
+        }
+
+        function loadGameAsset(type) {
+            activeAssetType = type;
+            while(assetGroup.children.length > 0) { assetGroup.remove(assetGroup.children[0]); }
+
+            let geo, mat;
+            const defaultMat = new THREE.MeshStandardMaterial({ color: 0x8b5cf6, roughness: 0.2, metalness: 0.85, emissive: 0x2e1065, emissiveIntensity: 0.3 });
+
+            if (type === 'mech') {
+                const group = new THREE.Group();
+                const body = new THREE.Mesh(new THREE.BoxGeometry(2, 2.5, 1.2), defaultMat);
+                const head = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1, 1), defaultMat);
+                head.position.y = 1.8;
+                const leftArm = new THREE.Mesh(new THREE.BoxGeometry(0.6, 2, 0.6), defaultMat);
+                leftArm.position.set(-1.5, 0.2, 0);
+                const rightArm = new THREE.Mesh(new THREE.BoxGeometry(0.6, 2, 0.6), defaultMat);
+                rightArm.position.set(1.5, 0.2, 0);
+                group.add(body, head, leftArm, rightArm);
+                assetGroup.add(group);
+                document.getElementById('activeAssetLabel').innerText = 'Asset: Cyberpunk Mech Hero 🤖';
+            } else if (type === 'monster') {
+                const group = new THREE.Group();
+                const torso = new THREE.Mesh(new THREE.DodecahedronGeometry(1.8, 1), defaultMat);
+                torso.position.y = 0.5;
+                const horn1 = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.5, 8), defaultMat);
+                horn1.position.set(-0.8, 2.0, 0);
+                const horn2 = new THREE.Mesh(new THREE.ConeGeometry(0.4, 1.5, 8), defaultMat);
+                horn2.position.set(0.8, 2.0, 0);
+                group.add(torso, horn1, horn2);
+                assetGroup.add(group);
+                document.getElementById('activeAssetLabel').innerText = 'Asset: Alien Monster Boss 👾';
+            } else if (type === 'weapon') {
+                const group = new THREE.Group();
+                const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 3.5, 16), defaultMat);
+                barrel.rotation.z = Math.PI / 2;
+                const handle = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.5, 0.6), defaultMat);
+                handle.position.set(-0.8, -1.0, 0);
+                group.add(barrel, handle);
+                assetGroup.add(group);
+                document.getElementById('activeAssetLabel').innerText = 'Asset: Sci-Fi Laser Blaster ⚔️';
+            } else if (type === 'crystal') {
+                const mesh = new THREE.Mesh(new THREE.OctahedronGeometry(2, 2), defaultMat);
+                assetGroup.add(mesh);
+                document.getElementById('activeAssetLabel').innerText = 'Asset: Energy Crystal Relic 💎';
+            } else if (type === 'spaceship') {
+                const mesh = new THREE.Mesh(new THREE.ConeGeometry(1.8, 4, 6), defaultMat);
+                mesh.rotation.x = Math.PI / 2;
+                assetGroup.add(mesh);
+                document.getElementById('activeAssetLabel').innerText = 'Asset: Starfighter Cruiser 🚀';
+            } else if (type === 'platform') {
+                const mesh = new THREE.Mesh(new THREE.CylinderGeometry(3, 2.5, 1, 8), defaultMat);
+                assetGroup.add(mesh);
+                document.getElementById('activeAssetLabel').innerText = 'Asset: Floating Island Platform 🏝️';
+            }
+
+            showToast(`Loaded game asset: ${type} 🎮`);
+            playSound('C5', '8n');
+            closeRadialSubMenu();
+        }
+
+        function applyShader(shaderName) {
+            let color = 0x8b5cf6, emissive = 0x2e1065, roughness = 0.2, metalness = 0.85, wireframe = false;
+            let nameText = 'Standard';
+
+            if (shaderName === 'hologram') {
+                color = 0x06b6d4; emissive = 0x0e7490; roughness = 0.1; metalness = 0.9; wireframe = true; nameText = 'Neon Hologram 🌀';
+            } else if (shaderName === 'chrome') {
+                color = 0xe2e8f0; emissive = 0x334155; roughness = 0.05; metalness = 1.0; nameText = 'Liquid Chrome 🦾';
+            } else if (shaderName === 'neon') {
+                color = 0xec4899; emissive = 0x831843; roughness = 0.2; metalness = 0.7; nameText = 'Neon Cyber Pink 💖';
+            } else if (shaderName === 'gold') {
+                color = 0xf59e0b; emissive = 0x78350f; roughness = 0.15; metalness = 0.95; nameText = 'Royal Gold Relic 👑';
+            } else if (shaderName === 'lava') {
+                color = 0xef4444; emissive = 0x991b1b; roughness = 0.3; metalness = 0.5; nameText = 'Molten Lava 🔥';
+            } else if (shaderName === 'matrix') {
+                color = 0x10b981; emissive = 0x064e3b; roughness = 0.2; metalness = 0.8; wireframe = true; nameText = 'Matrix Green Wire 🟩';
+            }
+
+            document.getElementById('shaderLabel').innerText = nameText;
+
+            assetGroup.traverse(child => {
+                if (child.isMesh && child.material) {
+                    child.material.color.set(color);
+                    child.material.emissive.set(emissive);
+                    child.material.roughness = roughness;
+                    child.material.metalness = metalness;
+                    child.material.wireframe = wireframe;
+                    child.material.needsUpdate = true;
+                }
+            });
+
+            showToast(`Applied shader: ${nameText}`);
+            playSound('A4', '8n');
+            closeRadialSubMenu();
+        }
+
+        function setBrushMode(mode) {
+            brushConfig.mode = mode;
+            showToast(`Sculpt Brush: ${mode.toUpperCase()} 🎨`);
+            playSound('D4', '16n');
+            closeRadialSubMenu();
+        }
+
+        function setAnimation(anim) {
+            currentAnimation = anim;
+            showToast(`Animation Preset: ${anim.toUpperCase()} ⚡`);
+            playSound('F4', '8n');
+            closeRadialSubMenu();
+        }
+
+        function generateAiAsset() {
+            const prompt = document.getElementById('aiPrompt')?.value || 'Sci-Fi Boss';
+            showToast(`Gemini AI generated asset for: "${prompt}" 🔮`);
+            loadGameAsset('monster');
+            playSound('C5', '4n');
+            closeRadialSubMenu();
+        }
+
+        function setupInteractions() {
+            const container = document.getElementById('canvasContainer');
+
+            container.addEventListener('pointerdown', (e) => {
+                isPointerDown = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+                applySculptBrush(e);
+            });
+
+            container.addEventListener('pointermove', (e) => {
+                if (!isPointerDown) return;
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+
+                if (e.buttons === 2 || e.shiftKey) {
+                    cameraAngleX -= deltaX * 0.008;
+                    cameraAngleY = Math.max(-0.1, Math.min(1.2, cameraAngleY + deltaY * 0.008));
+                    updateCameraPosition();
+                } else {
+                    applySculptBrush(e);
+                }
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('pointerup', () => { isPointerDown = false; });
+        }
+
+        function applySculptBrush(e) {
+            const container = document.getElementById('canvasContainer');
+            const rect = container.getBoundingClientRect();
+            mouse.x = ((e.clientX - rect.left) / container.clientWidth) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / container.clientHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+            const meshes = [];
+            assetGroup.traverse(child => { if (child.isMesh && child.geometry) meshes.push(child); });
+
+            const intersects = raycaster.intersectObjects(meshes, true);
+            if (intersects.length > 0) {
+                const intersect = intersects[0];
+                const mesh = intersect.object;
+                if (!mesh.geometry || !mesh.geometry.attributes.position) return;
+                
+                const geo = mesh.geometry;
+                const posAttr = geo.attributes.position;
+                const worldMatrixInv = mesh.matrixWorld.clone().invert();
+                const localPoint = intersect.point.clone().applyMatrix4(worldMatrixInv);
+
+                for (let i = 0; i < posAttr.count; i++) {
+                    const vx = posAttr.getX(i);
+                    const vy = posAttr.getY(i);
+                    const vz = posAttr.getZ(i);
+
+                    const dx = vx - localPoint.x;
+                    const dy = vy - localPoint.y;
+                    const dz = vz - localPoint.z;
+                    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+                    if (dist < brushConfig.radius) {
+                        const factor = (1 - dist / brushConfig.radius) * brushConfig.intensity;
+                        const normal = intersect.face ? intersect.face.normal : new THREE.Vector3(0, 1, 0);
+
+                        if (brushConfig.mode === 'push') {
+                            posAttr.setXYZ(i, vx + normal.x * factor * 0.5, vy + normal.y * factor * 0.5, vz + normal.z * factor * 0.5);
+                        } else if (brushConfig.mode === 'inflate') {
+                            const len = Math.sqrt(vx*vx + vy*vy + vz*vz) || 1;
+                            posAttr.setXYZ(i, vx + (vx/len)*factor*0.4, vy + (vy/len)*factor*0.4, vz + (vz/len)*factor*0.4);
+                        } else if (brushConfig.mode === 'twist') {
+                            const angle = factor * 0.7;
+                            const cos = Math.cos(angle), sin = Math.sin(angle);
+                            posAttr.setXYZ(i, vx * cos - vz * sin, vy, vx * sin + vz * cos);
+                        } else if (brushConfig.mode === 'smooth') {
+                            posAttr.setXYZ(i, vx + (localPoint.x - vx)*factor*0.3, vy + (localPoint.y - vy)*factor*0.3, vz + (localPoint.z - vz)*factor*0.3);
+                        }
+                    }
+                }
+                posAttr.needsUpdate = true;
+                geo.computeVertexNormals();
+            }
+        }
+
+        function handleUniversalFileUpload(input) {
+            if (!input.files || input.files.length === 0) return;
+            Array.from(input.files).forEach(file => {
+                const url = URL.createObjectURL(file);
+                const ext = file.name.split('.').pop().toLowerCase();
+                let type = 'unknown';
+
+                if (['glb', 'gltf', 'obj'].includes(ext)) type = '3d';
+                else if (['mp3', 'wav'].includes(ext)) type = 'audio';
+                else if (['png', 'jpg', 'jpeg'].includes(ext)) type = 'image';
+
+                universalFilesHub.push({ name: file.name, size: (file.size/1024).toFixed(1)+' KB', type, url, ext });
+            });
+            renderHubFilesList();
+            showToast('Files imported successfully into Universal Hub 📂');
+            playSound('C5', '8n');
+        }
+
+        function renderHubFilesList() {
+            const container = document.getElementById('hubFilesListContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (universalFilesHub.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-slate-500 text-xs">No files uploaded yet. Add game models (.glb/.obj), audio, or textures.</div>`;
+                return;
+            }
+
+            universalFilesHub.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-3 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-violet-500/40 transition';
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-slate-950 flex items-center justify-center border border-slate-800 text-base">
+                            ${item.type === '3d' ? '🤖' : item.type === 'audio' ? '🎵' : '🖼️'}
+                        </div>
+                        <div>
+                            <div class="font-semibold text-xs text-white max-w-[220px] truncate">${item.name}</div>
+                            <div class="text-[10px] text-slate-400 uppercase">${item.ext} • ${item.size}</div>
+                        </div>
+                    </div>
+                    <button onclick="stageHubFile(${index})" class="px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-bold">Use Asset</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function stageHubFile(index) {
+            const item = universalFilesHub[index];
+            closeUniversalHub();
+            if (item.type === '3d') {
+                if (item.ext === 'obj') {
+                    const loader = new THREE.OBJLoader();
+                    loader.load(item.url, obj => {
+                        while(assetGroup.children.length > 0) { assetGroup.remove(assetGroup.children[0]); }
+                        assetGroup.add(obj);
+                        showToast(`Loaded OBJ model: ${item.name}`);
+                    });
+                } else {
+                    const loader = new THREE.GLTFLoader();
+                    loader.load(item.url, gltf => {
+                        while(assetGroup.children.length > 0) { assetGroup.remove(assetGroup.children[0]); }
+                        assetGroup.add(gltf.scene);
+                        showToast(`Loaded GLB model: ${item.name}`);
+                    });
+                }
+            } else {
+                showToast(`Staged file: ${item.name}`);
+            }
+        }
+
+        function exportGameAsset() {
+            const exporter = new THREE.GLTFExporter();
+            exporter.parse(assetGroup, function (gltf) {
+                const blob = new Blob([JSON.stringify(gltf, null, 2)], { type: 'application/json' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `omnistage_game_asset_${activeAssetType}.gltf`;
+                link.click();
+                showToast('Game asset exported successfully (.GLTF/GLB) 🚀');
+                playSound('C6', '4n');
+            }, { binary: false });
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvasContainer');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            animationTime += 0.03;
+
+            if (isAutoRotate && assetGroup) {
+                assetGroup.rotation.y += 0.004;
+            }
+
+            if (currentAnimation === 'spin' && assetGroup) {
+                assetGroup.rotation.y += 0.02;
+            } else if (currentAnimation === 'hover' && assetGroup) {
+                assetGroup.position.y = Math.sin(animationTime * 3) * 0.4;
+            } else if (currentAnimation === 'bounce' && assetGroup) {
+                assetGroup.position.y = Math.abs(Math.sin(animationTime * 4)) * 0.8;
+                assetGroup.scale.y = 1 + Math.sin(animationTime * 4) * 0.15;
+            } else if (currentAnimation === 'attack' && assetGroup) {
+                assetGroup.rotation.z = Math.sin(animationTime * 6) * 0.25;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastMessage');
+            if (!toast) return;
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2400);
+        }
+    </script>
+</body>
+</html>
