@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Red Bunny — One Sheet Demo Game</title>
+<style>
+:root{--bg:#070a12;--panel:rgba(10,13,24,.88);--line:#32405f;--cyan:#61e8ff;--pink:#ff59db;--red:#ff3f62;--green:#66f5b2;--text:#eef4ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;overflow:hidden}
+button,input,textarea{font:inherit}button{color:var(--text);background:#12182a;border:1px solid var(--line);border-radius:14px;padding:10px 13px;cursor:pointer}
+button:hover{border-color:var(--cyan)}button.active{background:linear-gradient(135deg,#25204c,#15263c);border-color:var(--pink)}
+#app{height:100vh;display:grid;grid-template-columns:78px 1fr 310px;grid-template-rows:64px 1fr}
+header{grid-column:1/4;display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--line);background:#090d18}
+.logo{font-weight:900;letter-spacing:.08em}.logo span{color:var(--pink)}
+.top{display:flex;gap:7px;align-items:center}.pill{border:1px solid var(--line);padding:6px 9px;border-radius:999px;color:#a9b6d2;font-size:12px}
+nav{grid-row:2;display:flex;flex-direction:column;gap:9px;padding:10px 7px;border-right:1px solid var(--line);background:#0a0e19}
+.edge{width:64px;min-height:55px;font-size:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.edge b{font-size:18px}.edge small{color:#9eabc5}
+main{position:relative;overflow:hidden;background:#05070d}
+#scene{position:absolute;inset:0;background:center/cover no-repeat url('stage_reference.jpg');}
+#scene:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(4,8,18,.05),rgba(3,5,12,.55))}
+#player{position:absolute;left:48%;top:58%;width:86px;transform:translate(-50%,-100%);z-index:4;filter:drop-shadow(0 10px 14px #000)}
+.avatar{width:72px;height:108px;margin:auto;position:relative}
+.ears{position:absolute;left:20px;top:-10px;width:16px;height:42px;border:4px solid var(--red);border-radius:60% 60% 30% 30%;transform:rotate(-12deg)}.ears.r{left:44px;transform:rotate(12deg)}
+.head{position:absolute;left:17px;top:18px;width:40px;height:42px;background:#d83c51;border-radius:50% 50% 44% 44%;border:2px solid #ffd1da}
+.body{position:absolute;left:10px;top:55px;width:54px;height:47px;background:linear-gradient(135deg,#a50f2c,#321126);border:2px solid #ff5b72;border-radius:16px 16px 8px 8px}
+.eye{position:absolute;top:34px;width:5px;height:5px;background:#fff;border-radius:50%;z-index:2}.eye.l{left:29px}.eye.r{left:45px}
+.leg{position:absolute;top:94px;width:11px;height:22px;background:#161c2a;border-radius:7px}.leg.l{left:24px}.leg.r{left:43px}
+#nameplate{margin-top:4px;text-align:center;font-size:11px;background:#090c18cc;border:1px solid var(--pink);border-radius:8px;padding:3px}
+.dialog{position:absolute;left:5%;right:5%;bottom:18px;z-index:8;background:var(--panel);border:1px solid var(--cyan);border-radius:18px;padding:14px;backdrop-filter:blur(12px);display:none}
+.dialog.show{display:block}.speaker{color:var(--green);font-weight:800}.choices{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}
+#right{grid-column:3;grid-row:2;background:#090d18;border-left:1px solid var(--line);padding:12px;overflow:auto}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:11px;margin-bottom:10px}
+.panel h3{margin:0 0 9px;font-size:13px}.muted{color:#92a0bc;font-size:12px}.bar{height:7px;background:#20283b;border-radius:99px;overflow:hidden;margin:5px 0 9px}.bar i{display:block;height:100%;width:78%;background:linear-gradient(90deg,var(--cyan),var(--pink))}
+textarea,input{width:100%;background:#080b14;color:#eaf1ff;border:1px solid var(--line);border-radius:10px;padding:9px}
+#tabs{display:flex;gap:5px;overflow:auto;margin-bottom:9px}.tab{white-space:nowrap;padding:7px 9px;font-size:11px}
+#assetGrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.asset{font-size:11px;text-align:left}.asset strong{display:block;color:var(--cyan)}
+#buildMsg{color:var(--green);font-size:12px;min-height:18px}
+#mobileDock{display:none}
+#quick{position:absolute;right:15px;top:15px;z-index:7;display:flex;flex-direction:column;gap:7px}
+.quick{width:50px;height:50px;border-radius:18px;background:#0b1020dd;border:1px solid var(--line);backdrop-filter:blur(8px);font-size:19px}
+#move{position:absolute;left:18px;bottom:20px;z-index:7;display:grid;grid-template-columns:48px 48px 48px;gap:5px}
+#move button{height:44px;padding:0;border-radius:15px;background:#0a1020cc}.blank{visibility:hidden}
+@media(max-width:850px){
+ #app{grid-template-columns:1fr;grid-template-rows:54px 1fr 68px}
+ header{grid-column:1}.logo{font-size:13px}
+ nav{display:none}main{grid-column:1;grid-row:2}#right{display:none}
+ #mobileDock{display:flex;position:absolute;left:8px;right:8px;bottom:7px;height:58px;z-index:20;background:#080c17ee;border:1px solid var(--line);border-radius:20px;justify-content:space-around;align-items:center;backdrop-filter:blur(14px)}
+ #mobileDock button{border:0;background:transparent;font-size:10px;padding:6px}.mobileIcon{font-size:20px;display:block}
+ #quick{right:8px;top:8px}.quick{width:45px;height:45px}
+ #move{bottom:77px;left:9px}
+ .dialog{bottom:74px;left:4%;right:4%}
+}
+</style>
+</head>
+<body>
+<div id="app">
+<header>
+  <div class="logo">🐇 <span>X42</span> RED BUNNY <span>/ ONE-SHEET DEMO</span></div>
+  <div class="top"><span class="pill" id="status">LIVE DEMO</span><button onclick="toggleEditor()">☰ EDIT</button></div>
+</header>
+<nav>
+  <button class="edge active" onclick="showTab('game')"><b>⌂</b>GAME</button>
+  <button class="edge" onclick="showTab('character')"><b>♙</b>CHAR</button>
+  <button class="edge" onclick="showTab('stages')"><b>▣</b>STAGES</button>
+  <button class="edge" onclick="showTab('story')"><b>☷</b>STORY</button>
+  <button class="edge" onclick="showTab('assets')"><b>✦</b>ASSETS</button>
+  <button class="edge" onclick="document.getElementById('upload').click()"><b>⇧</b>IMPORT</button>
+  <button class="edge" onclick="exportProject()"><b>⇩</b>EXPORT</button>
+</nav>
+<main>
+ <div id="scene"></div>
+ <div id="quick">
+   <button class="quick" onclick="talk()">💬</button>
+   <button class="quick" onclick="attack()">⚔</button>
+   <button class="quick" onclick="useSkill()">✦</button>
+   <button class="quick" onclick="toggleEditor()">☰</button>
+ </div>
+ <div id="player"><div class="avatar"><div class="ears"></div><div class="ears r"></div><div class="head"></div><div class="eye l"></div><div class="eye r"></div><div class="body"></div><div class="leg l"></div><div class="leg r"></div></div><div id="nameplate">RED BUNNY</div></div>
+ <div id="move"><button class="blank"></button><button onclick="move(0,-3)">▲</button><button class="blank"></button><button onclick="move(-3,0)">◀</button><button onclick="move(0,3)">▼</button><button onclick="move(3,0)">▶</button></div>
+ <div id="dialog" class="dialog"><div class="speaker" id="speaker">Mika</div><div id="line">Die Firewall ist fast geknackt. Bist du bereit?</div><div class="choices"><button onclick="nextDialogue()">Ich bin bereit.</button><button onclick="nextDialogue()">Erzähl mir mehr.</button><button onclick="closeDialogue()">Später.</button></div></div>
+ <div id="mobileDock">
+  <button onclick="showTab('game')"><span class="mobileIcon">⌂</span>Game</button>
+  <button onclick="showTab('character')"><span class="mobileIcon">♙</span>Char</button>
+  <button onclick="showTab('story')"><span class="mobileIcon">☷</span>Story</button>
+  <button onclick="showTab('assets')"><span class="mobileIcon">✦</span>Assets</button>
+  <button onclick="document.getElementById('upload').click()"><span class="mobileIcon">⇧</span>Import</button>
+ </div>
+</main>
+<aside id="right">
+ <div id="tabs">
+  <button class="tab active" onclick="showTab('game')">GAME</button><button class="tab" onclick="showTab('character')">CHARACTER</button><button class="tab" onclick="showTab('stages')">STAGES</button><button class="tab" onclick="showTab('story')">STORY</button><button class="tab" onclick="showTab('assets')">ASSETS</button>
+ </div>
+ <div id="panelContent"></div>
+</aside>
+<input id="upload" type="file" accept="image/*" hidden onchange="importSheet(event)">
+</div>
+<script>
+const manifest = {"format": "PaperDollOneSheet/0.2", "sheet": {"file": "one_sheet.png", "width": 2048, "height": 2048, "grid": 32}, "game": {"title": "Red Bunny: Bermuda Dreieck", "genre": "anime cyber-thriller adventure", "defaultStage": "stage_reference.jpg"}, "assets": {"C01": {"type": "character", "name": "Red Bunny", "group": "characters"}, "N01": {"type": "npc", "name": "Mika — informant", "group": "npcs"}, "E01": {"type": "enemy", "name": "NETWORK Hunter", "group": "enemies"}, "W17": {"type": "weapon", "name": "Signal Baton", "group": "equipment"}, "I01": {"type": "item", "name": "Encrypted Drive", "group": "items"}, "S07": {"type": "skill", "name": "Signal Burst", "group": "skills"}, "S12": {"type": "skill", "name": "Shadow Dash", "group": "skills"}, "S31": {"type": "skill", "name": "Network Jam", "group": "skills"}, "BG01": {"type": "stage", "name": "St. Pauli Rain District", "group": "stages"}, "BG02": {"type": "stage", "name": "Harbor Night", "group": "stages"}}, "animations": {"C01": {"idle": "A01", "walk": "A02", "run": "A03", "attack": "A21", "special": "A31", "hit": "A41", "death": "A51"}}, "starterCharacter": {"id": "C01", "name": "Red Bunny", "sprite": "C01", "stats": {"hp": 120, "focus": 85, "speed": 20, "stealth": 24}, "skills": ["S07", "S12", "S31"], "equipment": ["W17", "I01"]}};
+let tab='game', x=.48, y=.58, storyIndex=0, sheetURL=null;
+const story=[
+ ["Mika","Die Firewall ist fast geknackt. Bist du bereit?"],
+ ["Red Bunny","Noch nicht. Erst brauche ich den Signal-Key."],
+ ["Mika","Dann geh zum alten Funkmast. Der NETWORK-Hunter ist bereits unterwegs."],
+ ["Red Bunny","Verstanden. Wir verschwinden, bevor sie wissen, wo wir sind."]
+];
+function renderPanel(){
+ const c=document.getElementById('panelContent');
+ if(tab==='game') c.innerHTML=`<div class="panel"><h3>ONE-SHEET → PLAYABLE DEMO</h3><div class="muted">This prototype treats one uploaded atlas as the source of truth for characters, stages, equipment, effects and UI.</div><p id="buildMsg">✓ Starter game assembled from manifest.</p><button onclick="talk()">▶ Play scene</button></div><div class="panel"><h3>Mission</h3><b>Escape the NETWORKs</b><p class="muted">Find the Signal-Key and reach the safehouse.</p></div>`;
+ if(tab==='character') c.innerHTML=`<div class="panel"><h3>RED BUNNY — C01</h3><div class="muted">Preset: WHISTLEBLOWER</div><p>HP ${manifest.starterCharacter.stats.hp}</p><div class="bar"><i style="width:80%"></i></div><p>Focus ${manifest.starterCharacter.stats.focus}</p><div class="bar"><i style="width:72%"></i></div><p>Speed ${manifest.starterCharacter.stats.speed} · Stealth ${manifest.starterCharacter.stats.stealth}</p></div><div class="panel"><h3>Quick definition</h3><textarea id="charDef">C01 Red Bunny : WHISTLEBLOWER
+SPR C01
+AN 1,2,3,21,31,41,51
+EQ W17,I01
+SK 7,12,31
+STAT 120,85,20,24</textarea><button style="width:100%;margin-top:7px" onclick="applyDef()">APPLY</button></div>`;
+ if(tab==='stages') c.innerHTML=`<div class="panel"><h3>STAGE LIBRARY</h3><button onclick="setStage('stage_reference.jpg')" style="width:100%;margin-bottom:7px">BG01 · St. Pauli Rain District</button><button onclick="setStage('one_sheet.png')" style="width:100%">BG02 · One-Sheet Showcase</button></div><div class="panel"><h3>Scene flow</h3><p class="muted">01 Chase → 02 Informant → 03 Funkmast → 04 Safehouse</p></div>`;
+ if(tab==='story') c.innerHTML=`<div class="panel"><h3>STORY / DIALOGUE</h3><p class="muted">Edit the words and events without touching the assets.</p><textarea id="storyText">${story.map(a=>a[0]+": "+a[1]).join("\n")}</textarea><button style="width:100%;margin-top:7px" onclick="saveStory()">SAVE STORY</button></div><div class="panel"><h3>Event shortcuts</h3><button onclick="talk()">ADD DIALOGUE</button> <button onclick="attack()">ADD ACTION</button></div>`;
+ if(tab==='assets') c.innerHTML=`<div class="panel"><h3>ONE-SHEET ASSET LIBRARY</h3><div id="assetGrid">${Object.entries(manifest.assets).map(([id,a])=>`<button class="asset" onclick="selectAsset('${id}')"><strong>${id}</strong>${a.name}</button>`).join('')}</div></div><div class="panel"><h3>Master source</h3><img src="${sheetURL||'one_sheet.png'}" style="width:100%;border-radius:10px"><p class="muted">2048×2048 master sheet · semantic IDs live in one_sheet_manifest.json</p></div>`;
+}
+function showTab(t){tab=t;renderPanel();document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase()===t));}
+function toggleEditor(){showTab(tab==='game'?'story':'game');}
+function move(dx,dy){x=Math.max(.05,Math.min(.95,x+dx/100));y=Math.max(.18,Math.min(.88,y+dy/100));document.getElementById('player').style.left=(x*100)+'%';document.getElementById('player').style.top=(y*100)+'%';}
+function talk(){document.getElementById('dialog').classList.add('show');document.getElementById('speaker').textContent=story[storyIndex][0];document.getElementById('line').textContent=story[storyIndex][1];}
+function nextDialogue(){storyIndex=(storyIndex+1)%story.length;talk()}
+function closeDialogue(){document.getElementById('dialog').classList.remove('show')}
+function attack(){document.getElementById('status').textContent='ATTACK A21';document.getElementById('status').style.color='var(--red)';setTimeout(()=>document.getElementById('status').textContent='LIVE DEMO',800)}
+function useSkill(){document.getElementById('status').textContent='SKILL S31 · NETWORK JAM';setTimeout(()=>document.getElementById('status').textContent='LIVE DEMO',1200)}
+function setStage(f){document.getElementById('scene').style.backgroundImage=`url('${f}')`}
+function selectAsset(id){document.getElementById('buildMsg')?.replaceChildren(document.createTextNode('Selected '+id+' — '+manifest.assets[id].name))}
+function applyDef(){document.getElementById('status').textContent='CHARACTER UPDATED';setTimeout(()=>document.getElementById('status').textContent='LIVE DEMO',1000)}
+function saveStory(){document.getElementById('status').textContent='STORY SAVED';setTimeout(()=>document.getElementById('status').textContent='LIVE DEMO',1000)}
+function exportProject(){const blob=new Blob([JSON.stringify({manifest,story},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='red_bunny_demo_project.json';a.click()}
+function importSheet(e){const f=e.target.files[0];if(!f)return;sheetURL=URL.createObjectURL(f);document.getElementById('buildMsg')?.replaceChildren(document.createTextNode('✓ One-sheet imported: '+f.name+' · demo project rebuilt'));document.getElementById('scene').style.backgroundImage=`url('${sheetURL}')`;document.getElementById('status').textContent='ONE-SHEET IMPORTED';setTimeout(()=>document.getElementById('status').textContent='LIVE DEMO',1400)}
+renderPanel();
+</script>
+</body></html>

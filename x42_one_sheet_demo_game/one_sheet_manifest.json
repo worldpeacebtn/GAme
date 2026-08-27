@@ -1,0 +1,97 @@
+{
+  "format": "PaperDollOneSheet/0.2",
+  "sheet": {
+    "file": "one_sheet.png",
+    "width": 2048,
+    "height": 2048,
+    "grid": 32
+  },
+  "game": {
+    "title": "Red Bunny: Bermuda Dreieck",
+    "genre": "anime cyber-thriller adventure",
+    "defaultStage": "stage_reference.jpg"
+  },
+  "assets": {
+    "C01": {
+      "type": "character",
+      "name": "Red Bunny",
+      "group": "characters"
+    },
+    "N01": {
+      "type": "npc",
+      "name": "Mika — informant",
+      "group": "npcs"
+    },
+    "E01": {
+      "type": "enemy",
+      "name": "NETWORK Hunter",
+      "group": "enemies"
+    },
+    "W17": {
+      "type": "weapon",
+      "name": "Signal Baton",
+      "group": "equipment"
+    },
+    "I01": {
+      "type": "item",
+      "name": "Encrypted Drive",
+      "group": "items"
+    },
+    "S07": {
+      "type": "skill",
+      "name": "Signal Burst",
+      "group": "skills"
+    },
+    "S12": {
+      "type": "skill",
+      "name": "Shadow Dash",
+      "group": "skills"
+    },
+    "S31": {
+      "type": "skill",
+      "name": "Network Jam",
+      "group": "skills"
+    },
+    "BG01": {
+      "type": "stage",
+      "name": "St. Pauli Rain District",
+      "group": "stages"
+    },
+    "BG02": {
+      "type": "stage",
+      "name": "Harbor Night",
+      "group": "stages"
+    }
+  },
+  "animations": {
+    "C01": {
+      "idle": "A01",
+      "walk": "A02",
+      "run": "A03",
+      "attack": "A21",
+      "special": "A31",
+      "hit": "A41",
+      "death": "A51"
+    }
+  },
+  "starterCharacter": {
+    "id": "C01",
+    "name": "Red Bunny",
+    "sprite": "C01",
+    "stats": {
+      "hp": 120,
+      "focus": 85,
+      "speed": 20,
+      "stealth": 24
+    },
+    "skills": [
+      "S07",
+      "S12",
+      "S31"
+    ],
+    "equipment": [
+      "W17",
+      "I01"
+    ]
+  }
+}
