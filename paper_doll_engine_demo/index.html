@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paper Doll Engine — Red Bunny Demo</title>
+<style>
+:root{--red:#e31b23;--ink:#121212;--paper:#f0f0ed;--muted:#9a9a9a}
+*{box-sizing:border-box}body{margin:0;background:var(--ink);color:#eee;font:14px system-ui,sans-serif}
+header{padding:16px 20px;border-bottom:2px solid var(--red);display:flex;justify-content:space-between;align-items:center}
+h1{margin:0;font-size:20px}.badge{border:1px solid var(--red);padding:4px 8px;border-radius:999px;color:#ff6870}
+main{display:grid;grid-template-columns:270px 1fr 330px;min-height:calc(100vh - 66px)}
+aside,section{padding:16px;border-right:1px solid #333}.right{border-right:0;border-left:1px solid #333}
+.card{background:#1c1c1c;border:1px solid #333;border-radius:10px;padding:12px;margin-bottom:12px}
+button,input,textarea,select{font:inherit;background:#111;color:#eee;border:1px solid #444;border-radius:7px;padding:8px}
+button{cursor:pointer}button:hover{border-color:var(--red)}.primary{background:var(--red);border-color:var(--red);color:#fff}
+.row{display:flex;gap:6px;align-items:center}.grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+#preview{background:linear-gradient(#252525,#111);min-height:430px;border:1px solid #333;border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+#preview img{width:min(90%,650px);image-rendering:pixelated}
+pre{white-space:pre-wrap;background:#0b0b0b;border:1px solid #333;padding:10px;border-radius:8px;min-height:160px}
+.small{color:#aaa;font-size:12px}.tag{display:inline-block;border:1px solid #444;border-radius:5px;padding:3px 6px;margin:2px}.red{color:#ff6870}
+textarea{width:100%;min-height:170px;font-family:ui-monospace,monospace}
+input{width:100%}
+@media(max-width:1000px){main{grid-template-columns:1fr}.right,aside{border:0;border-bottom:1px solid #333}}
+</style>
+</head>
+<body>
+<header><h1>🐇 PAPER DOLL ENGINE / RED BUNNY</h1><span class="badge">BERMUDA-DREIECK DEMO</span></header>
+<main>
+<aside>
+<div class="card"><b>Asset Command Pad</b><p class="small">Keyboard-first shortcuts. Try: <span class="red">C01</span>, <span class="red">A21</span>, <span class="red">W17</span>, <span class="red">S31</span>.</p>
+<input id="cmd" placeholder="type asset / command…" autofocus><div class="row" style="margin-top:7px"><button class="primary" onclick="runCmd()">Apply</button><button onclick="document.getElementById('cmd').value=''">Clear</button></div>
+<pre id="log">Ready. Load the preset with: @C001 Rote_Haesin : WHISTLEBLOWER_BUNNY</pre></div>
+<div class="card"><b>Asset library</b><div id="assets"></div></div>
+</aside>
+<section>
+<div id="preview"><img src="assets/red_bunny_atlas.svg" alt="Editable demo atlas"></div>
+<div class="card" style="margin-top:12px"><b>Live character</b><div id="tags" style="margin:8px 0"></div><pre id="char"></pre></div>
+</section>
+<aside class="right">
+<div class="card"><b>One-page developer definition</b>
+<textarea id="def">@C001 Rote_Haesin : WHISTLEBLOWER_BUNNY
+SPR C01
+AN 1,2,3,21,22,23
+EQ W17,W44
+SK 7,12,31
+STAT 120,80,24,18,14</textarea>
+<button class="primary" style="width:100%;margin-top:8px" onclick="parseDef()">Build character</button>
+</div>
+<div class="card"><b>AI assistant</b><p class="small">Demo supports a local prompt composer. API keys stay in your browser only. For production, use a server-side proxy so provider keys are never shipped to clients.</p>
+<select id="provider"><option>OpenAI</option><option>Google Gemini</option></select>
+<input id="key" type="password" placeholder="optional API key (local demo)">
+<input id="prompt" style="margin-top:7px" placeholder="e.g. make this character stealthier">
+<button style="width:100%;margin-top:7px" onclick="aiDraft()">Ask AI / draft changes</button>
+<pre id="aiout">No AI request made.</pre></div>
+</aside>
+</main>
+<script>
+let state={id:"C001",name:"Rote Häsin",sprite:"C01",anim:["A01","A02","A03","A21","A22","A23"],equipment:["W17","W44"],skills:["S07","S12","S31"],stats:[120,80,24,18,14]};
+const assets={C01:"Red Bunny",W17:"Iron Pipe",W21:"Signal Baton",W31:"Red Lantern",W44:"Whistle",S07:"Signal Burst",S12:"Shadow Dash",S31:"Network Jam",BG01:"Bermuda Harbor",N01:"Network Enforcer"};
+document.getElementById("assets").innerHTML=Object.entries(assets).map(([k,v])=>`<span class="tag"><b>${k}</b> ${v}</span>`).join("");
+function render(){document.getElementById("char").textContent=JSON.stringify(state,null,2);document.getElementById("tags").innerHTML=[state.sprite,...state.anim,state.equipment,...state.skills].flat().map(x=>`<span class="tag">${x}</span>`).join("");}
+function runCmd(){let s=document.getElementById("cmd").value.trim();if(!s)return;let out="Applied: "+s;
+if(/^WPN\s+/i.test(s)){state.equipment[0]=s.split(/\s+/)[1]}else if(/^SK\s+/i.test(s)){state.skills=s.split(/\s+/)[1].split(",").map(x=>"S"+x.replace(/^S/i,""))}
+else if(/^ATT\s+/i.test(s)){state.anim[3]=s.split(/\s+/)[1]}else if(/^SPR\s+/i.test(s)){state.sprite=s.split(/\s+/)[1]}
+else if(/^@C001/i.test(s)){out="Preset loaded: WHISTLEBLOWER_BUNNY"} document.getElementById("log").textContent=out;render();}
+function parseDef(){let t=document.getElementById("def").value, lines=t.split(/\n/); for(let l of lines){let p=l.trim().split(/\s+/);if(l.startsWith("@C001")){state.name=l.replace(/^@C001\s*/,"").split(":")[0].trim().replaceAll("_"," ")} if(p[0]=="SPR")state.sprite=p[1];if(p[0]=="AN")state.anim=p[1].split(",").map(x=>"A"+x);if(p[0]=="EQ")state.equipment=p[1].split(",");if(p[0]=="SK")state.skills=p[1].split(",").map(x=>"S"+x);if(p[0]=="STAT")state.stats=p[1].split(",").map(Number)} render();}
+async function aiDraft(){let prompt=document.getElementById("prompt").value||"Improve this character";let provider=document.getElementById("provider").value;let key=document.getElementById("key").value;
+if(!key){document.getElementById("aiout").textContent=`AI draft mode (${provider})\\n\\nPrompt: ${prompt}\\n\\nSuggested command:\\nSK 7,12,31,44\\nSTAT 120,80,26,18,16\\n\\nFor a real integration, put the API call behind your own server/proxy. Never publish a production API key in this HTML.`;return;}
+document.getElementById("aiout").textContent="A production build should call your backend here. This demo deliberately does not send the key anywhere.";
+}
+render();
+document.getElementById("cmd").addEventListener("keydown",e=>{if(e.key==="Enter")runCmd()});
+</script>
+</body></html>

@@ -1,0 +1,34 @@
+{
+  "id": "C001",
+  "name": "Rote H\u00e4sin",
+  "template": "WHISTLEBLOWER_BUNNY",
+  "sprite": "C01",
+  "animations": {
+    "idle": "A01",
+    "walk": "A02",
+    "run": "A03",
+    "attack": "A21",
+    "hit": "A22",
+    "death": "A23"
+  },
+  "equipment": {
+    "weapon": "W17",
+    "offhand": "W44",
+    "jacket": "CLOTH_RED_03"
+  },
+  "skills": [
+    "S07",
+    "S12",
+    "S31"
+  ],
+  "faction": "X42",
+  "stats": {
+    "hp": 120,
+    "mp": 80,
+    "atk": 24,
+    "def": 18,
+    "spd": 14
+  },
+  "ai": "STEALTH_WHISTLEBLOWER",
+  "dialogue": "D01"
+}

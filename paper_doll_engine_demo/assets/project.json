@@ -1,0 +1,52 @@
+{
+  "project": "Red Bunny — St Paulianisches Bermuda-Dreieck",
+  "version": "0.1-demo",
+  "characters": [
+    {
+      "id": "C001",
+      "name": "Rote Häsin",
+      "template": "WHISTLEBLOWER_BUNNY",
+      "sprite": "C01",
+      "animations": {
+        "idle": "A01",
+        "walk": "A02",
+        "run": "A03",
+        "attack": "A21",
+        "hit": "A22",
+        "death": "A23"
+      },
+      "equipment": {
+        "weapon": "W17",
+        "offhand": "W44",
+        "jacket": "CLOTH_RED_03"
+      },
+      "skills": [
+        "S07",
+        "S12",
+        "S31"
+      ],
+      "faction": "X42",
+      "stats": {
+        "hp": 120,
+        "mp": 80,
+        "atk": 24,
+        "def": 18,
+        "spd": 14
+      },
+      "ai": "STEALTH_WHISTLEBLOWER",
+      "dialogue": "D01"
+    }
+  ],
+  "presets": {
+    "WHISTLEBLOWER_BUNNY": "C01 AN[1,2,3,21,22,23] EQ[W17,W44] SK[7,12,31] STAT[120,80,24,18,14]"
+  },
+  "commands": [
+    "@C001 Rote_Haesin : WHISTLEBLOWER_BUNNY",
+    "SPR C01",
+    "ATT A21",
+    "WPN W17",
+    "ITEM W44",
+    "SK 7,12,31",
+    "STAT 120,80,24,18,14"
+  ]
+}

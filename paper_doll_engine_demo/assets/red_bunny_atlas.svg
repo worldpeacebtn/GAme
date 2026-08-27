@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768">
+<rect width="1024" height="768" fill="#171717"/>
+<!-- 8 x 6 grid, 128px cells -->
+<g stroke="#333" fill="none" opacity=".55">
+  <path d="M0 0H1024M0 128H1024M0 256H1024M0 384H1024M0 512H1024M0 640H1024M0 768H1024"/>
+  <path d="M0 0V768M128 0V768M256 0V768M384 0V768M512 0V768M640 0V768M768 0V768M896 0V768M1024 0V768"/>
+</g>
+<!-- Bunny frames: row 0 idle, row 1 walk, row 2 attack, row 3 hit/death -->
+<g font-family="sans-serif" font-size="11" fill="#eee">
+  <text x="8" y="18">BUNNY_IDLE_0</text><text x="136" y="18">BUNNY_IDLE_1</text>
+  <text x="264" y="18">BUNNY_IDLE_2</text><text x="392" y="18">BUNNY_IDLE_3</text>
+  <text x="520" y="18">BUNNY_IDLE_4</text><text x="648" y="18">BUNNY_IDLE_5</text>
+</g>
+<!-- repeated stylized bunny -->
+<g fill="#e31b23" stroke="#f3f3f3" stroke-width="4">
+  <g transform="translate(25,35)"><ellipse cx="39" cy="56" rx="31" ry="39"/><ellipse cx="23" cy="18" rx="10" ry="30"/><ellipse cx="55" cy="18" rx="10" ry="30"/><circle cx="28" cy="52" r="4" fill="#171717"/><circle cx="50" cy="52" r="4" fill="#171717"/><path d="M34 66q9 7 18 0" fill="none"/></g>
+  <g transform="translate(153,38)"><ellipse cx="39" cy="56" rx="31" ry="39"/><ellipse cx="23" cy="18" rx="10" ry="30"/><ellipse cx="55" cy="18" rx="10" ry="30"/><circle cx="28" cy="52" r="4" fill="#171717"/><circle cx="50" cy="52" r="4" fill="#171717"/><path d="M34 66q9 7 18 0" fill="none"/></g>
+  <g transform="translate(281,35)"><ellipse cx="39" cy="56" rx="31" ry="39"/><ellipse cx="23" cy="18" rx="10" ry="30"/><ellipse cx="55" cy="18" rx="10" ry="30"/><circle cx="28" cy="52" r="4" fill="#171717"/><circle cx="50" cy="52" r="4" fill="#171717"/><path d="M34 66q9 7 18 0" fill="none"/></g>
+  <g transform="translate(409,38)"><ellipse cx="39" cy="56" rx="31" ry="39"/><ellipse cx="23" cy="18" rx="10" ry="30"/><ellipse cx="55" cy="18" rx="10" ry="30"/><circle cx="28" cy="52" r="4" fill="#171717"/><circle cx="50" cy="52" r="4" fill="#171717"/><path d="M34 66q9 7 18 0" fill="none"/></g>
+  <g transform="translate(537,35)"><ellipse cx="39" cy="56" rx="31" ry="39"/><ellipse cx="23" cy="18" rx="10" ry="30"/><ellipse cx="55" cy="18" rx="10" ry="30"/><circle cx="28" cy="52" r="4" fill="#171717"/><circle cx="50" cy="52" r="4" fill="#171717"/><path d="M34 66q9 7 18 0" fill="none"/></g>
+  <g transform="translate(665,38)"><ellipse cx="39" cy="56" rx="31" ry="39"/><ellipse cx="23" cy="18" rx="10" ry="30"/><ellipse cx="55" cy="18" rx="10" ry="30"/><circle cx="28" cy="52" r="4" fill="#171717"/><circle cx="50" cy="52" r="4" fill="#171717"/><path d="M34 66q9 7 18 0" fill="none"/></g>
+</g>
+<!-- other demo rows: items, weapons, skills, environment -->
+<g font-family="sans-serif" fill="#fff" font-size="12">
+ <text x="8" y="150">W17_IRON_PIPE</text><text x="136" y="150">W21_SIGNAL_BATON</text>
+ <text x="264" y="150">W31_RED_LANTERN</text><text x="392" y="150">W44_WHISTLE</text>
+ <text x="520" y="150">S07_SIGNAL_BURST</text><text x="648" y="150">S12_SHADOW_DASH</text>
+ <text x="776" y="150">S31_NETWORK_JAM</text>
+</g>
+<g stroke="#eee" stroke-width="6" fill="none">
+ <path d="M25 210l75-55"/><path d="M153 210l75-55"/><path d="M281 210l45-75"/><path d="M409 210h65"/>
+</g>
+<g fill="#e31b23" stroke="#eee" stroke-width="3">
+ <circle cx="575" cy="185" r="25"/><path d="M575 155v60M545 185h60"/>
+ <path d="M675 210l45-60 45 60z"/>
+ <circle cx="930" cy="185" r="27"/><path d="M910 185h40M930 165v40"/>
+</g>
+<g font-family="sans-serif" font-size="12" fill="#fff">
+ <text x="8" y="278">BG_BERMUDA_01</text><text x="264" y="278">BG_BERMUDA_02</text>
+ <text x="520" y="278">NPC_NETWORK_01</text><text x="776" y="278">NPC_NETWORK_02</text>
+</g>
+<g fill="#252525" stroke="#e31b23" stroke-width="5">
+ <rect x="15" y="310" width="225" height="90" rx="8"/><rect x="270" y="310" width="225" height="90" rx="8"/>
+ <rect x="525" y="310" width="225" height="90" rx="8"/><rect x="780" y="310" width="225" height="90" rx="8"/>
+</g>
+<g font-family="sans-serif" fill="#fff" font-size="13">
+ <text x="34" y="355">RAIN • NEON • HARBOR</text><text x="289" y="355">ALLEY • STICKERS • FOG</text>
+ <text x="544" y="355">MASKED ENFORCER</text><text x="799" y="355">CORPORATE HUNTER</text>
+</g>
+<!-- metadata legend -->
+<text x="16" y="470" font-family="monospace" font-size="18" fill="#e31b23">ATLAS: RED_BUNNY_BERMUDA_01</text>
+<text x="16" y="500" font-family="monospace" font-size="14" fill="#ddd">GRID 8×6 • CELL 128×128 • PIVOT BOTTOM-CENTER • EDITABLE SVG SOURCE</text>
+</svg>

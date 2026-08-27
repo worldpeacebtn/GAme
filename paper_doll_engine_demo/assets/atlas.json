@@ -1,0 +1,97 @@
+{
+  "atlas": "RED_BUNNY_BERMUDA_01",
+  "image": "red_bunny_atlas.svg",
+  "cell": [
+    128,
+    128
+  ],
+  "grid": [
+    8,
+    6
+  ],
+  "pivot": [
+    64,
+    116
+  ],
+  "assets": {
+    "C01": {
+      "type": "character",
+      "name": "Red Bunny"
+    },
+    "W17": {
+      "type": "weapon",
+      "name": "Iron Pipe"
+    },
+    "W21": {
+      "type": "weapon",
+      "name": "Signal Baton"
+    },
+    "W31": {
+      "type": "item",
+      "name": "Red Lantern"
+    },
+    "W44": {
+      "type": "item",
+      "name": "Whistle"
+    },
+    "S07": {
+      "type": "skill",
+      "name": "Signal Burst"
+    },
+    "S12": {
+      "type": "skill",
+      "name": "Shadow Dash"
+    },
+    "S31": {
+      "type": "skill",
+      "name": "Network Jam"
+    },
+    "BG01": {
+      "type": "background",
+      "name": "Bermuda Harbor"
+    },
+    "N01": {
+      "type": "npc",
+      "name": "Network Enforcer"
+    }
+  },
+  "animations": {
+    "C01": {
+      "idle": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "walk": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "attack": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "hit": [
+        24,
+        25,
+        26
+      ],
+      "death": [
+        27,
+        28,
+        29,
+        30
+      ]
+    }
+  }
+}
