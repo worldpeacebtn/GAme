@@ -1,0 +1,56 @@
+{
+  "format": "X42-OneSheet-Playtest/0.4",
+  "masterSheet": "assets/one_sheet.png",
+  "stages": [
+    "assets/stage_1.jpg",
+    "assets/stage_2.jpg",
+    "assets/stage_3.jpg",
+    "assets/stage_4.jpg",
+    "assets/stage_5.jpg",
+    "assets/stage_6.jpg"
+  ],
+  "player": {
+    "id": "C01",
+    "name": "Red Bunny",
+    "frames": [
+      "assets/bunny_idle_0.png",
+      "assets/bunny_idle_1.png",
+      "assets/bunny_idle_2.png"
+    ],
+    "attack": "A21",
+    "skill": "S31"
+  },
+  "enemy": {
+    "id": "E01",
+    "name": "NETWORK Hunter",
+    "sprite": "assets/enemy_network.png",
+    "hp": 70
+  },
+  "npc": {
+    "id": "N01",
+    "name": "Mika",
+    "sprite": "assets/npc_informant.png"
+  },
+  "otherAssets": {
+    "vehicle": "assets/vehicle_bike.png",
+    "item": "assets/item_drive.png",
+    "object": "assets/object_terminal.png",
+    "weapon": "assets/weapon_baton.png",
+    "effect": "assets/effect_slash.png"
+  },
+  "sections": [
+    "characters",
+    "enemies",
+    "equipment",
+    "accessories",
+    "effects",
+    "stages",
+    "objects",
+    "elements",
+    "ui",
+    "tiles",
+    "npcs",
+    "vehicles",
+    "items"
+  ]
+}
