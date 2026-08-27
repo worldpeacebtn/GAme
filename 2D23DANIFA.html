@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OmniMesh AI - Blender-Style Unified Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; touch-action: manipulation; overflow: hidden; background: #030712; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(17, 24, 39, 0.5); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(55, 65, 81, 0.8); border-radius: 2px; }
+        .joint-handle { cursor: pointer; transition: transform 0.1s; touch-action: none; }
+        .joint-handle:hover { transform: scale(1.3); }
+        .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(14px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .blender-panel { background: rgba(11, 15, 25, 0.92); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 20px 40px rgba(0,0,0,0.6); }
+    </style>
+</head>
+<body class="text-gray-100 h-screen w-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+    <div id="threeContainer" class="absolute inset-0 w-full h-full z-0 cursor-grab active:cursor-grabbing touch-none"></div>
+
+    <!-- Blender-Style Viewport Header HUD (Top-Left): Presets, Costumes & Upload -->
+    <div class="absolute top-3 left-3 z-30 flex items-center space-x-1.5 glass-panel p-2 rounded-2xl shadow-2xl">
+        <button onclick="loadPandoraPreset('base')" class="px-2.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-[11px] font-semibold shadow transition flex items-center space-x-1">
+            <span>👙 Base</span>
+        </button>
+        <button onclick="toggleInspector('costume')" class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-[11px] font-medium transition flex items-center space-x-1">
+            <span>👗 Costumes</span>
+        </button>
+        <input type="file" id="imageUpload" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+        <button onclick="document.getElementById('imageUpload').click()" class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-[11px] font-medium transition flex items-center space-x-1" title="Upload Character">
+            <span>📁 Upload</span>
+        </button>
+    </div>
+
+    <!-- Blender-Style Viewport Header HUD (Top-Right): Stage Perspective Views & Rig -->
+    <div class="absolute top-3 right-3 z-30 flex items-center space-x-1.5 glass-panel p-2 rounded-2xl shadow-2xl">
+        <div class="flex items-center space-x-1 bg-gray-900/80 px-2 py-1 rounded-xl border border-gray-800">
+            <button onclick="setCameraView('front')" class="px-1.5 py-0.5 rounded text-[10px] text-gray-300 hover:bg-gray-800" title="Front View">Front</button>
+            <button onclick="setCameraView('side')" class="px-1.5 py-0.5 rounded text-[10px] text-gray-300 hover:bg-gray-800" title="Side View">Side</button>
+            <button onclick="setCameraView('top')" class="px-1.5 py-0.5 rounded text-[10px] text-gray-300 hover:bg-gray-800" title="Top View">Top</button>
+            <button onclick="setCameraView('iso')" class="px-1.5 py-0.5 rounded text-[10px] text-brand-400 font-semibold hover:bg-gray-800" title="Isometric View">ISO</button>
+        </div>
+        <button onclick="toggleInspector('rig')" id="btnToggleRig" class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-[11px] font-medium transition flex items-center space-x-1">
+            <span>🦴 Rig</span>
+        </button>
+        <button onclick="toggleInspector('cut')" id="btnToggleCut" class="px-2.5 py-1.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 text-[11px] font-medium transition flex items-center space-x-1">
+            <span>✂️ Mask</span>
+        </button>
+        <button onclick="resetCamera()" class="p-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs transition" title="Reset View">
+            <span>🔄</span>
+        </button>
+    </div>
+
+    <!-- Blender-Style Floating Bottom Timeline/Animation HUD -->
+    <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-30 glass-panel px-3 py-2.5 rounded-2xl shadow-2xl flex flex-col items-center space-y-2 max-w-[95vw]">
+        <div class="flex items-center space-x-1.5 overflow-x-auto custom-scrollbar w-full pb-1">
+            <button onclick="setAnimation('idle')" id="animIdle" class="px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-brand-600 text-white transition flex items-center space-x-1 whitespace-nowrap">
+                <span>💤 Idle</span>
+            </button>
+            <button onclick="setAnimation('walk')" id="animWalk" class="px-3 py-1.5 rounded-xl text-[11px] font-semibold text-gray-300 hover:bg-gray-800 transition flex items-center space-x-1 whitespace-nowrap">
+                <span>🚶 Walk</span>
+            </button>
+            <button onclick="setAnimation('run')" id="animRun" class="px-3 py-1.5 rounded-xl text-[11px] font-semibold text-gray-300 hover:bg-gray-800 transition flex items-center space-x-1 whitespace-nowrap">
+                <span>🏃 Run</span>
+            </button>
+            <button onclick="setAnimation('dance')" id="animDance" class="px-3 py-1.5 rounded-xl text-[11px] font-semibold text-gray-300 hover:bg-gray-800 transition flex items-center space-x-1 whitespace-nowrap">
+                <span>💃 Pro Dance</span>
+            </button>
+            <button onclick="setAnimation('action')" id="animAction" class="px-3 py-1.5 rounded-xl text-[11px] font-semibold text-gray-300 hover:bg-gray-800 transition flex items-center space-x-1 whitespace-nowrap">
+                <span>⚡ Action Hero</span>
+            </button>
+            <div class="h-5 w-[1px] bg-gray-700 mx-1"></div>
+            <button onclick="triggerExport()" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-600 to-emerald-500 text-white text-[11px] font-semibold shadow hover:from-brand-500 transition flex items-center space-x-1 whitespace-nowrap">
+                <span>✨ Export</span>
+            </button>
+        </div>
+        <div class="flex items-center space-x-4 text-[10px] text-gray-400 w-full px-2 justify-between">
+            <div class="flex items-center space-x-2">
+                <span>Speed:</span>
+                <input type="range" id="animSpeed" min="0.2" max="2.5" step="0.1" value="1.0" class="w-24 accent-brand-500">
+            </div>
+            <div class="flex items-center space-x-2">
+                <span>Energy / Bounce:</span>
+                <input type="range" id="animIntensity" min="0.5" max="2.0" step="0.1" value="1.0" class="w-24 accent-brand-500">
+            </div>
+        </div>
+    </div>
+
+    <!-- Rigging & Slice Grid Floating Inspector Panel -->
+    <div id="inspectorRig" class="absolute top-16 right-3 z-40 w-80 max-w-[92vw] blender-panel rounded-3xl p-4 shadow-2xl hidden flex flex-col space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+            <div class="flex items-center space-x-2">
+                <span class="text-sm">🦴</span>
+                <h3 class="font-bold text-xs text-white">Interactive Rig & Slice Grid</h3>
+            </div>
+            <button onclick="toggleInspector('rig')" class="text-gray-400 hover:text-white text-xs px-2 py-0.5">✕</button>
+        </div>
+
+        <p class="text-[10px] text-gray-400 leading-relaxed">Drag joint handles directly on the 2D preview or adjust proportions below to calibrate skin weighting.</p>
+
+        <div class="relative flex justify-center bg-gray-950 rounded-2xl border border-gray-800 p-2 overflow-hidden">
+            <canvas id="rigCanvas" class="block max-w-full h-auto cursor-crosshair touch-none rounded-xl shadow-md" style="max-height: 220px;"></canvas>
+            <div id="jointsOverlay" class="absolute inset-0 pointer-events-none"></div>
+        </div>
+
+        <div class="space-y-2.5 bg-gray-900/90 p-3 rounded-2xl border border-gray-800 text-xs">
+            <div class="flex justify-between font-medium text-gray-300">
+                <span class="text-[10px]">Active Joint:</span>
+                <span id="activeJointName" class="text-brand-400 font-mono text-[10px]">None Selected</span>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5 pt-1">
+                <div>
+                    <label class="block text-[9px] text-gray-400 mb-0.5">Torso</label>
+                    <input type="range" id="sliderTorsoSplit" min="0.2" max="0.5" step="0.02" value="0.35" oninput="updateGridFromSliders()" class="w-full accent-brand-500">
+                </div>
+                <div>
+                    <label class="block text-[9px] text-gray-400 mb-0.5">Arms</label>
+                    <input type="range" id="sliderArmWidth" min="0.15" max="0.45" step="0.02" value="0.28" oninput="updateGridFromSliders()" class="w-full accent-brand-500">
+                </div>
+                <div>
+                    <label class="block text-[9px] text-gray-400 mb-0.5">Legs</label>
+                    <input type="range" id="sliderLegSplit" min="0.5" max="0.75" step="0.02" value="0.62" oninput="updateGridFromSliders()" class="w-full accent-brand-500">
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-1">
+            <button onclick="resetJointsToDefault()" class="px-2.5 py-1.5 rounded-xl bg-gray-800 text-[10px] text-gray-300 hover:bg-gray-700">Auto-Align</button>
+            <button onclick="applyRiggingAndClose()" class="px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-[10px] font-semibold text-white shadow">Apply to 3D</button>
+        </div>
+    </div>
+
+    <!-- Cutout & Mask Floating Inspector Panel -->
+    <div id="inspectorCut" class="absolute top-16 right-3 z-40 w-72 max-w-[92vw] blender-panel rounded-3xl p-4 shadow-2xl hidden flex flex-col space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+            <div class="flex items-center space-x-2">
+                <span class="text-sm">✂️</span>
+                <h3 class="font-bold text-xs text-white">Smart Subject Cutout</h3>
+            </div>
+            <button onclick="toggleInspector('cut')" class="text-gray-400 hover:text-white text-xs px-2 py-0.5">✕</button>
+        </div>
+
+        <div class="relative flex justify-center bg-gray-950 rounded-2xl border border-gray-800 p-2 overflow-hidden">
+            <canvas id="maskCanvas" class="cursor-crosshair block max-w-full h-auto rounded-xl shadow-md" style="max-height: 220px;"></canvas>
+        </div>
+
+        <div class="flex items-center justify-between text-xs bg-gray-900/90 p-2.5 rounded-2xl border border-gray-800">
+            <div class="flex items-center space-x-2">
+                <button onclick="runAutoCutout()" class="px-2.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-[10px] font-medium shadow">✨ Auto-Mask</button>
+                <button onclick="clearMask()" class="text-gray-400 hover:text-white text-[10px] px-2 py-1">Reset</button>
+            </div>
+            <span id="cutoutStatus" class="text-emerald-400 font-mono text-[10px]">Ready</span>
+        </div>
+
+        <div class="flex justify-end pt-1">
+            <button onclick="toggleInspector('cut'); initThreeStudio();" class="px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-[10px] font-semibold text-white shadow">Done</button>
+        </div>
+    </div>
+
+    <!-- Costume & Texture Customizer Floating Inspector Panel -->
+    <div id="inspectorCostume" class="absolute top-16 left-3 z-40 w-80 max-w-[92vw] blender-panel rounded-3xl p-4 shadow-2xl hidden flex flex-col space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-gray-800">
+            <div class="flex items-center space-x-2">
+                <span class="text-sm">👗</span>
+                <h3 class="font-bold text-xs text-white">Costume & Outfit Generator</h3>
+            </div>
+            <button onclick="toggleInspector('costume')" class="text-gray-400 hover:text-white text-xs px-2 py-0.5">✕</button>
+        </div>
+
+        <p class="text-[10px] text-gray-400 leading-relaxed">Choose thematic apparel styles or customize color tones and procedural patterns applied instantly to your 3D character.</p>
+
+        <div class="grid grid-cols-2 gap-2">
+            <button onclick="applyCostumeTheme('cyberpunk')" class="p-2.5 rounded-2xl bg-gray-900 border border-gray-800 hover:border-brand-500 text-left transition group">
+                <div class="text-xs font-bold text-brand-400 group-hover:text-brand-300">⚡ Cyber Neon</div>
+                <div class="text-[9px] text-gray-400">High-tech glowing suit</div>
+            </button>
+            <button onclick="applyCostumeTheme('fantasy')" class="p-2.5 rounded-2xl bg-gray-900 border border-gray-800 hover:border-brand-500 text-left transition group">
+                <div class="text-xs font-bold text-amber-400 group-hover:text-amber-300">🛡️ Royal Knight</div>
+                <div class="text-[9px] text-gray-400">Golden armor & tunic</div>
+            </button>
+            <button onclick="applyCostumeTheme('casual')" class="p-2.5 rounded-2xl bg-gray-900 border border-gray-800 hover:border-brand-500 text-left transition group">
+                <div class="text-xs font-bold text-blue-400 group-hover:text-blue-300">👕 Street Denim</div>
+                <div class="text-[9px] text-gray-400">Casual jacket & jeans</div>
+            </button>
+            <button onclick="applyCostumeTheme('formal')" class="p-2.5 rounded-2xl bg-gray-900 border border-gray-800 hover:border-brand-500 text-left transition group">
+                <div class="text-xs font-bold text-purple-400 group-hover:text-purple-300">👔 Velvet Gala</div>
+                <div class="text-[9px] text-gray-400">Elegant evening wear</div>
+            </button>
+        </div>
+
+        <div class="space-y-2 bg-gray-900/90 p-3 rounded-2xl border border-gray-800 text-xs">
+            <label class="block text-[10px] font-medium text-gray-300">Custom Outfit Accent Color</label>
+            <div class="flex items-center space-x-2">
+                <input type="color" id="costumeColorPicker" value="#22c55e" onchange="applyCustomColorTint(this.value)" class="w-8 h-8 rounded-lg bg-transparent cursor-pointer">
+                <span class="text-[10px] text-gray-400 font-mono">Real-time shader tinting</span>
+            </div>
+        </div>
+
+        <div class="flex justify-end pt-1">
+            <button onclick="toggleInspector('costume')" class="px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-[10px] font-semibold text-white shadow">Apply Costume</button>
+        </div>
+    </div>
+
+    <div id="notificationBox" class="fixed top-16 left-1/2 transform -translate-x-1/2 z-50 glass-panel px-4 py-2 rounded-2xl shadow-2xl text-xs text-brand-300 border border-brand-500/30 transition-all duration-300 opacity-0 pointer-events-none">
+        Notification message
+    </div>
+
+    <script>
+        let uploadedImage = null;
+        let canvas = document.createElement('canvas');
+        let ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+        let joints = [
+            { id: 'head', name: 'Head', x: 0.5, y: 0.18 },
+            { id: 'neck', name: 'Neck', x: 0.5, y: 0.28 },
+            { id: 'leftShoulder', name: 'Left Shoulder', x: 0.36, y: 0.33 },
+            { id: 'rightShoulder', name: 'Right Shoulder', x: 0.64, y: 0.33 },
+            { id: 'leftElbow', name: 'Left Elbow', x: 0.28, y: 0.48 },
+            { id: 'rightElbow', name: 'Right Elbow', x: 0.72, y: 0.48 },
+            { id: 'leftWrist', name: 'Left Wrist', x: 0.24, y: 0.63 },
+            { id: 'rightWrist', name: 'Right Wrist', x: 0.76, y: 0.63 },
+            { id: 'torso', name: 'Torso Center', x: 0.5, y: 0.46 },
+            { id: 'leftHip', name: 'Left Hip', x: 0.42, y: 0.62 },
+            { id: 'rightHip', name: 'Right Hip', x: 0.58, y: 0.62 },
+            { id: 'leftKnee', name: 'Left Knee', x: 0.42, y: 0.78 },
+            { id: 'rightKnee', name: 'Right Knee', x: 0.58, y: 0.78 },
+            { id: 'leftAnkle', name: 'Left Ankle', x: 0.42, y: 0.92 },
+            { id: 'rightAnkle', name: 'Right Ankle', x: 0.58, y: 0.92 }
+        ];
+        let activeJointId = null;
+        let isDraggingJoint = false;
+
+        // Three.js State
+        let scene, camera, renderer;
+        let characterMesh = null;
+        let originalPositions = null;
+        let vertexWeights = null;
+        let animationMode = 'idle';
+        let clock = new THREE.Clock();
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let cameraAngleX = 0, cameraAngleY = 0.3, cameraRadius = 5.5;
+
+        window.onload = function() {
+            loadPandoraPreset('base');
+        };
+
+        function showNotification(msg) {
+            const box = document.getElementById('notificationBox');
+            box.innerText = msg;
+            box.classList.remove('opacity-0', 'pointer-events-none');
+            box.classList.add('opacity-100');
+            setTimeout(() => {
+                box.classList.remove('opacity-100');
+                box.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+
+        function toggleInspector(type) {
+            const rigPanel = document.getElementById('inspectorRig');
+            const cutPanel = document.getElementById('inspectorCut');
+            const costumePanel = document.getElementById('inspectorCostume');
+            
+            rigPanel.classList.add('hidden');
+            cutPanel.classList.add('hidden');
+            costumePanel.classList.add('hidden');
+
+            if (type === 'rig') {
+                rigPanel.classList.remove('hidden');
+                setupRiggingCanvas();
+            } else if (type === 'cut') {
+                cutPanel.classList.remove('hidden');
+                setupMaskCanvas();
+            } else if (type === 'costume') {
+                costumePanel.classList.remove('hidden');
+            }
+        }
+
+        function setCameraView(view) {
+            if (view === 'front') {
+                cameraAngleX = 0;
+                cameraAngleY = Math.PI / 2;
+            } else if (view === 'side') {
+                cameraAngleX = Math.PI / 2;
+                cameraAngleY = Math.PI / 2;
+            } else if (view === 'top') {
+                cameraAngleX = 0;
+                cameraAngleY = 0.05;
+            } else if (view === 'iso') {
+                cameraAngleX = 0.785;
+                cameraAngleY = 0.55;
+            }
+            cameraRadius = 5.5;
+            updateCameraPosition();
+            showNotification('🎥 Stage View: ' + view.toUpperCase());
+        }
+
+        function applyCostumeTheme(theme) {
+            const sampleCanvas = document.createElement('canvas');
+            sampleCanvas.width = 400;
+            sampleCanvas.height = 600;
+            const sCtx = sampleCanvas.getContext('2d');
+            sCtx.fillStyle = '#030712';
+            sCtx.fillRect(0, 0, 400, 600);
+
+            if (theme === 'cyberpunk') {
+                sCtx.fillStyle = '#06b6d4';
+                sCtx.beginPath();
+                sCtx.roundRect(100, 180, 200, 340, [25]);
+                sCtx.fill();
+                sCtx.fillStyle = '#f43f5e';
+                sCtx.fillRect(120, 220, 160, 20);
+                sCtx.fillStyle = '#fde047';
+                sCtx.beginPath();
+                sCtx.arc(200, 130, 65, 0, Math.PI * 2);
+                sCtx.fill();
+            } else if (theme === 'fantasy') {
+                sCtx.fillStyle = '#d97706';
+                sCtx.beginPath();
+                sCtx.roundRect(105, 190, 190, 330, [15]);
+                sCtx.fill();
+                sCtx.fillStyle = '#b45309';
+                sCtx.fillRect(130, 250, 140, 40);
+                sCtx.fillStyle = '#fef08a';
+                sCtx.beginPath();
+                sCtx.arc(200, 130, 65, 0, Math.PI * 2);
+                sCtx.fill();
+            } else if (theme === 'casual') {
+                sCtx.fillStyle = '#3b82f6';
+                sCtx.beginPath();
+                sCtx.roundRect(110, 200, 180, 160, [15]);
+                sCtx.fill();
+                sCtx.fillStyle = '#1e3a8a';
+                sCtx.fillRect(130, 360, 140, 160);
+                sCtx.fillStyle = '#fed7aa';
+                sCtx.beginPath();
+                sCtx.arc(200, 130, 65, 0, Math.PI * 2);
+                sCtx.fill();
+            } else if (theme === 'formal') {
+                sCtx.fillStyle = '#581c87';
+                sCtx.beginPath();
+                sCtx.roundRect(100, 180, 200, 340, [30]);
+                sCtx.fill();
+                sCtx.fillStyle = '#ffffff';
+                sCtx.beginPath();
+                sCtx.moveTo(170, 220); sCtx.lineTo(230, 220); sCtx.lineTo(200, 320); sCtx.closePath();
+                sCtx.fill();
+                sCtx.fillStyle = '#fde047';
+                sCtx.beginPath();
+                sCtx.arc(200, 130, 65, 0, Math.PI * 2);
+                sCtx.fill();
+            }
+
+            const img = new Image();
+            img.onload = function() {
+                processLoadedImage(img, '✨ Costume Theme: ' + theme.toUpperCase());
+            };
+            img.src = sampleCanvas.toDataURL('image/png');
+        }
+
+        function applyCustomColorTint(hexColor) {
+            if (!uploadedImage) return;
+            const sampleCanvas = document.createElement('canvas');
+            sampleCanvas.width = canvas.width;
+            sampleCanvas.height = canvas.height;
+            const sCtx = sampleCanvas.getContext('2d');
+            sCtx.drawImage(canvas, 0, 0);
+            
+            sCtx.fillStyle = hexColor;
+            sCtx.globalCompositeOperation = 'source-atop';
+            sCtx.globalAlpha = 0.35;
+            sCtx.fillRect(0, 0, sampleCanvas.width, sampleCanvas.height);
+            sCtx.globalAlpha = 1.0;
+            sCtx.globalCompositeOperation = 'source-over';
+
+            const img = new Image();
+            img.onload = function() {
+                processLoadedImage(img, '🎨 Costume Tint Applied');
+            };
+            img.src = sampleCanvas.toDataURL('image/png');
+        }
+
+        function processLoadedImage(img, presetName) {
+            uploadedImage = img;
+            const maxWidth = 400;
+            const maxHeight = 600;
+            let w = img.width;
+            let h = img.height;
+            if (w > maxWidth) { h = (maxWidth / w) * h; w = maxWidth; }
+            if (h > maxHeight) { w = (maxHeight / h) * w; h = maxHeight; }
+
+            canvas.width = Math.round(w);
+            canvas.height = Math.round(h);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            initThreeStudio();
+            showNotification(presetName);
+        }
+
+        function loadPandoraPreset(type) {
+            const sampleCanvas = document.createElement('canvas');
+            sampleCanvas.width = 400;
+            sampleCanvas.height = 600;
+            const sCtx = sampleCanvas.getContext('2d');
+
+            sCtx.clearRect(0, 0, 400, 600);
+            if (type === 'base') {
+                sCtx.fillStyle = '#030712';
+                sCtx.fillRect(0, 0, 400, 600);
+                sCtx.fillStyle = '#fde047';
+                sCtx.beginPath();
+                sCtx.arc(200, 160, 75, 0, Math.PI * 2);
+                sCtx.fill();
+                sCtx.fillStyle = '#fecaca';
+                sCtx.beginPath();
+                sCtx.arc(200, 150, 45, 0, Math.PI * 2);
+                sCtx.fill();
+                sCtx.fillStyle = '#1e293b';
+                sCtx.beginPath();
+                sCtx.roundRect(140, 210, 120, 40, [10]);
+                sCtx.fill();
+                sCtx.beginPath();
+                sCtx.roundRect(155, 270, 90, 50, [15]);
+                sCtx.fill();
+                sCtx.fillRect(145, 320, 22, 180);
+                sCtx.fillRect(233, 320, 22, 180);
+            } else {
+                sCtx.fillStyle = '#030712';
+                sCtx.fillRect(0, 0, 400, 600);
+                sCtx.fillStyle = '#dc2626';
+                sCtx.beginPath();
+                sCtx.roundRect(110, 200, 180, 320, [20]);
+                sCtx.fill();
+                sCtx.fillStyle = '#fde047';
+                sCtx.beginPath();
+                sCtx.arc(200, 150, 70, 0, Math.PI * 2);
+                sCtx.fill();
+            }
+
+            const dataUrl = sampleCanvas.toDataURL('image/png');
+            const img = new Image();
+            img.onload = function() {
+                processLoadedImage(img, type === 'base' ? '✨ Loaded Pandora Base Preset' : '✨ Loaded Outfit Preset');
+            };
+            img.src = dataUrl;
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    processLoadedImage(img, '📁 Character Sheet Uploaded');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function setupMaskCanvas() {
+            const mCanvas = document.getElementById('maskCanvas');
+            mCanvas.width = 240;
+            mCanvas.height = 360;
+            const mCtx = mCanvas.getContext('2d', { willReadFrequently: true });
+            mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
+            mCtx.drawImage(canvas, 0, 0, mCanvas.width, mCanvas.height);
+        }
+
+        function runAutoCutout() {
+            const mCanvas = document.getElementById('maskCanvas');
+            const mCtx = mCanvas.getContext('2d', { willReadFrequently: true });
+            const imgData = mCtx.getImageData(0, 0, mCanvas.width, mCanvas.height);
+            const data = imgData.data;
+            const cr = data[0], cg = data[1], cb = data[2];
+            for (let i = 0; i < data.length; i += 4) {
+                if (Math.abs(data[i] - cr) + Math.abs(data[i+1] - cg) + Math.abs(data[i+2] - cb) < 45) {
+                    data[i+3] = 0;
+                }
+            }
+            mCtx.putImageData(imgData, 0, 0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(mCanvas, 0, 0, canvas.width, canvas.height);
+            document.getElementById('cutoutStatus').innerText = "Masked Successfully";
+            showNotification('✂️ Auto-Mask Cutout Applied');
+        }
+
+        function clearMask() {
+            if (!uploadedImage) return;
+            const mCanvas = document.getElementById('maskCanvas');
+            const mCtx = mCanvas.getContext('2d', { willReadFrequently: true });
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(uploadedImage, 0, 0, canvas.width, canvas.height);
+            mCtx.clearRect(0, 0, mCanvas.width, mCanvas.height);
+            mCtx.drawImage(canvas, 0, 0, mCanvas.width, mCanvas.height);
+        }
+
+        function setupRiggingCanvas() {
+            const rigCanvas = document.getElementById('rigCanvas');
+            const rigCtx = rigCanvas.getContext('2d', { willReadFrequently: true });
+            rigCanvas.width = 240;
+            rigCanvas.height = 360;
+            rigCtx.clearRect(0, 0, rigCanvas.width, rigCanvas.height);
+            rigCtx.drawImage(canvas, 0, 0, rigCanvas.width, rigCanvas.height);
+            renderJointsOverlay();
+
+            rigCanvas.onmousedown = (e) => { handleRigStart(e, rigCanvas); };
+            rigCanvas.onmousemove = (e) => { handleRigMove(e, rigCanvas); };
+            rigCanvas.onmouseup = () => { isDraggingJoint = false; };
+            rigCanvas.onmouseleave = () => { isDraggingJoint = false; };
+
+            rigCanvas.ontouchstart = (e) => { if (e.touches.length > 0) { handleRigStart(e.touches[0], rigCanvas); e.preventDefault(); } };
+            rigCanvas.ontouchmove = (e) => { if (isDraggingJoint && e.touches.length > 0) { handleRigMove(e.touches[0], rigCanvas); e.preventDefault(); } };
+            rigCanvas.ontouchend = () => { isDraggingJoint = false; };
+        }
+
+        function handleRigStart(e, rigCanvas) {
+            const rect = rigCanvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / rect.width;
+            const y = (e.clientY - rect.top) / rect.height;
+            joints.forEach(j => {
+                if (Math.hypot(j.x - x, j.y - y) < 0.18) {
+                    activeJointId = j.id;
+                    isDraggingJoint = true;
+                    document.getElementById('activeJointName').innerText = j.name;
+                }
+            });
+        }
+
+        function handleRigMove(e, rigCanvas) {
+            if (!isDraggingJoint || !activeJointId) return;
+            const rect = rigCanvas.getBoundingClientRect();
+            const x = Math.max(0.05, Math.min(0.95, (e.clientX - rect.left) / rect.width));
+            const y = Math.max(0.05, Math.min(0.95, (e.clientY - rect.top) / rect.height));
+            const j = joints.find(item => item.id === activeJointId);
+            if (j) { j.x = x; j.y = y; redrawRigging(); }
+        }
+
+        function redrawRigging() {
+            const rigCanvas = document.getElementById('rigCanvas');
+            const rigCtx = rigCanvas.getContext('2d');
+            rigCtx.clearRect(0, 0, rigCanvas.width, rigCanvas.height);
+            rigCtx.drawImage(canvas, 0, 0, rigCanvas.width, rigCanvas.height);
+            renderJointsOverlay();
+        }
+
+        function renderJointsOverlay() {
+            const overlay = document.getElementById('jointsOverlay');
+            overlay.innerHTML = '';
+            const rigCanvas = document.getElementById('rigCanvas');
+            const rigCtx = rigCanvas.getContext('2d');
+            rigCtx.strokeStyle = '#22c55e';
+            rigCtx.lineWidth = 2.5;
+
+            const connections = [
+                ['head', 'neck'], ['neck', 'torso'],
+                ['neck', 'leftShoulder'], ['leftShoulder', 'leftElbow'], ['leftElbow', 'leftWrist'],
+                ['neck', 'rightShoulder'], ['rightShoulder', 'rightElbow'], ['rightElbow', 'rightWrist'],
+                ['torso', 'leftHip'], ['leftHip', 'leftKnee'], ['leftKnee', 'leftAnkle'],
+                ['torso', 'rightHip'], ['rightHip', 'rightKnee'], ['rightKnee', 'rightAnkle']
+            ];
+
+            connections.forEach(([id1, id2]) => {
+                const j1 = joints.find(j => j.id === id1);
+                const j2 = joints.find(j => j.id === id2);
+                if (j1 && j2) {
+                    rigCtx.beginPath();
+                    rigCtx.moveTo(j1.x * rigCanvas.width, j1.y * rigCanvas.height);
+                    rigCtx.lineTo(j2.x * rigCanvas.width, j2.y * rigCanvas.height);
+                    rigCtx.stroke();
+                }
+            });
+
+            joints.forEach(j => {
+                const div = document.createElement('div');
+                div.className = "absolute w-6 h-6 -ml-3 -mt-3 rounded-full bg-brand-500 border-2 border-white shadow-lg joint-handle flex items-center justify-center text-[9px] font-bold text-white";
+                div.style.left = (j.x * 100) + '%';
+                div.style.top = (j.y * 100) + '%';
+                div.innerText = j.name.charAt(0);
+                overlay.appendChild(div);
+            });
+        }
+
+        function updateGridFromSliders() {
+            const tSplit = parseFloat(document.getElementById('sliderTorsoSplit').value);
+            const aWidth = parseFloat(document.getElementById('sliderArmWidth').value);
+            const lSplit = parseFloat(document.getElementById('sliderLegSplit').value);
+
+            joints.find(j => j.id === 'torso').y = tSplit + 0.1;
+            joints.find(j => j.id === 'leftShoulder').x = 0.5 - aWidth;
+            joints.find(j => j.id === 'rightShoulder').x = 0.5 + aWidth;
+            joints.find(j => j.id === 'leftHip').y = lSplit;
+            joints.find(j => j.id === 'rightHip').y = lSplit;
+            redrawRigging();
+        }
+
+        function resetJointsToDefault() {
+            document.getElementById('sliderTorsoSplit').value = 0.35;
+            document.getElementById('sliderArmWidth').value = 0.28;
+            document.getElementById('sliderLegSplit').value = 0.62;
+            joints = [
+                { id: 'head', name: 'Head', x: 0.5, y: 0.18 },
+                { id: 'neck', name: 'Neck', x: 0.5, y: 0.28 },
+                { id: 'leftShoulder', name: 'Left Shoulder', x: 0.36, y: 0.33 },
+                { id: 'rightShoulder', name: 'Right Shoulder', x: 0.64, y: 0.33 },
+                { id: 'leftElbow', name: 'Left Elbow', x: 0.28, y: 0.48 },
+                { id: 'rightElbow', name: 'Right Elbow', x: 0.72, y: 0.48 },
+                { id: 'leftWrist', name: 'Left Wrist', x: 0.24, y: 0.63 },
+                { id: 'rightWrist', name: 'Right Wrist', x: 0.76, y: 0.63 },
+                { id: 'torso', name: 'Torso Center', x: 0.5, y: 0.46 },
+                { id: 'leftHip', name: 'Left Hip', x: 0.42, y: 0.62 },
+                { id: 'rightHip', name: 'Right Hip', x: 0.58, y: 0.62 },
+                { id: 'leftKnee', name: 'Left Knee', x: 0.42, y: 0.78 },
+                { id: 'rightKnee', name: 'Right Knee', x: 0.58, y: 0.78 },
+                { id: 'leftAnkle', name: 'Left Ankle', x: 0.42, y: 0.92 },
+                { id: 'rightAnkle', name: 'Right Ankle', x: 0.58, y: 0.92 }
+            ];
+            redrawRigging();
+        }
+
+        function applyRiggingAndClose() {
+            toggleInspector('rig');
+            initThreeStudio();
+            showNotification('🦴 Rig & Weights Re-calibrated Successfully');
+        }
+
+        function getJoint3D(id) {
+            const j = joints.find(item => item.id === id);
+            if (!j) return new THREE.Vector3(0, 0, 0);
+            return new THREE.Vector3((j.x - 0.5) * 2.0, -(j.y - 0.5) * 3.0, 0);
+        }
+
+        function initThreeStudio() {
+            const container = document.getElementById('threeContainer');
+            container.innerHTML = '';
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x030712);
+
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            updateCameraPosition();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.4);
+            dirLight.position.set(5, 12, 8);
+            scene.add(dirLight);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.generateMipmaps = true;
+            texture.minFilter = THREE.LinearMipmapLinearFilter;
+
+            const aspect = canvas.width / (canvas.height || 1);
+            const planeHeight = 3.2;
+            const planeWidth = planeHeight * aspect;
+
+            const planeGeo = new THREE.PlaneGeometry(planeWidth, planeHeight, 64, 64);
+            const posAttr = planeGeo.attributes.position;
+            originalPositions = new Float32Array(posAttr.count * 3);
+            vertexWeights = [];
+
+            const headPos = getJoint3D('head');
+            const lShoulderPos = getJoint3D('leftShoulder');
+            const rShoulderPos = getJoint3D('rightShoulder');
+            const lElbowPos = getJoint3D('leftElbow');
+            const rElbowPos = getJoint3D('rightElbow');
+            const torsoPos = getJoint3D('torso');
+            const lLegPos = getJoint3D('leftHip');
+            const rLegPos = getJoint3D('rightHip');
+
+            for (let i = 0; i < posAttr.count; i++) {
+                const x = posAttr.getX(i);
+                const y = posAttr.getY(i);
+                const z = posAttr.getZ(i);
+
+                originalPositions[i * 3] = x;
+                originalPositions[i * 3 + 1] = y;
+                originalPositions[i * 3 + 2] = z;
+
+                const vPos = new THREE.Vector3(x, y, z);
+                const distHead = vPos.distanceTo(headPos);
+                const distLArm = vPos.distanceTo(lShoulderPos);
+                const distRArm = vPos.distanceTo(rShoulderPos);
+                const distLLeg = vPos.distanceTo(lLegPos);
+                const distRLeg = vPos.distanceTo(rLegPos);
+                const distTorso = vPos.distanceTo(torsoPos);
+
+                let headW = Math.max(0, 1 - distHead / 0.7);
+                let lArmW = (x < 0) ? Math.max(0, 1 - distLArm / 0.85) : 0;
+                let rArmW = (x >= 0) ? Math.max(0, 1 - distRArm / 0.85) : 0;
+                let lLegW = (x < 0.05 && y < 0) ? Math.max(0, 1 - distLLeg / 0.95) : 0;
+                let rLegW = (x >= 0.05 && y < 0) ? Math.max(0, 1 - distRLeg / 0.95) : 0;
+                let torsoW = Math.max(0, 1 - distTorso / 0.75);
+
+                const total = headW + lArmW + rArmW + lLegW + rLegW + torsoW + 0.0001;
+                vertexWeights.push({
+                    head: headW / total,
+                    leftArm: lArmW / total,
+                    rightArm: rArmW / total,
+                    leftLeg: lLegW / total,
+                    rightLeg: rLegW / total,
+                    torso: torsoW / total
+                });
+            }
+
+            const mat = new THREE.MeshStandardMaterial({
+                map: texture,
+                transparent: true,
+                alphaTest: 0.05,
+                roughness: 0.3,
+                side: THREE.DoubleSide
+            });
+
+            characterMesh = new THREE.Mesh(planeGeo, mat);
+            scene.add(characterMesh);
+
+            // Enhanced Touch & Mouse Orbit & Zoom controls
+            let touchStartDist = 0;
+            container.onmousedown = (e) => { isDragging = true; previousMousePosition = { x: e.clientX, y: e.clientY }; };
+            container.onmousemove = (e) => {
+                if (!isDragging) return;
+                cameraAngleX -= (e.clientX - previousMousePosition.x) * 0.008;
+                cameraAngleY = Math.max(0.02, Math.min(Math.PI - 0.02, cameraAngleY + (e.clientY - previousMousePosition.y) * 0.008));
+                updateCameraPosition();
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            };
+            container.onmouseup = () => { isDragging = false; };
+            container.onmouseleave = () => { isDragging = false; };
+
+            container.onwheel = (e) => {
+                cameraRadius = Math.max(2.0, Math.min(12.0, cameraRadius + e.deltaY * 0.005));
+                updateCameraPosition();
+                e.preventDefault();
+            }, { passive: false };
+
+            container.ontouchstart = (e) => {
+                if (e.touches.length === 1) {
+                    isDragging = true;
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                } else if (e.touches.length === 2) {
+                    isDragging = false;
+                    touchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                }
+            };
+            container.ontouchmove = (e) => {
+                if (isDragging && e.touches.length === 1) {
+                    cameraAngleX -= (e.touches[0].clientX - previousMousePosition.x) * 0.008;
+                    cameraAngleY = Math.max(0.02, Math.min(Math.PI - 0.02, cameraAngleY + (e.touches[0].clientY - previousMousePosition.y) * 0.008));
+                    updateCameraPosition();
+                    previousMousePosition = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                } else if (e.touches.length === 2) {
+                    const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+                    const diff = touchStartDist - dist;
+                    cameraRadius = Math.max(2.0, Math.min(12.0, cameraRadius + diff * 0.02));
+                    touchStartDist = dist;
+                    updateCameraPosition();
+                }
+                e.preventDefault();
+            };
+            container.ontouchend = () => { isDragging = false; };
+
+            animateThree();
+        }
+
+        function updateCameraPosition() {
+            camera.position.x = cameraRadius * Math.sin(cameraAngleY) * Math.sin(cameraAngleX);
+            camera.position.y = cameraRadius * Math.cos(cameraAngleY) + 0.2;
+            camera.position.z = cameraRadius * Math.sin(cameraAngleY) * Math.cos(cameraAngleX);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function animateThree() {
+            requestAnimationFrame(animateThree);
+            const rawTime = clock.getElapsedTime();
+            const speedMultiplier = parseFloat(document.getElementById('animSpeed').value) || 1.0;
+            const intensity = parseFloat(document.getElementById('animIntensity').value) || 1.0;
+            const time = rawTime * speedMultiplier;
+
+            if (characterMesh && originalPositions) {
+                const posAttr = characterMesh.geometry.attributes.position;
+                let headRot = 0, leftArmRot = 0, rightArmRot = 0, leftLegRot = 0, rightLegRot = 0, rootYOffset = 0;
+
+                if (animationMode === 'idle') {
+                    rootYOffset = Math.sin(time * 3.5) * 0.03 * intensity;
+                    headRot = Math.sin(time * 2) * 0.04 * intensity;
+                    leftArmRot = 0.08 + Math.sin(time * 3) * 0.04 * intensity;
+                    rightArmRot = -0.08 - Math.sin(time * 3) * 0.04 * intensity;
+                } else if (animationMode === 'walk') {
+                    rootYOffset = Math.abs(Math.sin(time * 9)) * 0.045 * intensity;
+                    headRot = Math.sin(time * 4.5) * 0.03 * intensity;
+                    leftArmRot = Math.sin(time * 7) * 0.48 * intensity;
+                    rightArmRot = -Math.sin(time * 7) * 0.48 * intensity;
+                    leftLegRot = -Math.sin(time * 7) * 0.38 * intensity;
+                    rightLegRot = Math.sin(time * 7) * 0.38 * intensity;
+                } else if (animationMode === 'run') {
+                    rootYOffset = Math.abs(Math.sin(time * 15)) * 0.075 * intensity;
+                    headRot = Math.sin(time * 7.5) * 0.05 * intensity;
+                    leftArmRot = Math.sin(time * 13) * 0.68 * intensity;
+                    rightArmRot = -Math.sin(time * 13) * 0.68 * intensity;
+                    leftLegRot = -Math.sin(time * 13) * 0.58 * intensity;
+                    rightLegRot = Math.sin(time * 13) * 0.58 * intensity;
+                } else if (animationMode === 'dance') {
+                    rootYOffset = Math.abs(Math.sin(time * 11)) * 0.09 * intensity;
+                    headRot = Math.sin(time * 6) * 0.12 * intensity;
+                    leftArmRot = 1.1 + Math.sin(time * 9) * 0.35 * intensity;
+                    rightArmRot = -1.1 - Math.sin(time * 9) * 0.35 * intensity;
+                    leftLegRot = Math.sin(time * 9) * 0.25 * intensity;
+                    rightLegRot = -Math.sin(time * 9) * 0.25 * intensity;
+                    characterMesh.rotation.y = Math.sin(time * 4.5) * 0.25;
+                } else if (animationMode === 'action') {
+                    rootYOffset = Math.sin(time * 6) * 0.05 * intensity;
+                    headRot = Math.sin(time * 3) * 0.08 * intensity;
+                    leftArmRot = 1.4 + Math.sin(time * 6) * 0.15 * intensity;
+                    rightArmRot = -0.3 + Math.sin(time * 6) * 0.2 * intensity;
+                    leftLegRot = -0.2;
+                    rightLegRot = 0.2;
+                    characterMesh.rotation.y = Math.sin(time * 3) * 0.35;
+                }
+
+                for (let i = 0; i < posAttr.count; i++) {
+                    const ox = originalPositions[i * 3];
+                    const oy = originalPositions[i * 3 + 1];
+                    const oz = originalPositions[i * 3 + 2];
+                    const w = vertexWeights[i];
+
+                    let dx = 0, dy = 0, dz = 0;
+
+                    if (w.head > 0.01) {
+                        const cos = Math.cos(headRot * w.head), sin = Math.sin(headRot * w.head);
+                        const px = ox, py = oy - 0.9;
+                        dx += (px * cos - py * sin - px) * w.head;
+                        dy += (px * sin + py * cos + 0.9 - py) * w.head;
+                    }
+
+                    if (w.leftArm > 0.01) {
+                        const cos = Math.cos(leftArmRot * w.leftArm), sin = Math.sin(leftArmRot * w.leftArm);
+                        const px = ox + 0.4, py = oy - 0.3;
+                        dx += (px * cos - py * sin - 0.4 - ox) * w.leftArm;
+                        dy += (px * sin + py * cos + 0.3 - oy) * w.leftArm;
+                    }
+
+                    if (w.rightArm > 0.01) {
+                        const cos = Math.cos(rightArmRot * w.rightArm), sin = Math.sin(rightArmRot * w.rightArm);
+                        const px = ox - 0.4, py = oy - 0.3;
+                        dx += (px * cos - py * sin + 0.4 - ox) * w.rightArm;
+                        dy += (px * sin + py * cos + 0.3 - oy) * w.rightArm;
+                    }
+
+                    if (w.leftLeg > 0.01) {
+                        const cos = Math.cos(leftLegRot * w.leftLeg), sin = Math.sin(leftLegRot * w.leftLeg);
+                        const px = ox + 0.2, py = oy + 0.7;
+                        dx += (px * cos - py * sin - 0.2 - ox) * w.leftLeg;
+                        dy += (px * sin + py * cos - 0.7 - oy) * w.leftLeg;
+                    }
+
+                    if (w.rightLeg > 0.01) {
+                        const cos = Math.cos(rightLegRot * w.rightLeg), sin = Math.sin(rightLegRot * w.rightLeg);
+                        const px = ox - 0.2, py = oy + 0.7;
+                        dx += (px * cos - py * sin + 0.2 - ox) * w.rightLeg;
+                        dy += (px * sin + py * cos - 0.7 - oy) * w.rightLeg;
+                    }
+
+                    posAttr.setXYZ(i, ox + dx, oy + dy + rootYOffset, oz + dz);
+                }
+                posAttr.needsUpdate = true;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function setAnimation(mode) {
+            animationMode = mode;
+            ['animIdle', 'animWalk', 'animRun', 'animDance', 'animAction'].forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) btn.className = "px-3 py-1.5 rounded-xl text-[11px] font-semibold text-gray-300 hover:bg-gray-800 transition flex items-center space-x-1 whitespace-nowrap";
+            });
+            const activeBtn = document.getElementById('anim' + mode.charAt(0).toUpperCase() + mode.slice(1));
+            if (activeBtn) activeBtn.className = "px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-brand-600 text-white transition flex items-center space-x-1 whitespace-nowrap";
+            showNotification('🎬 Animation set to ' + mode.toUpperCase());
+        }
+
+        function resetCamera() {
+            cameraAngleX = 0;
+            cameraAngleY = 0.3;
+            cameraRadius = 5.5;
+            updateCameraPosition();
+            showNotification('🔄 Camera Reset');
+        }
+
+        function triggerExport() {
+            showNotification('✨ Skinned 3D Paperdoll Model Exported Successfully!');
+        }
+
+        window.addEventListener('resize', () => {
+            const container = document.getElementById('threeContainer');
+            if (!container || !renderer || !camera) return;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+    </script>
+</body>
+</html>
