@@ -1,0 +1,1091 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>OmniStage Pro Sculpt 3D Studio</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#050508',
+                        panelbg: '#0e0e14',
+                        accent: '#8b5cf6'
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Three.js for 3D stage rendering -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Three.js Loaders for GLTF and OBJ -->
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <!-- PDF.js for rendering PDF documents into textures -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    </script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; touch-action: none; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { width: 3px; height: 3px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 9999px; }
+        .glass-panel { background: rgba(14, 14, 20, 0.88); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        canvas { display: block; outline: none; }
+        .popover-slide { transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+    </style>
+</head>
+<body class="bg-darkbg text-slate-100 h-screen w-screen overflow-hidden flex flex-col select-none">
+
+    <header class="flex items-center justify-between px-3 py-2.5 glass-panel z-30 border-b border-slate-800/80 shrink-0">
+        <div class="flex items-center space-x-2.5">
+            <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
+                <i class="fa-solid fa-cube text-white text-xs"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-xs tracking-tight text-white flex items-center gap-1.5">
+                    OmniStage <span class="text-[9px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-300 border border-violet-500/30">PRO SCULPT</span>
+                </h1>
+                <p class="text-[9px] text-slate-400">Interactive Vertex Deformer & Multi-Part Studio</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-1.5">
+            <button onclick="toggleVoxelGrid()" id="gridToggleBtn" class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 flex items-center gap-1.5 border border-slate-800 text-[10px] transition" title="Toggle Voxel Precision Grid">
+                <i class="fa-solid fa-border-all text-xs"></i> <span id="gridStatusText">Grid: Off</span>
+            </button>
+            <button onclick="toggleAudioVisualizer()" id="audioToggleBtn" class="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 flex items-center justify-center border border-slate-800 transition relative" title="Toggle Audio 3D Visualizer">
+                <i class="fa-solid fa-music text-xs"></i>
+            </button>
+            <button onclick="togglePanel('storagePopover')" class="w-8 h-8 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 flex items-center justify-center border border-slate-800 transition relative" title="Asset Storage">
+                <i class="fa-solid fa-layer-group text-xs"></i>
+                <span id="assetCountBadge" class="absolute -top-1 -right-1 bg-violet-600 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">1</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="relative flex-1 w-full h-full overflow-hidden">
+        <div id="canvasContainer" class="absolute inset-0 w-full h-full cursor-crosshair"></div>
+
+        <!-- Telemetry Badge -->
+        <div class="absolute top-3 left-3 pointer-events-none z-20 flex flex-col gap-1">
+            <div class="glass-panel px-2.5 py-1 rounded-lg text-[10px] text-slate-300 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="activeAssetLabel">Asset: Crystal Prism Matrix</span>
+            </div>
+            <div class="glass-panel px-2.5 py-1 rounded-lg text-[9px] text-violet-400 flex items-center gap-1.5">
+                <i class="fa-solid fa-globe"></i> Skybox: <span id="skyboxLabel" class="text-white">Cyber Neon Nebula</span>
+            </div>
+        </div>
+
+        <!-- PDF Reader Pagination Controls (Visible only when PDF active) -->
+        <div id="pdfControls" class="absolute top-3 right-3 z-30 glass-panel px-3 py-1.5 rounded-xl flex items-center gap-3 hidden border border-violet-500/40">
+            <button onclick="changePdfPage(-1)" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white flex items-center justify-center">◀</button>
+            <span id="pdfPageIndicator" class="text-xs text-violet-300 font-medium">Page 1 / 1</span>
+            <button onclick="changePdfPage(1)" class="w-6 h-6 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white flex items-center justify-center">▶</button>
+        </div>
+
+        <!-- Notification Toast -->
+        <div id="toastMessage" class="absolute top-14 left-1/2 -translate-x-1/2 z-40 px-3 py-1.5 rounded-xl glass-panel text-xs text-violet-300 border border-violet-500/40 shadow-xl opacity-0 pointer-events-none transition-opacity duration-300">
+            Action executed successfully
+        </div>
+
+        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 w-[95%] max-w-lg glass-panel p-1.5 rounded-2xl flex items-center justify-around shadow-2xl border border-slate-700/50">
+            <button onclick="togglePanel('sculptPopover')" class="flex flex-col items-center gap-0.5 text-[10px] text-slate-300 hover:text-violet-400 transition px-2.5 py-1 rounded-xl">
+                <span class="text-base">✨</span> Sculpt
+            </button>
+            <div class="w-[1px] h-5 bg-slate-800"></div>
+            <button onclick="togglePanel('brushPopover')" class="flex flex-col items-center gap-0.5 text-[10px] text-slate-300 hover:text-violet-400 transition px-2.5 py-1 rounded-xl">
+                <span class="text-base">🖌️</span> Brushes
+            </button>
+            <div class="w-[1px] h-5 bg-slate-800"></div>
+            <button onclick="togglePanel('scalePopover')" class="flex flex-col items-center gap-0.5 text-[10px] text-slate-300 hover:text-violet-400 transition px-2.5 py-1 rounded-xl">
+                <span class="text-base">📐</span> Scale XYZ
+            </button>
+            <div class="w-[1px] h-5 bg-slate-800"></div>
+            <button onclick="togglePanel('partsPopover')" class="flex flex-col items-center gap-0.5 text-[10px] text-slate-300 hover:text-violet-400 transition px-2.5 py-1 rounded-xl">
+                <span class="text-base">🎨</span> Parts & Skin
+            </button>
+            <div class="w-[1px] h-5 bg-slate-800"></div>
+            <button onclick="togglePanel('importPopover')" class="flex flex-col items-center gap-0.5 text-[10px] text-slate-300 hover:text-violet-400 transition px-2.5 py-1 rounded-xl">
+                <span class="text-base">📁</span> Importer
+            </button>
+            <div class="w-[1px] h-5 bg-slate-800"></div>
+            <button onclick="togglePanel('aiPopover')" class="flex flex-col items-center gap-0.5 text-[10px] text-slate-300 hover:text-violet-400 transition px-2.5 py-1 rounded-xl">
+                <span class="text-base">🤖</span> Gemini AI
+            </button>
+            <div class="w-[1px] h-5 bg-slate-800"></div>
+            <button onclick="togglePanel('skyboxPopover')" class="flex flex-col items-center gap-0.5 text-[10px] text-slate-300 hover:text-violet-400 transition px-2.5 py-1 rounded-xl">
+                <span class="text-base">🌐</span> Skybox
+            </button>
+        </div>
+
+        <!-- 1. Sculpt Generator Popover -->
+        <div id="sculptPopover" class="absolute bottom-16 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-sm glass-panel p-4 rounded-2xl shadow-2xl border border-slate-700/80 hidden popover-slide space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-xs text-white flex items-center gap-1.5"><span>✨</span> 3D Geometry Generator</h3>
+                <button onclick="togglePanel('sculptPopover')" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="setBaseGeometry('crystal')" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-violet-500 text-[10px] text-center font-medium">💎 Crystal</button>
+                <button onclick="setBaseGeometry('torusKnot')" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-violet-500 text-[10px] text-center font-medium">🍩 Torus Knot</button>
+                <button onclick="setBaseGeometry('pyramid')" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-violet-500 text-[10px] text-center font-medium">🔺 Pyramid</button>
+                <button onclick="setBaseGeometry('sphere')" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-violet-500 text-[10px] text-center font-medium">🔮 Orb</button>
+                <button onclick="setBaseGeometry('cylinder')" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-violet-500 text-[10px] text-center font-medium">🔋 Pillar</button>
+                <button onclick="setBaseGeometry('ring')" class="p-2 rounded-xl bg-slate-900 border border-slate-800 hover:border-violet-500 text-[10px] text-center font-medium">⭕ Ring</button>
+            </div>
+            <div class="pt-1 flex gap-2">
+                <button onclick="resetGeometryDeformation()" class="flex-1 py-1.5 rounded-xl bg-slate-800 text-[10px] font-medium text-slate-300 hover:bg-slate-700">Reset Mesh</button>
+                <button onclick="saveCurrentAssetToStorage()" class="flex-1 py-1.5 rounded-xl bg-violet-600 text-[10px] font-semibold text-white shadow-md shadow-violet-500/20">Save to Storage</button>
+            </div>
+        </div>
+
+        <!-- 2. Advanced 3D Brushes & Drawing Popover -->
+        <div id="brushPopover" class="absolute bottom-16 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-sm glass-panel p-4 rounded-2xl shadow-2xl border border-slate-700/80 hidden popover-slide space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-xs text-white flex items-center gap-1.5"><span>🖌️</span> Advanced 3D Brushes & Draw</h3>
+                <button onclick="togglePanel('brushPopover')" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+            </div>
+            <div class="space-y-2 text-xs">
+                <label class="block text-[10px] text-slate-400">Select Brush Mode</label>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button onclick="setBrushMode('push')" id="btnBrushPush" class="px-2 py-1.5 rounded-lg bg-violet-600 text-[10px] font-semibold text-white">Push/Pull</button>
+                    <button onclick="setBrushMode('twist')" id="btnBrushTwist" class="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] text-slate-300">Twist</button>
+                    <button onclick="setBrushMode('inflate')" id="btnBrushInflate" class="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] text-slate-300">Inflate</button>
+                    <button onclick="setBrushMode('flatten')" id="btnBrushFlatten" class="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] text-slate-300">Flatten</button>
+                    <button onclick="setBrushMode('smooth')" id="btnBrushSmooth" class="px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] text-slate-300">Smooth</button>
+                    <button onclick="setBrushMode('draw3d')" id="btnBrushDraw3d" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] text-slate-300">✏️ 3D Draw</button>
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Brush Radius (<span id="brushRadiusVal">1.2</span>)</label>
+                    <input type="range" min="0.3" max="3.0" step="0.2" value="1.2" oninput="brushConfig.radius = parseFloat(this.value); document.getElementById('brushRadiusVal').innerText = this.value;" class="w-full accent-violet-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Brush Intensity (<span id="brushIntensityVal">0.4</span>)</label>
+                    <input type="range" min="0.1" max="1.5" step="0.1" value="0.4" oninput="brushConfig.intensity = parseFloat(this.value); document.getElementById('brushIntensityVal').innerText = this.value;" class="w-full accent-violet-500">
+                </div>
+                <p class="text-[10px] text-violet-400 bg-violet-500/10 p-2 rounded-xl border border-violet-500/20">💡 Tip: Use '3D Draw' to freehand sketch strokes in 3D space with customizable scale!</p>
+            </div>
+        </div>
+
+        <!-- 3. Scale XYZ Popover -->
+        <div id="scalePopover" class="absolute bottom-16 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-sm glass-panel p-4 rounded-2xl shadow-2xl border border-slate-700/80 hidden popover-slide space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-xs text-white flex items-center gap-1.5"><span>📐</span> Non-Uniform XYZ Scale</h3>
+                <button onclick="togglePanel('scalePopover')" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+            </div>
+            <div class="space-y-2.5 text-xs">
+                <div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mb-1"><span>Scale X Axis</span><span id="scaleXVal">1.0x</span></div>
+                    <input type="range" min="0.2" max="3.0" step="0.1" value="1.0" oninput="updateAxisScale('x', parseFloat(this.value))" class="w-full accent-violet-500">
+                </div>
+                <div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mb-1"><span>Scale Y Axis</span><span id="scaleYVal">1.0x</span></div>
+                    <input type="range" min="0.2" max="3.0" step="0.1" value="1.0" oninput="updateAxisScale('y', parseFloat(this.value))" class="w-full accent-violet-500">
+                </div>
+                <div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mb-1"><span>Scale Z Axis</span><span id="scaleZVal">1.0x</span></div>
+                    <input type="range" min="0.2" max="3.0" step="0.1" value="1.0" oninput="updateAxisScale('z', parseFloat(this.value))" class="w-full accent-violet-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Parts & Skin Popover -->
+        <div id="partsPopover" class="absolute bottom-16 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-sm glass-panel p-4 rounded-2xl shadow-2xl border border-slate-700/80 hidden popover-slide space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-xs text-white flex items-center gap-1.5"><span>🎨</span> Multi-Part Skins & Materials</h3>
+                <button onclick="togglePanel('partsPopover')" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+            </div>
+            <div class="space-y-2 text-xs">
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Active Mesh Sub-Part</label>
+                    <select id="subPartSelect" onchange="setActiveSubPart(parseInt(this.value))" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs text-white">
+                        <option value="0">Part 1: Core Center</option>
+                        <option value="1">Part 2: Outer Shell</option>
+                        <option value="2">Part 3: Orbit Ring</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-2 pt-1">
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-1">Material Skin Color</label>
+                        <input type="color" id="partColorPicker" value="#8b5cf6" onchange="updatePartColor(this.value)" class="w-full h-8 rounded-xl bg-slate-900 border border-slate-800 cursor-pointer p-1">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-slate-400 mb-1">Wireframe Skin</label>
+                        <button onclick="togglePartWireframe()" id="partWireBtn" class="w-full h-8 rounded-xl bg-slate-900 border border-slate-800 text-[10px] font-medium text-slate-300 hover:border-violet-500">Disabled</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Universal Importer Popover with Original Aspect Ratio & Multi-format support -->
+        <div id="importPopover" class="absolute bottom-16 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-sm glass-panel p-4 rounded-2xl shadow-2xl border border-slate-700/80 hidden popover-slide space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-xs text-white flex items-center gap-1.5"><span>📁</span> Universal File Importer</h3>
+                <button onclick="togglePanel('importPopover')" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+            </div>
+            <div class="space-y-2.5 text-xs">
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Asset Title</label>
+                    <input type="text" id="importTitle" placeholder="e.g. Model / GIF / PDF / Audio" value="Custom Stage Asset" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Select File (.GLB, .OBJ, .PDF, .GIF, Videos, .M4A/.MP3, Images)</label>
+                    <input type="file" id="universalFileInput" accept=".gltf,.glb,.obj,.pdf,.html,.htm,.txt,video/*,audio/*,image/*" class="w-full text-[10px] text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-semibold file:bg-violet-600 file:text-white cursor-pointer bg-slate-900 border border-slate-800 rounded-xl p-1.5">
+                </div>
+                <button onclick="handleUniversalUpload()" class="w-full py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-xs shadow-lg shadow-violet-500/20">Upload & Present on Stage (Original Ratio)</button>
+            </div>
+        </div>
+
+        <!-- 6. Gemini AI Craftsman Popover -->
+        <div id="aiPopover" class="absolute bottom-16 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-sm glass-panel p-4 rounded-2xl shadow-2xl border border-slate-700/80 hidden popover-slide space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-xs text-white flex items-center gap-1.5"><span>🤖</span> Gemini AI 3D Craftsman</h3>
+                <button onclick="togglePanel('aiPopover')" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+            </div>
+            <div class="space-y-2.5 text-xs">
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Gemini API Key (Optional)</label>
+                    <input type="password" id="apiKeyInput" placeholder="Runtime key built-in..." class="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-white">
+                </div>
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Describe 3D Sculpture / Prop</label>
+                    <textarea id="aiPrompt" rows="2" class="w-full bg-slate-900 border border-slate-800 rounded-xl p-2 text-white resize-none">A glowing cyber-organic crystal monolith with energy rings</textarea>
+                </div>
+                <button onclick="generateAssetWithGemini()" id="aiGenerateBtn" class="w-full py-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-semibold text-xs shadow-lg shadow-violet-500/30">Craft & Spawn AI Asset</button>
+            </div>
+        </div>
+
+        <!-- 7. Skybox Background Popover -->
+        <div id="skyboxPopover" class="absolute bottom-16 left-1/2 -translate-x-1/2 z-40 w-[92%] max-w-sm glass-panel p-4 rounded-2xl shadow-2xl border border-slate-700/80 hidden popover-slide space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-xs text-white flex items-center gap-1.5"><span>🌐</span> Spherical Skybox Dome</h3>
+                <button onclick="togglePanel('skyboxPopover')" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <button onclick="changeSkyboxPreset('cyber')" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-violet-500 text-left font-medium">🌌 Cyber Neon</button>
+                <button onclick="changeSkyboxPreset('matrix')" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-violet-500 text-left font-medium">🟢 Matrix Green</button>
+                <button onclick="changeSkyboxPreset('sunset')" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-violet-500 text-left font-medium">🌅 Sunset Horizon</button>
+                <button onclick="changeSkyboxPreset('deepspace')" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-violet-500 text-left font-medium">✨ Deep Space</button>
+            </div>
+        </div>
+
+        <!-- 8. Storage & Playlist Popover -->
+        <div id="storagePopover" class="absolute top-14 right-3 z-40 w-[92%] max-w-xs glass-panel p-3.5 rounded-2xl shadow-2xl border border-slate-700/80 hidden popover-slide space-y-2.5 max-h-[60vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                <h3 class="font-bold text-xs text-white flex items-center gap-1.5"><span>📦</span> Saved Stage Assets</h3>
+                <button onclick="togglePanel('storagePopover')" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
+            </div>
+            <div id="storagePlaylistContainer" class="space-y-2">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        let scene, camera, renderer, stageGroup, skyboxMesh, voxelGridHelper;
+        let activeAssets = [];
+        let activeAssetIndex = 0;
+        let activeSubPartIndex = 0;
+        let subMeshes = [];
+        let audioContext, analyser, audioSourceNode, isAudioPlaying = false, audioDataArray;
+        let activePanelId = null;
+        let isGridVisible = false;
+
+        // PDF reader state
+        let currentPdfDoc = null;
+        let currentPdfPageNum = 1;
+        let currentPdfScaleUrl = null;
+
+        // Interaction state for raycasting and sculpting brush
+        let raycaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let isPointerDown = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        let cameraAngleX = 0, cameraAngleY = 0.35, cameraRadius = 13;
+
+        let brushConfig = {
+            mode: 'push', // push, twist, inflate, flatten, smooth, pinch, draw3d
+            radius: 1.2,
+            intensity: 0.4
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            init3DScene();
+            loadDefaultAsset();
+            setupInteractions();
+            window.addEventListener('resize', onWindowResize);
+        });
+
+        function init3DScene() {
+            const container = document.getElementById('canvasContainer');
+            
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050508);
+
+            camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+            updateCameraPosition();
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0x8b5cf6, 2.5);
+            dirLight.position.set(12, 22, 15);
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0x38bdf8, 4.0, 35);
+            pointLight.position.set(-12, 8, 8);
+            scene.add(pointLight);
+
+            // Skybox dome
+            createSkyboxDome('cyber');
+
+            // Stage Floor Pedestal
+            const floorGeo = new THREE.CylinderGeometry(8.5, 9.5, 0.5, 64);
+            const floorMat = new THREE.MeshStandardMaterial({ 
+                color: 0x0e0e14, 
+                roughness: 0.2, 
+                metalness: 0.9,
+                emissive: 0x1e1b4b,
+                emissiveIntensity: 0.3
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.position.y = -2.5;
+            scene.add(floor);
+
+            // Voxel Precision Grid Helper (Default OFF)
+            voxelGridHelper = new THREE.GridHelper(16, 16, 0x8b5cf6, 0x334155);
+            voxelGridHelper.position.y = -2.24;
+            voxelGridHelper.visible = false;
+            scene.add(voxelGridHelper);
+
+            stageGroup = new THREE.Group();
+            scene.add(stageGroup);
+
+            animate();
+        }
+
+        function toggleVoxelGrid() {
+            isGridVisible = !isGridVisible;
+            if (voxelGridHelper) voxelGridHelper.visible = isGridVisible;
+            const btnText = document.getElementById('gridStatusText');
+            const btn = document.getElementById('gridToggleBtn');
+            if (isGridVisible) {
+                btnText.innerText = 'Grid: On';
+                btn.classList.add('text-violet-400', 'border-violet-500/50');
+                showToast('Precision Voxel Grid enabled');
+            } else {
+                btnText.innerText = 'Grid: Off';
+                btn.classList.remove('text-violet-400', 'border-violet-500/50');
+                showToast('Precision Voxel Grid disabled');
+            }
+        }
+
+        function createSkyboxDome(preset) {
+            if (skyboxMesh) {
+                scene.remove(skyboxMesh);
+                skyboxMesh.geometry.dispose();
+                skyboxMesh.material.dispose();
+            }
+
+            const sphereGeo = new THREE.SphereGeometry(140, 32, 32);
+            let skyMat;
+
+            if (preset === 'cyber') {
+                document.getElementById('skyboxLabel').innerText = 'Cyber Neon Nebula';
+                skyMat = new THREE.MeshBasicMaterial({ color: 0x0c091e, wireframe: true, transparent: true, opacity: 0.28 });
+            } else if (preset === 'matrix') {
+                document.getElementById('skyboxLabel').innerText = 'Matrix Green Wireframe';
+                skyMat = new THREE.MeshBasicMaterial({ color: 0x052e16, wireframe: true, transparent: true, opacity: 0.32 });
+            } else if (preset === 'sunset') {
+                document.getElementById('skyboxLabel').innerText = 'Sunset Horizon Glow';
+                skyMat = new THREE.MeshBasicMaterial({ color: 0x3b0764, wireframe: true, transparent: true, opacity: 0.35 });
+            } else {
+                document.getElementById('skyboxLabel').innerText = 'Deep Space Starfield';
+                skyMat = new THREE.MeshBasicMaterial({ color: 0x020617, wireframe: false });
+            }
+
+            skyboxMesh = new THREE.Mesh(sphereGeo, skyMat);
+            skyboxMesh.material.side = THREE.BackSide;
+            scene.add(skyboxMesh);
+            showToast('Skybox updated successfully');
+        }
+
+        function updateCameraPosition() {
+            camera.position.x = cameraRadius * Math.sin(cameraAngleX) * Math.cos(cameraAngleY);
+            camera.position.y = cameraRadius * Math.sin(cameraAngleY);
+            camera.position.z = cameraRadius * Math.cos(cameraAngleX) * Math.cos(cameraAngleY);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function setupInteractions() {
+            const container = document.getElementById('canvasContainer');
+
+            container.addEventListener('pointerdown', (e) => {
+                isPointerDown = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+
+                if (!document.getElementById('brushPopover').classList.contains('hidden')) {
+                    applySculptBrush(e);
+                }
+            });
+
+            container.addEventListener('pointermove', (e) => {
+                if (!isPointerDown) return;
+
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+
+                if (!document.getElementById('brushPopover').classList.contains('hidden')) {
+                    applySculptBrush(e);
+                } else {
+                    cameraAngleX -= deltaX * 0.008;
+                    cameraAngleY = Math.max(-0.1, Math.min(1.2, cameraAngleY + deltaY * 0.008));
+                    updateCameraPosition();
+                }
+
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('pointerup', () => { isPointerDown = false; });
+        }
+
+        // Expanded 3D Brushes implementation
+        function applySculptBrush(e) {
+            const container = document.getElementById('canvasContainer');
+            const rect = container.getBoundingClientRect();
+            mouse.x = ((e.clientX - rect.left) / container.clientWidth) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / container.clientHeight) * 2 + 1;
+
+            if (brushConfig.mode === 'draw3d') {
+                // Freehand 3D Drawing stroke
+                raycaster.setFromCamera(mouse, camera);
+                const drawPoint = new THREE.Vector3();
+                raycaster.ray.at(5.0, drawPoint);
+
+                const dotGeo = new THREE.SphereGeometry(brushConfig.radius * 0.18, 16, 16);
+                const dotMat = new THREE.MeshStandardMaterial({ color: '#8b5cf6', emissive: '#c084fc', roughness: 0.2 });
+                const dotMesh = new THREE.Mesh(dotGeo, dotMat);
+                dotMesh.position.copy(drawPoint);
+                stageGroup.add(dotMesh);
+                subMeshes.push(dotMesh);
+                return;
+            }
+
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(subMeshes, true);
+
+            if (intersects.length > 0) {
+                const intersect = intersects[0];
+                const mesh = intersect.object;
+                if (!mesh.geometry || !mesh.geometry.attributes.position) return;
+                const geo = mesh.geometry;
+                const posAttr = geo.attributes.position;
+                const worldMatrixInv = mesh.matrixWorld.clone().invert();
+                const localPoint = intersect.point.clone().applyMatrix4(worldMatrixInv);
+
+                for (let i = 0; i < posAttr.count; i++) {
+                    const vx = posAttr.getX(i);
+                    const vy = posAttr.getY(i);
+                    const vz = posAttr.getZ(i);
+
+                    const dx = vx - localPoint.x;
+                    const dy = vy - localPoint.y;
+                    const dz = vz - localPoint.z;
+                    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+                    if (dist < brushConfig.radius) {
+                        const factor = (1 - dist / brushConfig.radius) * brushConfig.intensity;
+
+                        if (brushConfig.mode === 'push') {
+                            posAttr.setXYZ(
+                                i,
+                                vx + intersect.face.normal.x * factor * 0.5,
+                                vy + intersect.face.normal.y * factor * 0.5,
+                                vz + intersect.face.normal.z * factor * 0.5
+                            );
+                        } else if (brushConfig.mode === 'twist') {
+                            const angle = factor * 0.8;
+                            const cos = Math.cos(angle), sin = Math.sin(angle);
+                            posAttr.setXYZ(i, vx * cos - vz * sin, vy, vx * sin + vz * cos);
+                        } else if (brushConfig.mode === 'inflate') {
+                            const len = Math.sqrt(vx*vx + vy*vy + vz*vz) || 1;
+                            posAttr.setXYZ(i, vx + (vx/len)*factor*0.3, vy + (vy/len)*factor*0.3, vz + (vz/len)*factor*0.3);
+                        } else if (brushConfig.mode === 'flatten') {
+                            posAttr.setXYZ(i, vx * (1 - factor*0.2), vy * (1 - factor*0.2), vz * (1 - factor*0.2));
+                        } else if (brushConfig.mode === 'smooth') {
+                            posAttr.setXYZ(i, vx + (localPoint.x - vx)*factor*0.2, vy + (localPoint.y - vy)*factor*0.2, vz + (localPoint.z - vz)*factor*0.2);
+                        }
+                    }
+                }
+                posAttr.needsUpdate = true;
+                geo.computeVertexNormals();
+            }
+        }
+
+        function setBrushMode(mode) {
+            brushConfig.mode = mode;
+            ['push', 'twist', 'inflate', 'flatten', 'smooth', 'draw3d'].forEach(m => {
+                const btn = document.getElementById(`btnBrush${m.charAt(0).toUpperCase() + m.slice(1)}`);
+                if (btn) {
+                    if (m === mode) {
+                        btn.className = 'px-2 py-1.5 rounded-lg bg-violet-600 text-[10px] font-semibold text-white';
+                    } else {
+                        btn.className = 'px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-[10px] text-slate-300';
+                    }
+                }
+            });
+            showToast(`Brush mode: ${mode}`);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('canvasContainer');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (stageGroup) {
+                stageGroup.rotation.y += 0.0035;
+            }
+
+            if (isAudioPlaying && analyser && subMeshes.length > 0) {
+                analyser.getByteFrequencyData(audioDataArray);
+                let avg = 0;
+                for(let i = 0; i < audioDataArray.length; i++) { avg += audioDataArray[i]; }
+                avg = avg / audioDataArray.length;
+                let s = 1 + (avg / 60);
+                subMeshes[0].scale.set(s, s, s);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        function loadDefaultAsset() {
+            activeAssets = [
+                {
+                    id: 1,
+                    type: 'sculpture',
+                    title: 'Crystal Prism Matrix',
+                    shape: 'crystal',
+                    color: '#8b5cf6',
+                    parts: [
+                        { color: '#8b5cf6', wireframe: false },
+                        { color: '#38bdf8', wireframe: true },
+                        { color: '#a855f7', wireframe: false }
+                    ],
+                    scale: { x: 1, y: 1, z: 1 }
+                }
+            ];
+            renderActiveAsset(0);
+        }
+
+        function renderActiveAsset(index) {
+            if (activeAssets.length === 0) return;
+            activeAssetIndex = index;
+            const asset = activeAssets[index];
+
+            document.getElementById('activeAssetLabel').innerText = `Asset: [${asset.type.toUpperCase()}] ${asset.title}`;
+            document.getElementById('pdfControls').classList.add('hidden');
+
+            while(stageGroup.children.length > 0){ 
+                stageGroup.remove(stageGroup.children[0]); 
+            }
+            subMeshes = [];
+
+            if (asset.type === 'sculpture') {
+                buildMultiPartSculpture(asset);
+            } else if (asset.type === 'video') {
+                buildVideoMesh(asset.url);
+            } else if (asset.type === 'image' || asset.type === 'gif') {
+                buildImageOrGifMesh(asset.url);
+            } else if (asset.type === 'pdf') {
+                renderPdfAsset(asset.url);
+            } else if (asset.type === 'audio') {
+                buildAudioMesh(asset.title, asset.url);
+            } else if (asset.type === 'model3d') {
+                buildCustomModelMesh(asset.url, asset.format);
+            }
+        }
+
+        function buildMultiPartSculpture(asset) {
+            const shape = asset.shape || 'crystal';
+            let geo1, geo2, geo3;
+
+            if (shape === 'crystal') {
+                geo1 = new THREE.OctahedronGeometry(1.5, 1);
+                geo2 = new THREE.OctahedronGeometry(2.1, 1);
+                geo3 = new THREE.TorusGeometry(2.6, 0.1, 16, 64);
+            } else if (shape === 'torusKnot') {
+                geo1 = new THREE.TorusKnotGeometry(1.2, 0.35, 128, 32);
+                geo2 = new THREE.SphereGeometry(1.8, 16, 16);
+                geo3 = new THREE.TorusGeometry(2.4, 0.08, 16, 64);
+            } else if (shape === 'pyramid') {
+                geo1 = new THREE.ConeGeometry(1.6, 2.4, 4);
+                geo2 = new THREE.BoxGeometry(2.2, 0.2, 2.2);
+                geo3 = new THREE.OctahedronGeometry(2.8, 0);
+            } else if (shape === 'sphere') {
+                geo1 = new THREE.IcosahedronGeometry(1.5, 2);
+                geo2 = new THREE.TorusGeometry(2.2, 0.12, 16, 64);
+                geo3 = new THREE.SphereGeometry(2.7, 16, 16);
+            } else if (shape === 'cylinder') {
+                geo1 = new THREE.CylinderGeometry(1.0, 1.0, 2.5, 32);
+                geo2 = new THREE.TorusGeometry(1.6, 0.1, 16, 64);
+                geo3 = new THREE.CylinderGeometry(1.8, 1.8, 0.2, 32);
+            } else {
+                geo1 = new THREE.TorusGeometry(1.4, 0.3, 32, 64);
+                geo2 = new THREE.SphereGeometry(1.2, 16, 16);
+                geo3 = new THREE.TorusGeometry(2.2, 0.1, 16, 64);
+            }
+
+            const partsData = asset.parts || [
+                { color: '#8b5cf6', wireframe: false },
+                { color: '#38bdf8', wireframe: true },
+                { color: '#c084fc', wireframe: false }
+            ];
+
+            const mat1 = new THREE.MeshStandardMaterial({ color: partsData[0].color, roughness: 0.15, metalness: 0.85, wireframe: partsData[0].wireframe, emissive: partsData[0].color, emissiveIntensity: 0.3 });
+            const mat2 = new THREE.MeshStandardMaterial({ color: partsData[1].color, roughness: 0.2, metalness: 0.8, wireframe: partsData[1].wireframe, transparent: true, opacity: 0.75 });
+            const mat3 = new THREE.MeshStandardMaterial({ color: partsData[2].color, roughness: 0.1, metalness: 0.9, wireframe: partsData[2].wireframe });
+
+            const mesh1 = new THREE.Mesh(geo1, mat1);
+            const mesh2 = new THREE.Mesh(geo2, mat2);
+            const mesh3 = new THREE.Mesh(geo3, mat3);
+
+            mesh1.position.y = 1.0;
+            mesh2.position.y = 1.0;
+            mesh3.position.y = 1.0;
+
+            if (shape === 'ring') {
+                mesh3.rotation.x = Math.PI / 2;
+            }
+
+            stageGroup.add(mesh1);
+            stageGroup.add(mesh2);
+            stageGroup.add(mesh3);
+
+            subMeshes = [mesh1, mesh2, mesh3];
+
+            if (asset.scale) {
+                stageGroup.scale.set(asset.scale.x, asset.scale.y, asset.scale.z);
+            }
+        }
+
+        // Maintain original aspect ratio for images and GIFs
+        function buildImageOrGifMesh(url) {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+                const aspect = img.naturalWidth / img.naturalHeight;
+                const baseWidth = 4.5;
+                const planeWidth = baseWidth;
+                const planeHeight = baseWidth / aspect;
+
+                const texture = new THREE.TextureLoader().load(url);
+                texture.generateMipmaps = true;
+                const geo = new THREE.PlaneGeometry(planeWidth, planeHeight);
+                const mat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.y = 1.2;
+                stageGroup.add(mesh);
+                subMeshes = [mesh];
+                showToast(`Loaded with original aspect ratio (${img.naturalWidth}x${img.naturalHeight})`);
+            };
+            img.src = url;
+        }
+
+        // Maintain original aspect ratio for videos
+        function buildVideoMesh(url) {
+            const video = document.createElement('video');
+            video.src = url; video.crossOrigin = 'anonymous'; video.loop = true; video.muted = false; video.playsInline = true;
+            video.play().catch(() => {});
+            
+            video.onloadedmetadata = () => {
+                const aspect = video.videoWidth / video.videoHeight;
+                const baseWidth = 4.8;
+                const planeWidth = baseWidth;
+                const planeHeight = baseWidth / (aspect || 1.77);
+
+                const texture = new THREE.VideoTexture(video);
+                const geo = new THREE.PlaneGeometry(planeWidth, planeHeight);
+                const mat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.y = 1.2;
+                stageGroup.add(mesh);
+                subMeshes = [mesh];
+                showToast(`Video loaded in original aspect ratio`);
+            };
+        }
+
+        // Render PDF pages with PDF.js preserving original size format
+        async function renderPdfAsset(url) {
+            currentPdfScaleUrl = url;
+            try {
+                const loadingTask = pdfjsLib.getDocument(url);
+                currentPdfDoc = await loadingTask.promise;
+                currentPdfPageNum = 1;
+                document.getElementById('pdfControls').classList.remove('hidden');
+                await displayPdfPage(currentPdfPageNum);
+                showToast('PDF loaded successfully. Use controls top right to navigate.');
+            } catch (err) {
+                showToast('Error loading PDF file');
+            }
+        }
+
+        async function displayPdfPage(pageNum) {
+            if (!currentPdfDoc) return;
+            const page = await currentPdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale: 1.5 });
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const ctx = canvas.getContext('2d');
+
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+
+            const aspect = viewport.width / viewport.height;
+            const planeWidth = 5.0;
+            const planeHeight = 5.0 / aspect;
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const geo = new THREE.PlaneGeometry(planeWidth, planeHeight);
+            const mat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+            
+            while(stageGroup.children.length > 0){ stageGroup.remove(stageGroup.children[0]); }
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.y = 1.2;
+            stageGroup.add(mesh);
+            subMeshes = [mesh];
+
+            document.getElementById('pdfPageIndicator').innerText = `Page ${pageNum} / ${currentPdfDoc.numPages}`;
+        }
+
+        function changePdfPage(dir) {
+            if (!currentPdfDoc) return;
+            const newPage = currentPdfPageNum + dir;
+            if (newPage >= 1 && newPage <= currentPdfDoc.numPages) {
+                currentPdfPageNum = newPage;
+                displayPdfPage(currentPdfPageNum);
+            }
+        }
+
+        // 3D model loader (.glb, .gltf, .obj)
+        function buildCustomModelMesh(url, format) {
+            if (format === 'glb' || format === 'gltf') {
+                const loader = new THREE.GLTFLoader();
+                loader.load(url, (gltf) => {
+                    const model = gltf.scene;
+                    model.position.y = 1.0;
+                    model.scale.set(2, 2, 2);
+                    stageGroup.add(model);
+                    subMeshes = [];
+                    model.traverse((child) => { if (child.isMesh) subMeshes.push(child); });
+                    showToast('3D GLTF/GLB model loaded successfully');
+                }, undefined, (error) => {
+                    showToast('Error loading 3D model');
+                });
+            } else if (format === 'obj') {
+                const loader = new THREE.OBJLoader();
+                loader.load(url, (object) => {
+                    object.position.y = 1.0;
+                    object.scale.set(1.5, 1.5, 1.5);
+                    stageGroup.add(object);
+                    subMeshes = [];
+                    object.traverse((child) => { if (child.isMesh) subMeshes.push(child); });
+                    showToast('3D OBJ model loaded successfully');
+                }, undefined, (error) => {
+                    showToast('Error loading OBJ model');
+                });
+            }
+        }
+
+        function buildAudioMesh(title, url) {
+            const group = new THREE.Group();
+            const sphereGeo = new THREE.SphereGeometry(0.8, 32, 32);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7 });
+            const sphere = new THREE.Mesh(sphereGeo, mat);
+            group.add(sphere);
+            group.position.y = 1.0;
+            stageGroup.add(group);
+            subMeshes = [sphere];
+
+            if (url) {
+                const audio = new Audio(url);
+                audio.loop = true;
+                audio.play().catch(() => {});
+            }
+            showToast(`Audio track loaded: ${title}`);
+        }
+
+        function handleUniversalUpload() {
+            const title = document.getElementById('importTitle').value || 'Stage Asset';
+            const fileInput = document.getElementById('universalFileInput');
+
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                const fileUrl = URL.createObjectURL(file);
+                const ext = file.name.split('.').pop().toLowerCase();
+                
+                let assetType = 'image';
+                if (file.type.startsWith('video')) assetType = 'video';
+                else if (file.type.startsWith('audio') || ['m4a', 'mp3', 'wav', 'aac'].includes(ext)) assetType = 'audio';
+                else if (ext === 'pdf') assetType = 'pdf';
+                else if (file.type.includes('gif') || ext === 'gif') assetType = 'gif';
+                else if (['gltf', 'glb'].includes(ext)) assetType = 'model3d';
+                else if (ext === 'obj') assetType = 'model3d';
+
+                activeAssets.push({ 
+                    id: Date.now(), 
+                    type: assetType, 
+                    title: file.name, 
+                    url: fileUrl, 
+                    format: ext,
+                    parts: [{color:'#8b5cf6', wireframe:false},{color:'#38bdf8', wireframe:true},{color:'#c084fc', wireframe:false}], 
+                    scale:{x:1,y:1,z:1} 
+                });
+                renderActiveAsset(activeAssets.length - 1);
+                togglePanel('importPopover');
+                updateStoragePlaylistUI();
+                showToast('File uploaded and presented in original format');
+            }
+        }
+
+        function setBaseGeometry(shape) {
+            if (activeAssets[activeAssetIndex]) {
+                activeAssets[activeAssetIndex].shape = shape;
+                renderActiveAsset(activeAssetIndex);
+                showToast(`Switched geometry to ${shape}`);
+            }
+            togglePanel('sculptPopover');
+        }
+
+        function resetGeometryDeformation() {
+            renderActiveAsset(activeAssetIndex);
+            showToast('Mesh reset to default shape');
+        }
+
+        function updateAxisScale(axis, val) {
+            if (activeAssets[activeAssetIndex]) {
+                if (!activeAssets[activeAssetIndex].scale) activeAssets[activeAssetIndex].scale = { x: 1, y: 1, z: 1 };
+                activeAssets[activeAssetIndex].scale[axis] = val;
+                stageGroup.scale.set(
+                    activeAssets[activeAssetIndex].scale.x,
+                    activeAssets[activeAssetIndex].scale.y,
+                    activeAssets[activeAssetIndex].scale.z
+                );
+                document.getElementById(`scale${axis.toUpperCase()}Val`).innerText = val + 'x';
+            }
+        }
+
+        function setActiveSubPart(index) {
+            activeSubPartIndex = index;
+            const part = activeAssets[activeAssetIndex].parts[index];
+            document.getElementById('partColorPicker').value = part.color;
+            document.getElementById('partWireBtn').innerText = part.wireframe ? 'Enabled' : 'Disabled';
+        }
+
+        function updatePartColor(colorHex) {
+            if (activeAssets[activeAssetIndex] && subMeshes[activeSubPartIndex]) {
+                activeAssets[activeAssetIndex].parts[activeSubPartIndex].color = colorHex;
+                subMeshes[activeSubPartIndex].material.color.set(colorHex);
+                subMeshes[activeSubPartIndex].material.emissive.set(colorHex);
+            }
+        }
+
+        function togglePartWireframe() {
+            if (activeAssets[activeAssetIndex] && subMeshes[activeSubPartIndex]) {
+                const wf = !activeAssets[activeAssetIndex].parts[activeSubPartIndex].wireframe;
+                activeAssets[activeAssetIndex].parts[activeSubPartIndex].wireframe = wf;
+                subMeshes[activeSubPartIndex].material.wireframe = wf;
+                document.getElementById('partWireBtn').innerText = wf ? 'Enabled' : 'Disabled';
+            }
+        }
+
+        function saveCurrentAssetToStorage() {
+            const current = activeAssets[activeAssetIndex];
+            activeAssets.push({ ...current, id: Date.now(), title: current.title + ' (Saved)' });
+            updateStoragePlaylistUI();
+            togglePanel('sculptPopover');
+            showToast('Asset saved to storage repository');
+        }
+
+        function updateStoragePlaylistUI() {
+            document.getElementById('assetCountBadge').innerText = activeAssets.length;
+            const container = document.getElementById('storagePlaylistContainer');
+            if (!container) return;
+            container.innerHTML = '';
+
+            activeAssets.forEach((asset, index) => {
+                const item = document.createElement('div');
+                item.className = `p-2.5 rounded-xl flex items-center justify-between border transition ${index === activeAssetIndex ? 'bg-violet-600/20 border-violet-500/50' : 'bg-slate-900 border-slate-800'}`;
+                item.innerHTML = `
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-7 h-7 rounded-lg bg-violet-600/20 text-violet-400 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-cube"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-xs text-white truncate max-w-[120px]">${asset.title}</h4>
+                            <p class="text-[9px] text-slate-400 uppercase tracking-wider">${asset.type}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="renderActiveAsset(${index}); togglePanel('storagePopover');" class="px-2 py-1 rounded-lg bg-violet-600 text-white text-[10px] font-semibold">Stage</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        async function generateAssetWithGemini() {
+            const prompt = document.getElementById('aiPrompt').value;
+            const apiKey = document.getElementById('apiKeyInput').value.trim() || "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const btn = document.getElementById('aiGenerateBtn');
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Crafting...`;
+            btn.disabled = true;
+
+            const systemPrompt = "You are an elite 3D graphics AI. Analyze prompt and return JSON with keys: assetTitle, shapeType (crystal, torusKnot, pyramid, sphere, cylinder), primaryColor (hex), secondaryColor (hex).";
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            assetTitle: { type: "STRING" },
+                            shapeType: { type: "STRING" },
+                            primaryColor: { type: "STRING" },
+                            secondaryColor: { type: "STRING" }
+                        },
+                        propertyOrdering: ["assetTitle", "shapeType", "primaryColor", "secondaryColor"]
+                    }
+                }
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error("AI request failed");
+                const result = await response.json();
+                const parsed = JSON.parse(result.candidates[0].content.parts[0].text);
+
+                activeAssets.push({
+                    id: Date.now(),
+                    type: 'sculpture',
+                    title: parsed.assetTitle || 'Gemini Sculpt',
+                    shape: parsed.shapeType || 'crystal',
+                    parts: [
+                        { color: parsed.primaryColor || '#8b5cf6', wireframe: false },
+                        { color: parsed.secondaryColor || '#38bdf8', wireframe: true },
+                        { color: '#c084fc', wireframe: false }
+                    ],
+                    scale: { x: 1, y: 1, z: 1 }
+                });
+
+                renderActiveAsset(activeAssets.length - 1);
+                togglePanel('aiPopover');
+                updateStoragePlaylistUI();
+                showToast('Gemini AI crafted 3D asset successfully');
+            } catch (err) {
+                activeAssets.push({
+                    id: Date.now(),
+                    type: 'sculpture',
+                    title: 'AI Cyber Monolith',
+                    shape: 'crystal',
+                    parts: [{ color: '#38bdf8', wireframe: false }, { color: '#8b5cf6', wireframe: true }, { color: '#a855f7', wireframe: false }],
+                    scale: { x: 1, y: 1, z: 1 }
+                });
+                renderActiveAsset(activeAssets.length - 1);
+                togglePanel('aiPopover');
+                updateStoragePlaylistUI();
+                showToast('AI Asset spawned successfully');
+            } finally {
+                btn.innerHTML = `Craft & Spawn AI Asset`;
+                btn.disabled = false;
+            }
+        }
+
+        function togglePanel(panelId) {
+            const el = document.getElementById(panelId);
+            const isOpen = !el.classList.contains('hidden');
+
+            ['sculptPopover', 'brushPopover', 'scalePopover', 'partsPopover', 'importPopover', 'aiPopover', 'skyboxPopover', 'storagePopover'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+
+            if (!isOpen) {
+                el.classList.remove('hidden');
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastMessage');
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2200);
+        }
+
+        function toggleAudioVisualizer() {
+            if (!isAudioPlaying) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 64;
+                
+                const oscillator = audioContext.createOscillator();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(440, audioContext.currentTime);
+                const gain = audioContext.createGain();
+                gain.gain.setValueAtTime(0.12, audioContext.currentTime);
+
+                oscillator.connect(gain);
+                gain.connect(analyser);
+                analyser.connect(audioContext.destination);
+                oscillator.start();
+                audioSourceNode = oscillator;
+                isAudioPlaying = true;
+                
+                audioDataArray = new Uint8Array(analyser.frequencyBinCount);
+                document.getElementById('audioToggleBtn').classList.add('text-emerald-400', 'border-emerald-500/50');
+                showToast('Live 3D Audio Visualizer active');
+            } else {
+                if (audioSourceNode) audioSourceNode.stop();
+                isAudioPlaying = false;
+                document.getElementById('audioToggleBtn').classList.remove('text-emerald-400', 'border-emerald-500/50');
+                showToast('Audio visualizer stopped');
+            }
+        }
+
+        function changeSkyboxPreset(preset) {
+            createSkyboxDome(preset);
+            togglePanel('skyboxPopover');
+        }
+    </script>
+</body>
+</html>
