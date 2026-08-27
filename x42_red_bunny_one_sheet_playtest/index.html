@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>X42 — Red Bunny One-Sheet Playtest</title>
+<style>
+:root{--bg:#070914;--glass:rgba(8,12,25,.82);--line:#405074;--cyan:#63e9ff;--pink:#ff62df;--green:#6ff3ad;--white:#eef5ff}
+*{box-sizing:border-box}html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--white);font-family:Inter,system-ui,sans-serif}
+button{font:inherit;color:var(--white);border:1px solid var(--line);background:#121a2d;border-radius:15px;cursor:pointer}
+button:active{transform:scale(.97)}
+#game{height:100dvh;position:relative;overflow:hidden}
+#world{position:absolute;inset:0;background:#111 center/cover no-repeat url("assets/default_background.jpg")}
+#world:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,6,17,.08),rgba(3,5,13,.38))}
+#topbar{position:absolute;left:10px;right:10px;top:10px;z-index:10;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.glass{background:var(--glass);border:1px solid var(--line);box-shadow:0 8px 30px #0008;backdrop-filter:blur(12px)}
+#title{padding:9px 12px;border-radius:15px;font-weight:900;letter-spacing:.06em;font-size:13px;pointer-events:auto}
+#title span{color:var(--pink)}
+#stats{padding:7px 10px;border-radius:15px;font-size:11px;min-width:145px}
+.bar{height:5px;background:#263149;border-radius:9px;overflow:hidden;margin:3px 0}.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan));width:78%}
+#player{position:absolute;z-index:5;left:48%;top:58%;width:120px;height:180px;transform:translate(-50%,-100%);touch-action:none}
+#player img{width:100%;height:100%;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 14px 12px #000b)}
+#marker{position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);width:72px;height:14px;border-radius:50%;background:#0009;filter:blur(2px)}
+#name{position:absolute;top:-22px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#090e1acc;border:1px solid var(--pink);border-radius:8px;padding:3px 7px;font-size:10px}
+#controls{position:absolute;z-index:9;left:12px;bottom:16px;display:grid;grid-template-columns:48px 48px 48px;gap:5px}
+#controls button{width:48px;height:45px;background:#0b1122dd}
+.empty{visibility:hidden}
+#actions{position:absolute;z-index:9;right:12px;bottom:16px;display:flex;flex-direction:column;gap:7px}
+.action{width:55px;height:55px;border-radius:18px;background:#0b1122ee;font-size:20px}
+.action small{display:block;font-size:8px;color:#aab8d0}
+#dialog{position:absolute;z-index:20;left:5%;right:5%;bottom:92px;padding:14px;border-radius:18px;display:none}
+#dialog.show{display:block}
+#dialog .speaker{font-weight:900;color:var(--green);font-size:12px}
+#dialog .line{margin-top:5px;line-height:1.4}
+#edit{position:absolute;z-index:30;right:10px;top:60px;width:min(370px,calc(100% - 20px));max-height:calc(100dvh - 72px);overflow:auto;padding:12px;border-radius:18px;display:none}
+#edit.show{display:block}
+h3{font-size:13px;margin:3px 0 8px}.muted{font-size:11px;color:#99a8c5;line-height:1.4}
+.tabs{display:flex;gap:5px;overflow:auto;margin-bottom:8px}.tabs button{padding:7px 9px;font-size:10px;white-space:nowrap}
+.section{border-top:1px solid #2c3850;padding-top:10px;margin-top:10px}
+#sheet{width:100%;border-radius:12px;border:1px solid #34405a}
+textarea{width:100%;min-height:120px;background:#080c16;color:#edf4ff;border:1px solid #3a4967;border-radius:10px;padding:9px;font:11px ui-monospace,monospace}
+input[type=file]{width:100%;font-size:11px}
+.assetgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}.assetgrid button{text-align:left;padding:8px;font-size:10px}.assetgrid b{display:block;color:var(--cyan)}
+#toast{position:absolute;z-index:50;left:50%;top:78px;transform:translateX(-50%);background:#091020ee;border:1px solid var(--cyan);border-radius:999px;padding:8px 12px;font-size:11px;opacity:0;pointer-events:none;transition:.2s}
+#toast.on{opacity:1}
+@media(max-width:700px){
+ #title{font-size:11px;padding:8px}.stats{min-width:130px}
+ #player{width:105px;height:158px}
+ #edit{top:auto;bottom:72px;right:7px;width:calc(100% - 14px);max-height:62dvh}
+ #dialog{bottom:76px}
+ #controls{bottom:13px}.actions{bottom:13px}
+}
+</style>
+</head>
+<body>
+<div id="game">
+ <div id="world"></div>
+ <div id="topbar">
+   <div id="title" class="glass">🐇 <span>X42</span> RED BUNNY · PLAYTEST</div>
+   <div id="stats" class="glass">HP 120<div class="bar"><i style="width:80%"></i></div>FOCUS 85<div class="bar"><i style="width:68%"></i></div></div>
+ </div>
+
+ <div id="player">
+   <div id="name">RED BUNNY</div>
+   <div id="marker"></div>
+   <img id="bunny" src="assets/bunny_idle_0.png" alt="Red Bunny">
+ </div>
+
+ <div id="controls">
+   <button class="empty"></button><button onclick="move(0,-3)">▲</button><button class="empty"></button>
+   <button onclick="move(-3,0)">◀</button><button onclick="move(0,3)">▼</button><button onclick="move(3,0)">▶</button>
+ </div>
+
+ <div id="actions">
+   <button class="action" onclick="dialogue()">💬<small>STORY</small></button>
+   <button class="action" onclick="pulse('ATTACK A21')">⚔<small>ATTACK</small></button>
+   <button class="action" onclick="pulse('SKILL S31')">✦<small>SKILL</small></button>
+   <button class="action" onclick="toggleEditor()">☰<small>EDIT</small></button>
+ </div>
+
+ <div id="dialog" class="glass">
+   <div class="speaker" id="speaker">Mika</div>
+   <div class="line" id="line">Die Firewall ist fast geknackt. Bist du bereit?</div>
+   <button style="margin-top:9px;padding:7px 10px" onclick="nextLine()">Weiter →</button>
+   <button style="margin-top:9px;padding:7px 10px" onclick="closeDialog()">×</button>
+ </div>
+
+ <div id="edit" class="glass">
+   <div class="tabs">
+     <button onclick="editTab('story')">STORY</button>
+     <button onclick="editTab('stage')">STAGE</button>
+     <button onclick="editTab('assets')">ASSETS</button>
+     <button onclick="editTab('sheet')">ONE-SHEET</button>
+   </div>
+   <div id="editorBody"></div>
+ </div>
+ <div id="toast"></div>
+</div>
+
+<script>
+const manifest={"format": "X42-OneSheet-Playtest/0.3", "masterSheet": "assets/one_sheet.png", "defaultBackground": "assets/default_background.jpg", "character": {"id": "C01", "name": "Red Bunny", "idleFrames": ["assets/bunny_idle_0.png", "assets/bunny_idle_1.png", "assets/bunny_idle_2.png"], "sourceAsset": "C01", "skills": ["S07", "S12", "S31"]}, "assetExamples": {"C01": "Red Bunny", "W17": "Signal Baton", "S07": "Signal Burst", "S12": "Shadow Dash", "S31": "Network Jam", "BG01": "St. Pauli Rain District"}};
+let px=.48, py=.58, frame=0, lineIndex=0, editorTab='story';
+const lines=[
+ ["Mika","Die Firewall ist fast geknackt. Bist du bereit?"],
+ ["Red Bunny","Bereit. Aber wir brauchen den Signal-Key."],
+ ["Mika","Dann durch den Regen. Der NETWORK-Hunter ist schon unterwegs."],
+ ["Red Bunny","Wir verschwinden im Bermuda-Dreieck."]
+];
+function place(){document.getElementById('player').style.left=(px*100)+'%';document.getElementById('player').style.top=(py*100)+'%'}
+function move(dx,dy){px=Math.max(.08,Math.min(.92,px+dx/100));py=Math.max(.18,Math.min(.9,py+dy/100));place(); pulse('MOVE')}
+document.addEventListener('keydown',e=>{if(e.key==='ArrowUp')move(0,-3);if(e.key==='ArrowDown')move(0,3);if(e.key==='ArrowLeft')move(-3,0);if(e.key==='ArrowRight')move(3,0);});
+setInterval(()=>{frame=(frame+1)%3;document.getElementById('bunny').src=manifest.character.idleFrames[frame]},420);
+function pulse(t){const el=document.getElementById('toast');el.textContent=t;el.classList.add('on');setTimeout(()=>el.classList.remove('on'),650)}
+function dialogue(){document.getElementById('dialog').classList.add('show');renderLine()}
+function renderLine(){document.getElementById('speaker').textContent=lines[lineIndex][0];document.getElementById('line').textContent=lines[lineIndex][1]}
+function nextLine(){lineIndex=(lineIndex+1)%lines.length;renderLine()}
+function closeDialog(){document.getElementById('dialog').classList.remove('show')}
+function toggleEditor(){document.getElementById('edit').classList.toggle('show');renderEditor()}
+function editTab(t){editorTab=t;renderEditor()}
+function renderEditor(){
+ const b=document.getElementById('editorBody');
+ if(editorTab==='story') b.innerHTML=`<h3>Simple story editor</h3><div class="muted">Change the story without touching the art.</div><textarea id="storyEdit">${lines.map(x=>x[0]+': '+x[1]).join('\\n')}</textarea><button style="width:100%;margin-top:7px;padding:9px" onclick="saveStory()">SAVE DIALOGUE</button>`;
+ if(editorTab==='stage') b.innerHTML=`<h3>Background</h3><div class="muted">Upload any image. It becomes the playable stage background.</div><input type="file" accept="image/*" onchange="uploadBackground(event)"><div class="section"><button style="width:100%;padding:9px" onclick="resetBackground()">USE DEMO BACKGROUND</button></div>`;
+ if(editorTab==='assets') b.innerHTML=`<h3>Quick asset library</h3><div class="assetgrid">${Object.entries(manifest.assetExamples).map(([id,n])=>`<button onclick="pulse('${id} · ${n}')"><b>${id}</b>${n}</button>`).join('')}</div><div class="section muted">The IDs stay stable even when artwork is replaced.</div>`;
+ if(editorTab==='sheet') b.innerHTML=`<h3>Master one-sheet</h3><div class="muted">This is the same sheet the demo is built around.</div><img id="sheet" src="assets/one_sheet.png"><div class="section muted">2048×2048 master · semantic IDs from manifest.json</div>`;
+}
+function saveStory(){const raw=document.getElementById('storyEdit').value.split('\\n').filter(Boolean);raw.forEach((s,i)=>{const k=s.indexOf(':');if(k>0&&lines[i]){lines[i]=[s.slice(0,k),s.slice(k+1).trim()]}});pulse('DIALOGUE SAVED');renderLine()}
+function uploadBackground(e){const f=e.target.files[0];if(!f)return;const url=URL.createObjectURL(f);document.getElementById('world').style.backgroundImage=`url("${url}")`;pulse('BACKGROUND LOADED')}
+function resetBackground(){document.getElementById('world').style.backgroundImage='url("assets/default_background.jpg")';pulse('DEMO BACKGROUND')}
+place();renderEditor();
+</script>
+</body></html>

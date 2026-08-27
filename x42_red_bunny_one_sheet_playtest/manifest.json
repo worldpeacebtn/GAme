@@ -1,0 +1,28 @@
+{
+  "format": "X42-OneSheet-Playtest/0.3",
+  "masterSheet": "assets/one_sheet.png",
+  "defaultBackground": "assets/default_background.jpg",
+  "character": {
+    "id": "C01",
+    "name": "Red Bunny",
+    "idleFrames": [
+      "assets/bunny_idle_0.png",
+      "assets/bunny_idle_1.png",
+      "assets/bunny_idle_2.png"
+    ],
+    "sourceAsset": "C01",
+    "skills": [
+      "S07",
+      "S12",
+      "S31"
+    ]
+  },
+  "assetExamples": {
+    "C01": "Red Bunny",
+    "W17": "Signal Baton",
+    "S07": "Signal Burst",
+    "S12": "Shadow Dash",
+    "S31": "Network Jam",
+    "BG01": "St. Pauli Rain District"
+  }
+}
