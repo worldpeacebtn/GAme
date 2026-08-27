@@ -1,0 +1,231 @@
+{
+  "format": "X42-OneSheet-Playtest/0.6",
+  "masterSheet": "assets/one_sheet.png",
+  "viewport": {
+    "logical": [
+      320,
+      180
+    ],
+    "scaling": "nearest-neighbor",
+    "presentation": "handheld"
+  },
+  "character": {
+    "id": "C01",
+    "name": "Red Bunny",
+    "animations": {
+      "idle": {
+        "frames": 4,
+        "fps": 12,
+        "files": [
+          "assets/frames/C01_idle_00.png",
+          "assets/frames/C01_idle_01.png",
+          "assets/frames/C01_idle_02.png",
+          "assets/frames/C01_idle_03.png"
+        ]
+      },
+      "walk": {
+        "frames": 4,
+        "fps": 12,
+        "files": [
+          "assets/frames/C01_walk_00.png",
+          "assets/frames/C01_walk_01.png",
+          "assets/frames/C01_walk_02.png",
+          "assets/frames/C01_walk_03.png"
+        ]
+      },
+      "run": {
+        "frames": 4,
+        "fps": 12,
+        "files": [
+          "assets/frames/C01_run_00.png",
+          "assets/frames/C01_run_01.png",
+          "assets/frames/C01_run_02.png",
+          "assets/frames/C01_run_03.png"
+        ]
+      },
+      "attack1": {
+        "frames": 4,
+        "fps": 12,
+        "files": [
+          "assets/frames/C01_attack1_00.png",
+          "assets/frames/C01_attack1_01.png",
+          "assets/frames/C01_attack1_02.png",
+          "assets/frames/C01_attack1_03.png"
+        ]
+      },
+      "attack2": {
+        "frames": 4,
+        "fps": 12,
+        "files": [
+          "assets/frames/C01_attack2_00.png",
+          "assets/frames/C01_attack2_01.png",
+          "assets/frames/C01_attack2_02.png",
+          "assets/frames/C01_attack2_03.png"
+        ]
+      },
+      "dash": {
+        "frames": 4,
+        "fps": 12,
+        "files": [
+          "assets/frames/C01_dash_00.png",
+          "assets/frames/C01_dash_01.png",
+          "assets/frames/C01_dash_02.png",
+          "assets/frames/C01_dash_03.png"
+        ]
+      },
+      "hit": {
+        "frames": 4,
+        "fps": 12,
+        "files": [
+          "assets/frames/C01_hit_00.png",
+          "assets/frames/C01_hit_01.png",
+          "assets/frames/C01_hit_02.png",
+          "assets/frames/C01_hit_03.png"
+        ]
+      },
+      "death": {
+        "frames": 4,
+        "fps": 12,
+        "files": [
+          "assets/frames/C01_death_00.png",
+          "assets/frames/C01_death_01.png",
+          "assets/frames/C01_death_02.png",
+          "assets/frames/C01_death_03.png"
+        ]
+      }
+    }
+  },
+  "stages": {
+    "BG01": {
+      "name": "street_rain",
+      "file": "assets/stages/street_rain.jpg"
+    },
+    "BG02": {
+      "name": "neon_lane",
+      "file": "assets/stages/neon_lane.jpg"
+    },
+    "BG03": {
+      "name": "harbor",
+      "file": "assets/stages/harbor.jpg"
+    },
+    "BG04": {
+      "name": "warehouse",
+      "file": "assets/stages/warehouse.jpg"
+    },
+    "BG05": {
+      "name": "underground",
+      "file": "assets/stages/underground.jpg"
+    },
+    "BG06": {
+      "name": "utopia",
+      "file": "assets/stages/utopia.jpg"
+    }
+  },
+  "npcs": [
+    "N01",
+    "N02",
+    "N03",
+    "N04",
+    "N05",
+    "N06",
+    "N07",
+    "N08"
+  ],
+  "enemies": [
+    "E01",
+    "E02",
+    "E03",
+    "E04",
+    "E05",
+    "E06",
+    "E07",
+    "E08",
+    "E09",
+    "E10",
+    "E11",
+    "E12",
+    "E13",
+    "E14"
+  ],
+  "equipment": [
+    "W01",
+    "W02",
+    "W03",
+    "W04",
+    "W05",
+    "W06",
+    "W07",
+    "W08",
+    "W09",
+    "W10",
+    "W11",
+    "W12",
+    "W13",
+    "W14",
+    "W15",
+    "W16",
+    "W17",
+    "W18",
+    "W19",
+    "W20",
+    "W21",
+    "W22",
+    "W23",
+    "W24"
+  ],
+  "skills": [
+    "S01",
+    "S02",
+    "S03",
+    "S04",
+    "S05",
+    "S06",
+    "S07",
+    "S08",
+    "S09",
+    "S10",
+    "S11",
+    "S12",
+    "S13",
+    "S14",
+    "S15",
+    "S16",
+    "S17",
+    "S18",
+    "S19",
+    "S20"
+  ],
+  "objects": [
+    "O01",
+    "O02",
+    "O03",
+    "O04",
+    "O05",
+    "O06",
+    "O07",
+    "O08"
+  ],
+  "items": [
+    "I01",
+    "I02",
+    "I03",
+    "I04",
+    "I05",
+    "I06",
+    "I07",
+    "I08",
+    "I09",
+    "I10",
+    "I11",
+    "I12",
+    "I13",
+    "I14",
+    "I15"
+  ],
+  "vehicles": [
+    "V01",
+    "V02",
+    "V03",
+    "V04"
+  ]
+}
