@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Cyber Comic Studio & Multi-Layer Graphic Engine v5</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#03050b',
+                        darkcard: '#080d1a',
+                        cyberblue: '#00f0ff',
+                        cyberpurple: '#9d00ff',
+                        cyberpink: '#ff007f',
+                        cyberorange: '#ff5500',
+                        neongreen: '#00ffcc'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Bangers&display=swap');
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+        ::-webkit-scrollbar { width: 2px; height: 2px; }
+        ::-webkit-scrollbar-thumb { background: rgba(157,0,255,0.4); border-radius: 2px; }
+        
+        .neon-infinite-grid {
+            background-color: #03050b;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(157,0,255,0.18) 0%, transparent 60%),
+                radial-gradient(circle at 10% 20%, rgba(0,240,255,0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(255,0,127,0.15) 0%, transparent 40%),
+                linear-gradient(to right, rgba(0,240,255,0.06) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,85,0,0.05) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+        }
+
+        .neon-hud {
+            background: linear-gradient(135deg, rgba(8, 13, 26, 0.9) 0%, rgba(3, 5, 11, 0.98) 100%);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            box-shadow: 0 0 25px rgba(157, 0, 255, 0.2), inset 0 0 10px rgba(0, 240, 255, 0.05);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-radius: 16px;
+        }
+
+        .tactile-btn {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(5, 8, 18, 0.95) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+            border-radius: 10px;
+            transition: all 0.08s ease;
+            touch-action: pan-y;
+        }
+        .tactile-btn:active, .tactile-btn.active {
+            transform: scale(0.93);
+            background: linear-gradient(135deg, rgba(157, 0, 255, 0.4) 0%, rgba(0, 240, 255, 0.3) 100%);
+            border-color: #00f0ff;
+            box-shadow: 0 0 15px rgba(0,240,255,0.6);
+        }
+
+        .spheric-wheel {
+            background: radial-gradient(circle at 35% 35%, #00f0ff 0%, #9d00ff 50%, #03050b 90%);
+            box-shadow: inset 0 -8px 20px rgba(0,0,0,0.9), 0 0 25px rgba(0,240,255,0.5);
+            border: 2px solid rgba(255,255,255,0.6);
+            border-radius: 50%;
+            width: 68px;
+            height: 68px;
+            touch-action: none;
+            transition: border-radius 0.3s ease;
+        }
+        .spheric-wheel.square-form {
+            border-radius: 16px;
+        }
+        .spheric-wheel:active {
+            transform: scale(0.92);
+            border-color: #ff007f;
+            box-shadow: inset 0 -4px 10px rgba(0,0,0,0.9), 0 0 20px rgba(255,0,127,0.7);
+        }
+        .comic-font { font-family: 'Bangers', cursive; letter-spacing: 1px; }
+    </style>
+</head>
+<body class="bg-darkbg text-slate-100 h-[100dvh] w-screen overflow-hidden flex flex-col select-none">
+
+    <div id="toast-container" class="fixed top-12 right-3 left-3 sm:left-auto z-50 flex flex-col gap-1.5 pointer-events-none"></div>
+
+    <header class="absolute top-0 left-0 right-0 z-40 p-2 flex items-center justify-between pointer-events-none">
+        <div class="neon-hud px-2.5 py-1 flex items-center gap-2 overflow-x-auto max-w-[42vw] pointer-events-auto no-scrollbar">
+            <span class="text-[9px] text-cyberblue font-bold">📂1</span>
+            <div id="tray-items" class="flex gap-1.5">
+                <span class="text-[9px] text-slate-400">0</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 pointer-events-auto">
+            <div id="history-emoji-wheel" class="neon-hud px-3 py-1.5 flex items-center gap-1.5 cursor-pointer text-xs shadow-xl rounded-xl" title="⏪ / ⏩">
+                <span>⏪</span><span class="text-[9px]">1</span><span>⏩</span>
+            </div>
+            <button onclick="openExportModal()" class="neon-hud px-3 py-1 text-xs font-bold text-neongreen flex items-center gap-1 active:scale-95 shadow-xl border border-neongreen/40 rounded-xl">
+                <span>💾</span><span>1</span>
+            </button>
+        </div>
+    </header>
+
+    <aside class="absolute left-2 top-12 bottom-20 w-52 neon-hud z-30 flex flex-col p-2 gap-2 pointer-events-auto shadow-2xl overflow-hidden hidden sm:flex">
+        <div class="flex items-center justify-between border-b border-white/10 pb-1">
+            <span class="text-[10px] font-bold text-cyberblue flex items-center gap-1">
+                <span>⚡</span><span>1</span>
+            </span>
+            <button onclick="openFilterLayerModal()" class="tactile-btn px-2 py-0.5 text-[9px] text-neongreen font-bold">+✨</button>
+        </div>
+        <div id="filter-layer-list" class="flex-1 overflow-y-auto space-y-1.5 pr-0.5 no-scrollbar"></div>
+    </aside>
+
+    <div id="canvas-container" class="absolute inset-0 z-0 neon-infinite-grid touch-none flex items-center justify-center overflow-hidden sm:pl-52">
+        <div id="zoom-viewport" class="relative w-full h-full flex flex-col items-center justify-center transition-transform duration-75 origin-center cursor-grab active:cursor-grabbing">
+            <canvas id="studio-canvas" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg border border-cyberblue/30"></canvas>
+            <div id="canvas-caption-display" class="mt-2 px-3 py-1 rounded-xl bg-darkcard/90 border border-cyberpurple/40 text-xs font-bold text-cyberblue comic-font tracking-wider shadow-2xl max-w-xs text-center truncate">
+                ⚡ CYBER MANGA ⚡
+            </div>
+            <video id="studio-video" class="max-w-full max-h-full object-contain hidden" controls crossorigin="anonymous" playsinline loop></video>
+        </div>
+        
+        <div id="canvas-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-darkbg/95 backdrop-blur-xl z-30 pointer-events-auto p-4 text-center">
+            <label class="neon-hud p-8 flex flex-col items-center gap-3 cursor-pointer hover:border-cyberblue transition max-w-sm w-full rounded-3xl">
+                <input type="file" id="file-input" multiple accept="image/*,video/*,.png,.jpg,.jpeg" class="hidden" onchange="handleFileSelect(event)">
+                <span class="text-4xl animate-bounce">⚡🌆</span>
+                <span class="text-xs font-bold text-slate-100">1</span>
+                <span class="text-[9px] text-cyberblue">🚀⚡✨</span>
+            </label>
+        </div>
+    </div>
+
+    <div class="absolute bottom-2 left-2 right-2 sm:left-52 sm:right-2 max-w-2xl mx-auto z-40 pointer-events-none pb-[env(safe-area-inset-bottom)]">
+        <div class="neon-hud p-2 flex flex-col gap-1.5 pointer-events-auto shadow-2xl">
+            
+            <div class="flex items-center justify-between border-b border-white/10 pb-1">
+                <div class="flex items-center gap-1 bg-darkcard/90 p-0.5 rounded-lg border border-white/10">
+                    <button onclick="switchHudTab('stamps')" id="tab-btn-stamps" class="px-2.5 py-0.5 rounded-md text-xs font-bold bg-cyberpurple text-white">✨1</button>
+                    <button onclick="switchHudTab('crop')" id="tab-btn-crop" class="px-2.5 py-0.5 rounded-md text-xs font-bold text-slate-400">✂️2</button>
+                    <button onclick="switchHudTab('adjust')" id="tab-btn-adjust" class="px-2.5 py-0.5 rounded-md text-xs font-bold text-slate-400">🎛️3</button>
+                </div>
+                <div class="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-darkcard/90 border border-white/10 text-[10px]">
+                    <span id="active-hud-status" class="text-neongreen font-bold">✨📐</span>
+                    <button onclick="toggleWheelForm()" class="tactile-btn px-1.5 py-0.5 text-[9px]" title="Transform Shape">🔷⭕</button>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <div id="hud-deck" class="grid grid-cols-4 sm:grid-cols-6 gap-1.5 flex-1 w-full overflow-x-auto no-scrollbar py-0.5"></div>
+
+                <div class="flex items-center gap-2 bg-darkcard/90 p-1.5 rounded-xl border border-cyberblue/30 shrink-0">
+                    <div class="flex flex-col text-right">
+                        <span id="wheel-target-label" class="text-[7px] text-cyberblue font-bold uppercase">🎯ZOOM/ROT</span>
+                        <span id="sticker-dial-val" class="text-[9px] text-slate-200 font-mono">75|0</span>
+                    </div>
+                    <div id="spheric-jog-wheel" class="spheric-wheel flex items-center justify-center cursor-pointer text-sm shadow-2xl">
+                        <i class="fa-solid fa-rotate text-neongreen"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-1.5 pt-1 border-t border-white/10">
+                <span class="text-[10px] text-cyberblue font-bold">💬</span>
+                <input type="text" id="bottom-caption-input" oninput="updateCaptionText(this.value)" placeholder="⚡ POW! ✨ 777" class="w-full bg-darkbg/90 border border-white/20 rounded-xl px-2.5 py-1 text-xs text-slate-100 font-semibold">
+                <button onclick="stampInlineText()" class="tactile-btn px-3 py-1 text-xs font-bold text-neongreen shrink-0">➕1</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="filter-modal-backdrop" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3">
+        <div class="neon-hud rounded-3xl shadow-2xl w-full max-w-md p-4 space-y-3">
+            <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                <h3 class="font-bold text-xs text-cyberblue">⚡✨1</h3>
+                <button onclick="closeFilterModal()" class="text-slate-400">✕</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-xs">
+                <button onclick="addFilterLayer('cyber-neon')" class="tactile-btn p-3 flex flex-col items-center gap-1"><span class="text-xl">🌆</span><span class="font-bold text-cyberblue">1</span></button>
+                <button onclick="addFilterLayer('anime-ductus')" class="tactile-btn p-3 flex flex-col items-center gap-1"><span class="text-xl">⚡</span><span class="font-bold text-neongreen">2</span></button>
+                <button onclick="addFilterLayer('ductus-pro')" class="tactile-btn p-3 flex flex-col items-center gap-1"><span class="text-xl">🏮</span><span class="font-bold text-cyberpink">3</span></button>
+                <button onclick="addFilterLayer('pixel-art')" class="tactile-btn p-3 flex flex-col items-center gap-1"><span class="text-xl">👾</span><span class="font-bold text-cyberorange">4</span></button>
+                <button onclick="addFilterLayer('halftone-dots')" class="tactile-btn p-3 flex flex-col items-center gap-1"><span class="text-xl">⚪</span><span class="font-bold text-cyberpurple">5</span></button>
+                <button onclick="addFilterLayer('glitch-rgb')" class="tactile-btn p-3 flex flex-col items-center gap-1"><span class="text-xl">💥</span><span class="font-bold text-slate-200">6</span></button>
+            </div>
+            <div class="pt-2 border-t border-white/10 flex justify-end">
+                <button onclick="closeFilterModal()" class="tactile-btn px-3 py-1.5 text-slate-300 text-xs font-semibold">❌</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-backdrop" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-3">
+        <div class="neon-hud rounded-3xl shadow-2xl w-full max-w-md p-4 space-y-3">
+            <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                <h3 class="font-bold text-xs text-cyberblue">💾1</h3>
+                <button onclick="closeModals()" class="text-slate-400">✕</button>
+            </div>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="text-[9px] text-slate-400 block mb-1 font-semibold">📏1</label>
+                    <select id="export-res-mode" class="w-full bg-darkbg border border-white/15 rounded-xl p-2.5 text-xs text-slate-200">
+                        <option value="native">1:1 (HQ)</option>
+                        <option value="viewport">2:2 (View)</option>
+                        <option value="sprite">3:3 (512)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[9px] text-slate-400 block mb-1 font-semibold">📁2</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="executeExport('png')" class="bg-cyberblue text-black py-2.5 rounded-xl font-bold shadow">PNG</button>
+                        <button onclick="executeExport('jpeg')" class="tactile-btn py-2.5 font-semibold text-slate-200">JPG</button>
+                        <button onclick="executeExport('webp')" class="tactile-btn py-2.5 font-semibold text-neongreen">WEBP</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let library = [];
+        let layers = [];
+        let currentEditFile = null;
+        let activeHudTab = 'stamps';
+        let filterLayers = [];
+        
+        // Adjustments with Contrast & Brightness fully supported
+        let adjustments = { brightness: 10, contrast: 20, saturation: 90, filterStrength: 90 };
+        let activeWheelTarget = 'size'; // 'size', 'rotation', 'brightness', 'contrast', 'saturation', 'strength'
+
+        let overlays = [];
+        let selectedOverlayIndex = null;
+        let isDraggingOverlay = false;
+        let dragStartX = 0, dragStartY = 0;
+        let activeOverlaySize = 75;
+        let activeOverlayRotation = 0;
+
+        let isCropActive = false;
+        let cropBox = { x: 50, y: 50, w: 300, h: 300 };
+        let isDraggingCrop = false;
+        let cropDragMode = null;
+
+        let historyStack = [];
+        let historyRedoStack = [];
+
+        let canvas = document.getElementById('studio-canvas');
+        let ctx = canvas.getContext('2d', { willReadFrequently: true });
+        let videoEl = document.getElementById('studio-video');
+
+        let currentZoom = 1.0, panX = 0, panY = 0;
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto px-3.5 py-2 rounded-xl text-xs font-medium shadow-2xl flex items-center gap-2 transition transform translate-y-2 opacity-0 ${
+                type === 'success' ? 'bg-cyberpurple/95 text-white border border-cyberblue/40 backdrop-blur-md' : 'bg-red-600/95 text-white backdrop-blur-md'
+            }`;
+            toast.innerHTML = `<span>${type === 'success' ? '⚡' : '⚠️'}</span> ${message}`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 2500);
+        }
+
+        // --- HUD Tabs & Deck (Strict Emojis and Numbers ONLY) ---
+        function switchHudTab(tab) {
+            activeHudTab = tab;
+            isCropActive = (tab === 'crop');
+            document.getElementById('tab-btn-stamps').className = `px-2.5 py-0.5 rounded-md text-xs font-bold ${tab==='stamps'?'bg-cyberpurple text-white':'text-slate-400'}`;
+            document.getElementById('tab-btn-crop').className = `px-2.5 py-0.5 rounded-md text-xs font-bold ${tab==='crop'?'bg-cyberblue text-black':'text-slate-400'}`;
+            document.getElementById('tab-btn-adjust').className = `px-2.5 py-0.5 rounded-md text-xs font-bold ${tab==='adjust'?'bg-cyberblue text-black':'text-slate-400'}`;
+            renderHudDeck();
+            compositeLayers();
+        }
+
+        function renderHudDeck() {
+            const deck = document.getElementById('hud-deck');
+            if (activeHudTab === 'stamps') {
+                document.getElementById('active-hud-status').innerText = '✨📐';
+                const stamps = [
+                    { emoji: '💥', id: '1' },
+                    { emoji: '⚡', id: '2' },
+                    { emoji: '🔥', id: '3' },
+                    { emoji: '💬', id: '4' },
+                    { emoji: '✨', id: '5' },
+                    { emoji: '💀', id: '6' },
+                    { emoji: '💢', id: '7' },
+                    { emoji: '🚀', id: '8' }
+                ];
+                deck.innerHTML = stamps.map(s => `
+                    <div class="tactile-btn p-1.5 flex flex-col items-center justify-center cursor-pointer select-none text-center"
+                         onclick="addStickerOverlay('${s.emoji}')">
+                        <span class="text-base">${s.emoji}</span>
+                        <span class="text-[8px] font-bold text-cyberblue">${s.id}</span>
+                    </div>
+                `).join('');
+            } else if (activeHudTab === 'crop') {
+                document.getElementById('active-hud-status').innerText = '✂️📐';
+                deck.innerHTML = `
+                    <button onclick="applyCropAction()" class="tactile-btn p-1.5 col-span-2 flex flex-col items-center bg-cyberblue/20 border-cyberblue">
+                        <span class="text-sm">✂️</span><span class="text-[9px] font-bold text-cyberblue">1</span>
+                    </button>
+                    <button onclick="resetCropBox()" class="tactile-btn p-1.5 col-span-2 flex flex-col items-center">
+                        <span class="text-sm">🔄</span><span class="text-[9px] font-bold text-slate-200">2</span>
+                    </button>
+                `;
+            } else if (activeHudTab === 'adjust') {
+                document.getElementById('active-hud-status').innerText = '🎛️⚡';
+                deck.innerHTML = `
+                    <button onclick="setWheelTarget('brightness')" class="tactile-btn p-1.5 flex flex-col items-center ${activeWheelTarget==='brightness'?'border-cyberblue':''}"><span class="text-base">☀️</span><span class="text-[8px] text-cyberblue font-bold">1</span></button>
+                    <button onclick="setWheelTarget('contrast')" class="tactile-btn p-1.5 flex flex-col items-center ${activeWheelTarget==='contrast'?'border-cyberblue':''}"><span class="text-base">🌓</span><span class="text-[8px] text-cyberblue font-bold">2</span></button>
+                    <button onclick="setWheelTarget('saturation')" class="tactile-btn p-1.5 flex flex-col items-center ${activeWheelTarget==='saturation'?'border-cyberblue':''}"><span class="text-base">🎨</span><span class="text-[8px] text-cyberblue font-bold">3</span></button>
+                    <button onclick="setWheelTarget('size')" class="tactile-btn p-1.5 flex flex-col items-center ${activeWheelTarget==='size'?'border-cyberblue':''}"><span class="text-base">📏</span><span class="text-[8px] text-cyberblue font-bold">4</span></button>
+                `;
+            }
+        }
+
+        function setWheelTarget(target) {
+            activeWheelTarget = target;
+            document.getElementById('wheel-target-label').innerText = `🎯${target.toUpperCase()}`;
+            showToast(`Target: ${target} 🎯`);
+        }
+
+        function toggleWheelForm() {
+            const wheel = document.getElementById('spheric-jog-wheel');
+            wheel.classList.toggle('square-form');
+            showToast('Form toggled 🔷⭕');
+        }
+
+        // --- Adaptive Spheric Wheel (Adapts to every value) ---
+        const sphericWheel = document.getElementById('spheric-jog-wheel');
+        let wheelStartY = 0;
+
+        sphericWheel.addEventListener('touchstart', (e) => {
+            wheelStartY = e.touches[0].clientY;
+            e.preventDefault();
+        }, { passive: false });
+
+        sphericWheel.addEventListener('touchmove', (e) => {
+            const dy = wheelStartY - e.touches[0].clientY;
+            if (Math.abs(dy) > 1) {
+                modifyTargetValue(dy > 0 ? 3 : -3);
+                wheelStartY = e.touches[0].clientY;
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        sphericWheel.addEventListener('mousedown', (e) => {
+            wheelStartY = e.clientY;
+            const onMouseMove = (ev) => {
+                const dy = wheelStartY - ev.clientY;
+                if (Math.abs(dy) > 1) {
+                    modifyTargetValue(dy > 0 ? 3 : -3);
+                    wheelStartY = ev.clientY;
+                }
+            };
+            const onMouseUp = () => {
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+            };
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        });
+
+        function modifyTargetValue(delta) {
+            if (activeWheelTarget === 'size') {
+                activeOverlaySize = Math.max(16, Math.min(300, activeOverlaySize + delta));
+                if (selectedOverlayIndex !== null && overlays[selectedOverlayIndex]) overlays[selectedOverlayIndex].size = activeOverlaySize;
+            } else if (activeWheelTarget === 'rotation') {
+                activeOverlayRotation = (activeOverlayRotation + delta * 3) % 360;
+                if (selectedOverlayIndex !== null && overlays[selectedOverlayIndex]) overlays[selectedOverlayIndex].rotation = activeOverlayRotation * (Math.PI / 180);
+            } else if (activeWheelTarget === 'brightness') {
+                adjustments.brightness = Math.max(-100, Math.min(100, adjustments.brightness + delta));
+                processImagePipeline();
+            } else if (activeWheelTarget === 'contrast') {
+                adjustments.contrast = Math.max(-100, Math.min(100, adjustments.contrast + delta));
+                processImagePipeline();
+            } else if (activeWheelTarget === 'saturation') {
+                adjustments.saturation = Math.max(-100, Math.min(200, adjustments.saturation + delta));
+                processImagePipeline();
+            }
+            updateStickerDialDisplay();
+            compositeLayers();
+        }
+
+        function updateStickerDialDisplay() {
+            let val = activeOverlaySize;
+            if(activeWheelTarget === 'brightness') val = adjustments.brightness;
+            if(activeWheelTarget === 'contrast') val = adjustments.contrast;
+            if(activeWheelTarget === 'saturation') val = adjustments.saturation;
+            document.getElementById('sticker-dial-val').innerText = `${val}|${activeOverlayRotation}°`;
+        }
+
+        // --- Filter Layers with Ductus Anime & Pixel Art ---
+        function openFilterLayerModal() {
+            if (!canvas.width) { showToast('Load file first!', 'error'); return; }
+            document.getElementById('filter-modal-backdrop').classList.remove('hidden');
+        }
+        function closeFilterModal() { document.getElementById('filter-modal-backdrop').classList.add('hidden'); }
+
+        function addFilterLayer(type) {
+            saveHistorySnapshot();
+            filterLayers.push({ id: 'fl_' + Math.random().toString(36).substr(2,6), type: type, strength: 90, blendMode: 'overlay' });
+            closeFilterModal();
+            renderFilterLayersUI();
+            processImagePipeline();
+            showToast(`Filter added: ${type} ⚡`);
+        }
+
+        function renderFilterLayersUI() {
+            const list = document.getElementById('filter-layer-list');
+            if(!filterLayers.length) {
+                list.innerHTML = `<span class="text-[9px] text-slate-500">0</span>`;
+                return;
+            }
+            list.innerHTML = filterLayers.map(fl => `
+                <div class="p-1.5 rounded-xl bg-darkcard/90 border border-cyberblue/30 flex flex-col gap-1">
+                    <div class="flex items-center justify-between text-[10px] font-bold text-cyberblue">
+                        <span class="truncate uppercase">${fl.type}</span>
+                        <button onclick="removeFilterLayer('${fl.id}')" class="text-red-400">✕</button>
+                    </div>
+                    <div class="flex items-center gap-1 text-[8px] text-slate-300">
+                        <select onchange="updateFilterBlend('${fl.id}', this.value)" class="bg-darkbg border border-white/10 rounded px-1 py-0.5 text-[8px]">
+                            <option value="overlay" ${fl.blendMode==='overlay'?'selected':''}>Over</option>
+                            <option value="multiply" ${fl.blendMode==='multiply'?'selected':''}>Mult</option>
+                            <option value="screen" ${fl.blendMode==='screen'?'selected':''}>Scr</option>
+                        </select>
+                        <input type="range" min="10" max="100" value="${fl.strength}" oninput="updateFilterStrength('${fl.id}', this.value)" class="w-full accent-cyberblue">
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function removeFilterLayer(id) {
+            saveHistorySnapshot();
+            filterLayers = filterLayers.filter(f => f.id !== id);
+            renderFilterLayersUI();
+            processImagePipeline();
+            showToast('Filter removed 🗑️');
+        }
+
+        function updateFilterBlend(id, mode) { const f = filterLayers.find(x => x.id === id); if(f) { f.blendMode = mode; processImagePipeline(); } }
+        function updateFilterStrength(id, val) { const f = filterLayers.find(x => x.id === id); if(f) { f.strength = parseInt(val); processImagePipeline(); } }
+
+        // --- File Loading ---
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const item = { id: 'f_' + Math.random().toString(36).substring(2,8), name: file.name, type: file.type.startsWith('video')?'video':'image', dataUrl: ev.target.result };
+                    library.push(item);
+                    updateLibraryTray();
+                    if(library.length === 1) loadIntoStudio(item);
+                };
+                reader.readAsDataURL(file);
+            });
+            showToast(`Loaded ${files.length} file(s)! 🚀`);
+            e.target.value = '';
+        }
+
+        function updateLibraryTray() {
+            document.getElementById('tray-items').innerHTML = library.map(i => `
+                <button onclick="loadIntoStudio(library.find(x=>x.id==='${i.id}'))" class="tactile-btn px-2 py-0.5 text-[9px] truncate max-w-[90px]">
+                    <span>${i.type==='video'?'🎬':'🖼️'}</span>
+                </button>
+            `).join('');
+        }
+
+        function loadIntoStudio(item) {
+            currentEditFile = item;
+            document.getElementById('canvas-placeholder').classList.add('hidden');
+            videoEl.classList.add('hidden');
+            canvas.classList.add('hidden');
+
+            if (item.type === 'video') {
+                videoEl.classList.remove('hidden');
+                videoEl.src = item.dataUrl;
+                videoEl.load();
+            } else {
+                canvas.classList.remove('hidden');
+                const img = new Image();
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    layers = []; overlays = []; filterLayers = []; historyStack = []; historyRedoStack = [];
+
+                    const base = {
+                        id: 'layer_base', name: item.name, opacity: 100, blendMode: 'normal',
+                        canvas: document.createElement('canvas'), originalImg: img
+                    };
+                    base.canvas.width = img.width; base.canvas.height = img.height;
+                    base.ctx = base.canvas.getContext('2d', { willReadFrequently: true });
+                    base.ctx.drawImage(img, 0, 0);
+
+                    layers.push(base);
+                    filterLayers.push({ id: 'fl_def', type: 'anime-ductus', strength: 90, blendMode: 'overlay' });
+
+                    resetCropBox();
+                    renderFilterLayersUI();
+                    processImagePipeline();
+                    resetZoom();
+                };
+                img.src = item.dataUrl;
+            }
+            showToast(`Loaded: ${item.name} ⚡`);
+        }
+
+        // --- Image Pipeline with Contrast, Brightness, Ductus Anime & Pixel Art ---
+        function processImagePipeline() {
+            if (!layers.length || !layers[0].originalImg) return;
+            const base = layers[0];
+            const w = base.canvas.width, h = base.canvas.height;
+            
+            base.ctx.clearRect(0, 0, w, h);
+            base.ctx.drawImage(base.originalImg, 0, 0);
+
+            let imgData = base.ctx.getImageData(0, 0, w, h);
+            let d = imgData.data;
+            const bright = adjustments.brightness * 1.5;
+            const contrast = adjustments.contrast;
+            const sat = adjustments.saturation / 100;
+            const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+
+            for (let i = 0; i < d.length; i += 4) {
+                let r = d[i], g = d[i+1], b = d[i+2];
+                r = factor * (r + bright - 128) + 128;
+                g = factor * (g + bright - 128) + 128;
+                b = factor * (b + bright - 128) + 128;
+
+                let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                d[i] = Math.min(255, Math.max(0, gray + (r - gray) * sat));
+                d[i+1] = Math.min(255, Math.max(0, gray + (g - gray) * sat));
+                d[i+2] = Math.min(255, Math.max(0, gray + (b - gray) * sat));
+            }
+            base.ctx.putImageData(imgData, 0, 0);
+
+            filterLayers.forEach(fl => {
+                let fC = document.createElement('canvas');
+                fC.width = w; fC.height = h;
+                let fCtx = fC.getContext('2d');
+                fCtx.drawImage(base.canvas, 0, 0);
+
+                if (fl.type === 'anime-ductus' || fl.type === 'ductus-pro') {
+                    let fd = fCtx.getImageData(0, 0, w, h);
+                    let pixels = fd.data;
+                    let steps = fl.type === 'ductus-pro' ? 6 : 4;
+                    for (let i = 0; i < pixels.length; i += 4) {
+                        pixels[i] = Math.floor(pixels[i] / (256 / steps)) * (256 / steps);
+                        pixels[i+1] = Math.floor(pixels[i+1] / (256 / steps)) * (256 / steps);
+                        pixels[i+2] = Math.floor(pixels[i+2] / (256 / steps)) * (256 / steps);
+                    }
+                    fCtx.putImageData(fd, 0, 0);
+                } else if (fl.type === 'pixel-art') {
+                    let pSize = 8;
+                    fCtx.imageSmoothingEnabled = false;
+                    fCtx.drawImage(base.canvas, 0, 0, w/pSize, h/pSize);
+                    fCtx.drawImage(fC, 0, 0, w/pSize, h/pSize, 0, 0, w, h);
+                }
+
+                base.ctx.save();
+                base.ctx.globalAlpha = fl.strength / 100;
+                base.ctx.globalCompositeOperation = fl.blendMode;
+                base.ctx.drawImage(fC, 0, 0);
+                base.ctx.restore();
+            });
+
+            compositeLayers();
+        }
+
+        function compositeLayers() {
+            if (!canvas.width) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            layers.forEach(l => {
+                ctx.save();
+                ctx.globalAlpha = l.opacity / 100;
+                ctx.globalCompositeOperation = l.blendMode;
+                ctx.drawImage(l.canvas, 0, 0);
+                ctx.restore();
+            });
+
+            overlays.forEach(item => {
+                ctx.save();
+                ctx.translate(item.x, item.y);
+                if (item.rotation) ctx.rotate(item.rotation);
+                ctx.font = `bold ${item.size * 1.3}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(item.content, 0, 0);
+                ctx.restore();
+            });
+
+            if (isCropActive) {
+                ctx.save();
+                ctx.strokeStyle = '#00f0ff';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(cropBox.x, cropBox.y, cropBox.w, cropBox.h);
+                ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(cropBox.x + cropBox.w/3, cropBox.y); ctx.lineTo(cropBox.x + cropBox.w/3, cropBox.y + cropBox.h);
+                ctx.moveTo(cropBox.x + (cropBox.w*2)/3, cropBox.y); ctx.lineTo(cropBox.x + (cropBox.w*2)/3, cropBox.y + cropBox.h);
+                ctx.moveTo(cropBox.x, cropBox.y + cropBox.h/3); ctx.lineTo(cropBox.x + cropBox.w, cropBox.y + cropBox.h/3);
+                ctx.moveTo(cropBox.x, cropBox.y + (cropBox.h*2)/3); ctx.lineTo(cropBox.x + cropBox.w, cropBox.y + (cropBox.h*2)/3);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        // --- Stickers & Stamps ---
+        function addStickerOverlay(emoji) {
+            if(!canvas.width) return;
+            saveHistorySnapshot();
+            overlays.push({
+                content: emoji,
+                x: canvas.width / 2 + (Math.random() * 30 - 15),
+                y: canvas.height / 2 + (Math.random() * 30 - 15),
+                size: activeOverlaySize,
+                rotation: activeOverlayRotation * (Math.PI / 180)
+            });
+            selectedOverlayIndex = overlays.length - 1;
+            compositeLayers();
+            updateStickerDialDisplay();
+            showToast(`Added ${emoji} ✨`);
+        }
+
+        function stampInlineText() {
+            const input = document.getElementById('bottom-caption-input');
+            const txt = input.value.trim();
+            if(!txt || !canvas.width) return;
+            saveHistorySnapshot();
+            overlays.push({
+                content: txt,
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                size: activeOverlaySize,
+                rotation: activeOverlayRotation * (Math.PI / 180)
+            });
+            selectedOverlayIndex = overlays.length - 1;
+            input.value = '';
+            compositeLayers();
+            updateStickerDialDisplay();
+            showToast('Stamped text! 💬');
+        }
+
+        // --- Canvas Interactions ---
+        function getCanvasPoint(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        canvas.addEventListener('pointerdown', (e) => {
+            const pt = getCanvasPoint(e);
+            if (isCropActive) {
+                isDraggingCrop = true;
+                dragStartX = pt.x - cropBox.x; dragStartY = pt.y - cropBox.y;
+                canvas.setPointerCapture(e.pointerId);
+                return;
+            }
+            for (let i = overlays.length - 1; i >= 0; i--) {
+                if (Math.hypot(pt.x - overlays[i].x, pt.y - overlays[i].y) < 90) {
+                    selectedOverlayIndex = i;
+                    activeOverlaySize = overlays[i].size;
+                    isDraggingOverlay = true;
+                    dragStartX = pt.x - overlays[i].x;
+                    dragStartY = pt.y - overlays[i].y;
+                    canvas.setPointerCapture(e.pointerId);
+                    updateStickerDialDisplay();
+                    e.stopPropagation();
+                    return;
+                }
+            }
+        });
+
+        canvas.addEventListener('pointermove', (e) => {
+            const pt = getCanvasPoint(e);
+            if (isCropActive && isDraggingCrop) {
+                cropBox.x = pt.x - dragStartX;
+                cropBox.y = pt.y - dragStartY;
+                compositeLayers();
+                return;
+            }
+            if (isDraggingOverlay && selectedOverlayIndex !== null) {
+                overlays[selectedOverlayIndex].x = pt.x - dragStartX;
+                overlays[selectedOverlayIndex].y = pt.y - dragStartY;
+                compositeLayers();
+                e.stopPropagation();
+            }
+        });
+
+        canvas.addEventListener('pointerup', (e) => {
+            isDraggingOverlay = false;
+            isDraggingCrop = false;
+            try { canvas.releasePointerCapture(e.pointerId); } catch(err){}
+        });
+
+        function resetCropBox() {
+            if(!canvas.width) return;
+            cropBox = { x: canvas.width * 0.1, y: canvas.height * 0.1, w: canvas.width * 0.8, h: canvas.height * 0.8 };
+            compositeLayers();
+            showToast('Grid reset ✂️');
+        }
+
+        function applyCropAction() {
+            if(!canvas.width) return;
+            saveHistorySnapshot();
+            let tmpC = document.createElement('canvas');
+            tmpC.width = cropBox.w; tmpC.height = cropBox.h;
+            tmpC.getContext('2d').drawImage(canvas, cropBox.x, cropBox.y, cropBox.w, cropBox.h, 0, 0, cropBox.w, cropBox.h);
+
+            canvas.width = cropBox.w; canvas.height = cropBox.h;
+            ctx.drawImage(tmpC, 0, 0);
+            if(layers.length) {
+                layers[0].canvas.width = cropBox.w; layers[0].canvas.height = cropBox.h;
+                layers[0].ctx.drawImage(canvas, 0, 0);
+            }
+            isCropActive = false;
+            switchHudTab('stamps');
+            compositeLayers();
+            showToast('Cropped successfully! ✂️⚡');
+        }
+
+        function updateCaptionText(v) {
+            document.getElementById('canvas-caption-display').innerText = v || '⚡ CYBER MANGA ⚡';
+        }
+
+        // --- Crash-Proof Export & History ---
+        function saveHistorySnapshot() {
+            if (!layers.length) return;
+            try {
+                historyStack.push(layers.map(l => ({ id: l.id, name: l.name, dataUrl: l.canvas.toDataURL() })));
+                if (historyStack.length > 20) historyStack.shift();
+                historyRedoStack = [];
+            } catch(e) {}
+        }
+
+        function openExportModal() {
+            if(!canvas.width && videoEl.classList.contains('hidden')) { showToast('No active asset', 'error'); return; }
+            document.getElementById('modal-backdrop').classList.remove('hidden');
+        }
+        function closeModals() {
+            document.getElementById('modal-backdrop').classList.add('hidden');
+            document.getElementById('filter-modal-backdrop').classList.add('hidden');
+        }
+
+        function executeExport(fmt) {
+            try {
+                let mime = fmt === 'jpeg' ? 'image/jpeg' : (fmt === 'webp' ? 'image/webp' : 'image/png');
+                let dataUrl = canvas.toDataURL(mime, 0.95);
+                let a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = (currentEditFile ? currentEditFile.name.split('.')[0] : 'cyber') + `_v5.${fmt}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                closeModals();
+                showToast('Exported successfully! 💾🚀');
+            } catch(err) {
+                showToast('Export failed safely', 'error');
+            }
+        }
+
+        const zoomViewport = document.getElementById('zoom-viewport');
+        const container = document.getElementById('canvas-container');
+        function updateTransform() { zoomViewport.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`; }
+        function resetZoom() { currentZoom = 1.0; panX = 0; panY = 0; updateTransform(); }
+
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            currentZoom = e.deltaY < 0 ? Math.min(5.0, currentZoom * 1.15) : Math.max(0.2, currentZoom / 1.15);
+            updateTransform();
+        }, { passive: false });
+
+        renderHudDeck();
+    </script>
+</body>
+</html>
