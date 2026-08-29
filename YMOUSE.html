@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>⚡ CYBER VAULT STUDIO v9 — Glass Morphism Edition</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#03050b',
+                        darkcard: '#080d1a',
+                        cyberblue: '#00f0ff',
+                        cyberpurple: '#9d00ff',
+                        cyberpink: '#ff007f',
+                        cyberorange: '#ff5500',
+                        neongreen: '#00ffcc',
+                        glasswhite: 'rgba(255,255,255,0.08)'
+                    },
+                    animation: {
+                        'float': 'float 4s ease-in-out infinite',
+                        'glow-pulse': 'glowPulse 2.5s ease-in-out infinite',
+                        'grid-shift': 'gridShift 8s linear infinite',
+                        'bubble-rise': 'bubbleRise 6s ease-in-out infinite',
+                        'shimmer': 'shimmer 3s ease-in-out infinite'
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-8px)' }
+                        },
+                        glowPulse: {
+                            '0%, 100%': { boxShadow: '0 0 20px rgba(0,240,255,0.3)' },
+                            '50%': { boxShadow: '0 0 40px rgba(0,240,255,0.7)' }
+                        },
+                        gridShift: {
+                            '0%': { backgroundPosition: '0 0, 0 0' },
+                            '100%': { backgroundPosition: '32px 32px, 32px 32px' }
+                        },
+                        bubbleRise: {
+                            '0%, 100%': { transform: 'translateY(0) scale(1)' },
+                            '50%': { transform: 'translateY(-12px) scale(1.05)' }
+                        },
+                        shimmer: {
+                            '0%, 100%': { opacity: '0.6' },
+                            '50%': { opacity: '1' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+        :root {
+            --glass-bg: rgba(10, 15, 30, 0.65);
+            --glass-border: rgba(0, 240, 255, 0.2);
+            --glass-highlight: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+            --cyber-glow: 0 0 25px rgba(0, 240, 255, 0.5);
+            --rainbow: conic-gradient(#ff0000, #ff8800, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+            --glass-radius: 20px;
+            --hud-anim-speed: 0.15s;
+        }
+
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            background: #03050b;
+            overscroll-behavior-y: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            overflow: hidden;
+            height: 100dvh;
+            width: 100vw;
+            touch-action: none;
+            color: #e2e8f0;
+        }
+
+        ::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
+            display: none;
+        }
+        * {
+            scrollbar-width: none;
+        }
+
+        /* ===== ANIMATED NEON GRID BACKGROUND ===== */
+        .animated-bg {
+            background-color: #03050b;
+            background-image:
+                radial-gradient(circle at 50% 50%, rgba(157, 0, 255, 0.12) 0%, transparent 70%),
+                radial-gradient(circle at 15% 25%, rgba(0, 240, 255, 0.10) 0%, transparent 50%),
+                radial-gradient(circle at 85% 75%, rgba(255, 0, 127, 0.08) 0%, transparent 50%),
+                linear-gradient(to right, rgba(0, 240, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 85, 0, 0.03) 1px, transparent 1px),
+                linear-gradient(to right, rgba(157, 0, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 255, 204, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 100% 100%, 32px 32px, 32px 32px, 8px 8px, 8px 8px;
+            animation: gridShift 12s linear infinite;
+        }
+
+        /* ===== GLASS MORPHISM CORE ===== */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            border-radius: var(--glass-radius);
+        }
+
+        .glass-btn {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.7) 0%, rgba(5, 8, 18, 0.85) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            transition: all 0.08s ease;
+            cursor: pointer;
+            touch-action: manipulation;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .glass-btn:active,
+        .glass-btn.active {
+            transform: scale(0.92);
+            background: linear-gradient(135deg, rgba(157, 0, 255, 0.5) 0%, rgba(0, 240, 255, 0.4) 100%);
+            border-color: #00f0ff;
+            box-shadow: var(--cyber-glow);
+        }
+
+        /* ===== FLOATING BUBBLES ANIMATION ===== */
+        .bubble {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.3) 0%, rgba(0, 240, 255, 0.1) 40%, transparent 70%);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            animation: bubbleRise 5s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        /* ===== MODE PILL ===== */
+        .mode-pill {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(5, 8, 18, 0.9) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 20px;
+            padding: 6px 12px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            touch-action: manipulation;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .mode-pill.active {
+            background: linear-gradient(135deg, rgba(157, 0, 255, 0.6) 0%, rgba(0, 240, 255, 0.5) 100%);
+            border-color: #00f0ff;
+            box-shadow: var(--cyber-glow);
+        }
+
+        /* ===== ASSET GRID ===== */
+        .asset-tile {
+            background: rgba(15, 23, 42, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 4px;
+            cursor: grab;
+            transition: all 0.1s ease;
+            touch-action: manipulation;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-width: 48px;
+            min-height: 48px;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+        }
+        .asset-tile:active {
+            transform: scale(0.9);
+            border-color: #00f0ff;
+            box-shadow: var(--cyber-glow);
+            cursor: grabbing;
+        }
+
+        /* ===== SPHERIC WHEEL ===== */
+        .spheric-wheel {
+            background: radial-gradient(circle at 30% 30%, #ffffff 0%, #00f0ff 20%, #9d00ff 55%, #03050b 90%);
+            box-shadow:
+                inset 0 -10px 25px rgba(0, 0, 0, 0.85),
+                inset 0 6px 15px rgba(255, 255, 255, 0.2),
+                0 0 30px rgba(0, 240, 255, 0.5),
+                0 8px 30px rgba(0, 0, 0, 0.6);
+            border: 2.5px solid rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            width: 68px;
+            height: 68px;
+            touch-action: none;
+            cursor: grab;
+            transition: border-radius 0.3s ease, transform 0.1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .spheric-wheel.square {
+            border-radius: 16px;
+        }
+        .spheric-wheel:active {
+            transform: scale(0.88);
+            border-color: #ff007f;
+            box-shadow: 0 0 50px rgba(255, 0, 127, 0.8);
+            cursor: grabbing;
+        }
+
+        /* ===== VAULT MODAL ===== */
+        .vault-item {
+            background: rgba(8, 13, 26, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.1s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            backdrop-filter: blur(8px);
+        }
+        .vault-item:active {
+            transform: scale(0.92);
+            border-color: #00f0ff;
+            box-shadow: var(--cyber-glow);
+        }
+
+        /* ===== GLB VIEWER ===== */
+        .glb-viewer {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            backdrop-filter: none !important;
+        }
+
+        /* ===== TAB SLIDER ===== */
+        .tab-slider {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            scroll-snap-type: x proximity;
+            -webkit-overflow-scrolling: touch;
+            padding: 4px 2px;
+        }
+        .tab-slider::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* ===== RESPONSIVE FONT SIZES ===== */
+        .text-micro {
+            font-size: 7px;
+            letter-spacing: 0.5px;
+            font-weight: 800;
+        }
+        .text-tiny {
+            font-size: 9px;
+            font-weight: 700;
+        }
+        .text-nano {
+            font-size: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        /* ===== GLOW RING ===== */
+        .glow-ring {
+            border: 2px solid rgba(0, 240, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.2), inset 0 0 10px rgba(0, 240, 255, 0.1);
+            border-radius: 16px;
+            transition: all 0.2s ease;
+        }
+        .glow-ring.active {
+            border-color: #ff007f;
+            box-shadow: 0 0 30px rgba(255, 0, 127, 0.6), inset 0 0 15px rgba(255, 0, 127, 0.2);
+        }
+
+        /* Fullscreen overlay */
+        .fullscreen-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body class="text-slate-100 h-[100dvh] w-screen flex flex-col overflow-hidden animated-bg">
+
+    <!-- FLOATING BUBBLES -->
+    <div class="bubble" style="top: 20%; left: 10%; width: 40px; height: 40px; animation-delay: 0s;"></div>
+    <div class="bubble" style="top: 60%; left: 80%; width: 28px; height: 28px; animation-delay: 1.5s;"></div>
+    <div class="bubble" style="top: 30%; left: 70%; width: 52px; height: 52px; animation-delay: 3s;"></div>
+    <div class="bubble" style="top: 75%; left: 20%; width: 34px; height: 34px; animation-delay: 0.8s;"></div>
+    <div class="bubble" style="top: 50%; left: 50%; width: 22px; height: 22px; animation-delay: 2.2s;"></div>
+
+    <!-- TOAST -->
+    <div id="toast-container" class="fixed top-14 right-3 left-3 sm:left-auto z-[300] flex flex-col gap-2 pointer-events-none items-center sm:items-end"></div>
+
+    <!-- ===== TOP HUD BAR ===== -->
+    <header class="absolute top-0 left-0 right-0 z-50 p-2 flex items-center justify-between gap-2 pointer-events-none">
+        <!-- Mode pills -->
+        <div class="glass px-2 py-1 flex items-center gap-1 pointer-events-auto overflow-x-auto no-scrollbar max-w-[58vw]">
+            <button onclick="setMode('comic')" id="mode-comic" class="mode-pill active">📖<span>1</span></button>
+            <button onclick="setMode('pixel')" id="mode-pixel" class="mode-pill">👾<span>2</span></button>
+            <button onclick="setMode('paperdoll')" id="mode-paperdoll" class="mode-pill">🧸<span>3</span></button>
+            <button onclick="setMode('3d')" id="mode-3d" class="mode-pill">🧊<span>4</span></button>
+            <button onclick="setMode('pixelgame')" id="mode-pixelgame" class="mode-pill">🕹️<span>5</span></button>
+        </div>
+
+        <!-- Right controls -->
+        <div class="flex items-center gap-1.5 pointer-events-auto">
+            <button onclick="undo()" class="glass-btn px-2.5 py-1.5 text-tiny text-cyberblue font-bold">⏪</button>
+            <button onclick="redo()" class="glass-btn px-2.5 py-1.5 text-tiny text-cyberblue font-bold">⏩</button>
+            <button onclick="openVault()" class="glass-btn px-2.5 py-1.5 text-tiny text-neongreen font-bold">🔐</button>
+            <button onclick="openExportModal()" class="glass-btn px-2.5 py-1.5 text-tiny text-neongreen font-bold">💾</button>
+        </div>
+    </header>
+
+    <!-- ===== LEFT ASSET SIDEBAR ===== -->
+    <aside class="absolute left-2 top-14 bottom-28 z-40 pointer-events-auto hidden sm:flex">
+        <div class="glass p-2 flex flex-col gap-2 items-center max-h-full overflow-y-auto no-scrollbar" style="max-width: 72px;">
+            <span class="text-micro text-cyberblue font-bold border-b border-white/10 pb-1 w-full text-center">⚡ASSETS</span>
+            <button onclick="setAssetTab('chars')" id="asset-tab-chars" class="glass-btn px-2 py-1.5 text-tiny font-bold active">🧑<span class="text-nano">1</span></button>
+            <button onclick="setAssetTab('objects')" id="asset-tab-objects" class="glass-btn px-2 py-1.5 text-tiny font-bold">📦<span class="text-nano">2</span></button>
+            <button onclick="setAssetTab('animals')" id="asset-tab-animals" class="glass-btn px-2 py-1.5 text-tiny font-bold">🐾<span class="text-nano">3</span></button>
+            <div class="flex-1"></div>
+            <button onclick="toggleGridPreset()" class="glass-btn px-2 py-1.5 text-tiny font-bold text-cyberorange">📐<span class="text-nano">4</span></button>
+            <button onclick="saveToVault()" class="glass-btn px-2 py-1.5 text-tiny font-bold text-neongreen">📥<span class="text-nano">5</span></button>
+        </div>
+    </aside>
+
+    <!-- ===== CANVAS VIEWPORT ===== -->
+    <div id="canvas-container" class="absolute inset-0 z-0 touch-none flex items-center justify-center overflow-hidden sm:pl-24 sm:pr-2">
+        <div id="zoom-viewport" class="relative w-full h-full flex items-center justify-center origin-center transition-transform duration-75 cursor-grab active:cursor-grabbing" style="transform: scale(1);">
+            <canvas id="studio-canvas" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg border border-cyberblue/20"></canvas>
+            <!-- GLB container -->
+            <div id="glb-container" class="hidden absolute inset-0 flex items-center justify-center" style="pointer-events: none;"></div>
+        </div>
+
+        <!-- Placeholder -->
+        <div id="canvas-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-darkbg/70 backdrop-blur-xl z-30 pointer-events-auto p-4 text-center">
+            <div class="glass p-8 flex flex-col items-center gap-4 cursor-pointer hover:border-cyberblue transition max-w-sm w-full rounded-3xl animate-float">
+                <input type="file" id="file-input-placeholder" multiple accept="image/*,video/*,.glb,.gif,.png,.jpg,.jpeg,.mp4,.mp3,.m4a,.txt,.html" class="hidden" onchange="handleFileSelect(event)">
+                <span class="text-6xl">⚡🌆</span>
+                <span class="text-sm font-bold text-slate-100">Drop Media | Load Assets</span>
+                <span class="text-micro text-cyberblue">✨ GLB • PNG • GIF • MP4 • HTML • TXT ✨</span>
+                <button onclick="document.getElementById('file-input-placeholder').click()" class="glass-btn px-4 py-2 text-tiny text-neongreen font-bold">📂 BROWSE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ASSET DECK (mobile bottom) ===== -->
+    <div class="absolute bottom-2 left-2 right-2 sm:left-24 sm:right-2 z-40 pointer-events-none pb-[env(safe-area-inset-bottom)]">
+        <div class="glass p-2.5 flex flex-col gap-2 pointer-events-auto shadow-2xl max-w-4xl mx-auto">
+
+            <!-- Top row: asset preview strip -->
+            <div id="asset-strip" class="tab-slider no-scrollbar flex gap-1.5 py-1">
+                <!-- dynamically populated -->
+            </div>
+
+            <!-- Middle row: tools + wheel -->
+            <div class="flex items-center gap-2">
+                <div id="tool-deck" class="flex-1 flex gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                    <!-- dynamically populated based on mode -->
+                </div>
+
+                <!-- Spheric jog wheel -->
+                <div class="flex items-center gap-2 bg-darkcard/60 p-1.5 rounded-2xl border border-cyberblue/25 shrink-0">
+                    <div class="flex flex-col text-right pr-1">
+                        <span id="wheel-target-label" class="text-micro text-cyberblue font-bold uppercase">🎯SIZE</span>
+                        <span id="sticker-dial-val" class="text-tiny text-slate-200 font-mono">75</span>
+                    </div>
+                    <div id="spheric-jog-wheel" class="spheric-wheel">
+                        <i class="fa-solid fa-bolt text-neongreen text-base"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom row: color picker + caption -->
+            <div class="flex items-center gap-1.5 pt-1 border-t border-white/10">
+                <div id="color-sphere-small" class="w-6 h-6 rounded-full border border-white/40 shrink-0 cursor-pointer" style="background: var(--rainbow);" title="Color picker"></div>
+                <span class="text-tiny text-cyberblue font-bold">💬</span>
+                <input type="text" id="caption-input" placeholder="⚡ POW! ✨" class="w-full bg-darkbg/90 border border-white/20 rounded-xl px-2.5 py-1 text-tiny text-slate-100 font-semibold">
+                <button onclick="stampText()" class="glass-btn px-2.5 py-1 text-tiny font-bold text-neongreen shrink-0">➕</button>
+                <button onclick="toggleEraser()" id="eraser-btn" class="glass-btn px-2.5 py-1 text-tiny font-bold text-cyberorange shrink-0">🧹</button>
+                <button onclick="toggleMaskMode()" id="mask-btn" class="glass-btn px-2.5 py-1 text-tiny font-bold text-cyberpink shrink-0">🎭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== VAULT MODAL ===== -->
+    <div id="vault-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-3">
+        <div class="glass rounded-3xl w-full max-w-sm p-4 space-y-3 max-h-[80vh] overflow-y-auto no-scrollbar">
+            <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                <span class="text-base font-bold text-cyberblue">🔐 VAULT</span>
+                <button onclick="closeVault()" class="text-xl text-slate-400">✕</button>
+            </div>
+            <div id="vault-list" class="grid grid-cols-3 gap-2"></div>
+            <button onclick="downloadAllVault()" class="glass-btn w-full py-2 text-tiny font-bold text-neongreen">💾 DOWNLOAD ALL</button>
+        </div>
+    </div>
+
+    <!-- ===== EXPORT MODAL ===== -->
+    <div id="export-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-3">
+        <div class="glass rounded-3xl w-full max-w-xs p-4 space-y-3">
+            <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                <span class="text-base font-bold text-neongreen">💾 EXPORT</span>
+                <button onclick="closeModals()" class="text-xl">✕</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="exportFile('png')" class="glass-btn py-3 text-lg">PNG</button>
+                <button onclick="exportFile('jpg')" class="glass-btn py-3 text-lg">JPG</button>
+                <button onclick="exportFile('webp')" class="glass-btn py-3 text-lg">WEBP</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="exportFile('gif')" class="glass-btn py-2 text-tiny">GIF</button>
+                <button onclick="exportFile('glb')" class="glass-btn py-2 text-tiny">GLB</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== GRID PRESET MODAL ===== -->
+    <div id="grid-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-3">
+        <div class="glass rounded-3xl w-full max-w-xs p-4 space-y-3">
+            <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                <span class="text-base font-bold text-cyberorange">📐 GRID PRESETS</span>
+                <button onclick="closeGridModal()" class="text-xl">✕</button>
+            </div>
+            <div class="grid grid-cols-4 gap-2" id="grid-presets">
+                <!-- populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== FULLSCREEN GLB VIEWER ===== -->
+    <div id="glb-fullscreen" class="fullscreen-overlay hidden" style="background: transparent; pointer-events: auto; z-index: 250;">
+        <div id="glb-fullscreen-container" class="w-full h-full" style="background: transparent; pointer-events: none;"></div>
+        <button onclick="exitGlbFullscreen()" class="absolute top-4 right-4 glass-btn px-4 py-2 text-tiny font-bold z-[260]" style="pointer-events: auto;">✕ EXIT</button>
+    </div>
+
+    <script>
+        // ================ CORE STATE ================
+        let library = [];
+        let vaultItems = [];
+        let layers = [];
+        let filterLayers = [];
+        let overlays = [];
+        let adjustments = { brightness: 0, contrast: 0, saturation: 100 };
+        let currentMode = 'comic';
+        let activeAssetTab = 'chars';
+        let activeWheelTarget = 'size';
+        let isCropActive = false;
+        let cropBox = { x: 10, y: 10, w: 200, h: 200 };
+        let selectedOverlayIndex = null;
+        let activeOverlaySize = 75;
+        let activeOverlayRotation = 0;
+        let selectedColor = '#ffffff';
+        let isDraggingItem = false;
+        let dragStartX = 0,
+            dragStartY = 0;
+        let historyStack = [];
+        let historyPointer = -1;
+        let eraserMode = false;
+        let maskMode = false;
+        let currentGridPreset = 'none';
+        let glbScene = null;
+        let glbRenderer = null;
+        let glbCamera = null;
+        let glbControls = null;
+
+        let canvas = document.getElementById('studio-canvas');
+        let ctx = canvas.getContext('2d', { willReadFrequently: true });
+        let currentZoom = 1.0,
+            panX = 0,
+            panY = 0;
+        const zoomViewport = document.getElementById('zoom-viewport');
+        const container = document.getElementById('canvas-container');
+
+        // ================ ASSET DEFINITIONS ================
+        const assetPresets = {
+            chars: [
+                { emoji: '🧑‍🎤', name: 'Punk', color: '#ff007f' },
+                { emoji: '🧙', name: 'Mage', color: '#9d00ff' },
+                { emoji: '🥷', name: 'Ninja', color: '#00f0ff' },
+                { emoji: '🦸', name: 'Hero', color: '#ff5500' },
+                { emoji: '🧛', name: 'Vamp', color: '#ff0000' },
+                { emoji: '🤖', name: 'Bot', color: '#00ffcc' },
+                { emoji: '👽', name: 'Alien', color: '#00ff00' },
+                { emoji: '🧚', name: 'Fairy', color: '#ff88cc' }
+            ],
+            objects: [
+                { emoji: '⚔️', name: 'Sword', color: '#cccccc' },
+                { emoji: '🛡️', name: 'Shield', color: '#888888' },
+                { emoji: '🔮', name: 'Orb', color: '#9d00ff' },
+                { emoji: '💎', name: 'Gem', color: '#00f0ff' },
+                { emoji: '🏮', name: 'Lantern', color: '#ff5500' },
+                { emoji: '📿', name: 'Beads', color: '#ff8800' },
+                { emoji: '🎯', name: 'Target', color: '#ff0000' },
+                { emoji: '🧪', name: 'Potion', color: '#00ff00' }
+            ],
+            animals: [
+                { emoji: '🐉', name: 'Dragon', color: '#00ff00' },
+                { emoji: '🦊', name: 'Fox', color: '#ff5500' },
+                { emoji: '🐺', name: 'Wolf', color: '#888888' },
+                { emoji: '🦁', name: 'Lion', color: '#ff8800' },
+                { emoji: '🐱', name: 'Cat', color: '#ff00ff' },
+                { emoji: '🦅', name: 'Eagle', color: '#00f0ff' },
+                { emoji: '🐢', name: 'Turtle', color: '#00cc00' },
+                { emoji: '🦈', name: 'Shark', color: '#0066cc' }
+            ]
+        };
+
+        // ================ GRID PRESETS ================
+        const gridPresets = {
+            'none': { label: '❌', cols: 1, rows: 1 },
+            '2x2': { label: '▦2x2', cols: 2, rows: 2 },
+            '3x3': { label: '▦3x3', cols: 3, rows: 3 },
+            '2x1': { label: '▯2x1', cols: 2, rows: 1 },
+            '1x2': { label: '▮1x2', cols: 1, rows: 2 },
+            '4x4': { label: '▦4x4', cols: 4, rows: 4 },
+            '3x2': { label: '▦3x2', cols: 3, rows: 2 },
+            '2x3': { label: '▦2x3', cols: 2, rows: 3 }
+        };
+
+        // ================ TOAST ================
+        function showToast(msg, type = 'success') {
+            const c = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className =
+                `px-4 py-2 rounded-xl text-tiny font-bold shadow-2xl flex items-center gap-2 transition transform translate-y-2 opacity-0 pointer-events-auto ${
+                type === 'success' ? 'bg-cyberpurple/95 text-white border border-cyberblue/40 backdrop-blur-md' : 'bg-red-600/95 text-white backdrop-blur-md'
+                }`;
+            t.innerHTML = `<span>${type==='success'?'⚡':'⚠️'}</span> ${msg}`;
+            c.appendChild(t);
+            requestAnimationFrame(() => t.classList.remove('translate-y-2', 'opacity-0'));
+            setTimeout(() => { t.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => t.remove(), 300); }, 1800);
+        }
+
+        // ================ MODE MANAGEMENT ================
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.mode-pill').forEach(p => p.classList.remove('active'));
+            const btn = document.getElementById(`mode-${mode}`);
+            if (btn) btn.classList.add('active');
+            renderToolDeck();
+            renderAssetStrip();
+            // Show/hide GLB container
+            const glbContainer = document.getElementById('glb-container');
+            if (mode === '3d') {
+                glbContainer.classList.remove('hidden');
+                canvas.classList.add('opacity-0');
+                initGlbViewer();
+            } else {
+                glbContainer.classList.add('hidden');
+                canvas.classList.remove('opacity-0');
+            }
+            showToast(`📖 Mode: ${mode}`);
+        }
+
+        // ================ ASSET TAB ================
+        function setAssetTab(tab) {
+            activeAssetTab = tab;
+            document.querySelectorAll('[id^="asset-tab-"]').forEach(b => b.classList.remove('active'));
+            document.getElementById(`asset-tab-${tab}`).classList.add('active');
+            renderAssetStrip();
+        }
+
+        function renderAssetStrip() {
+            const strip = document.getElementById('asset-strip');
+            const assets = assetPresets[activeAssetTab] || assetPresets.chars;
+            strip.innerHTML = assets.map((a, i) =>
+                `<button onclick="placeAsset('${a.emoji}', '${a.name}', '${a.color}')" class="asset-tile text-lg">
+                    ${a.emoji}<span class="text-nano text-slate-400">${i+1}</span>
+                </button>`
+            ).join('');
+        }
+
+        function placeAsset(emoji, name, color) {
+            if (!canvas.width) { showToast('Load base first', 'error'); return; }
+            saveState();
+            overlays.push({
+                content: emoji,
+                x: canvas.width / 2 + (Math.random() * 60 - 30),
+                y: canvas.height / 2 + (Math.random() * 60 - 30),
+                size: activeOverlaySize,
+                rotation: activeOverlayRotation * (Math.PI / 180),
+                color: color,
+                name: name
+            });
+            selectedOverlayIndex = overlays.length - 1;
+            compositeLayers();
+            showToast(`✨ ${name}`);
+        }
+
+        // ================ TOOL DECK ================
+        function renderToolDeck() {
+            const deck = document.getElementById('tool-deck');
+            if (!deck) return;
+
+            if (currentMode === 'comic') {
+                deck.innerHTML = `
+                    <button onclick="setWheelTarget('size')" class="glass-btn px-2.5 py-1 text-tiny font-bold ${activeWheelTarget==='size'?'active':''}">📏<span class="text-nano">1</span></button>
+                    <button onclick="setWheelTarget('rotation')" class="glass-btn px-2.5 py-1 text-tiny font-bold ${activeWheelTarget==='rotation'?'active':''}">🔄<span class="text-nano">2</span></button>
+                    <button onclick="setWheelTarget('brightness')" class="glass-btn px-2.5 py-1 text-tiny font-bold ${activeWheelTarget==='brightness'?'active':''}">☀️<span class="text-nano">3</span></button>
+                    <button onclick="setWheelTarget('contrast')" class="glass-btn px-2.5 py-1 text-tiny font-bold ${activeWheelTarget==='contrast'?'active':''}">🌓<span class="text-nano">4</span></button>
+                    <button onclick="setWheelTarget('saturation')" class="glass-btn px-2.5 py-1 text-tiny font-bold ${activeWheelTarget==='saturation'?'active':''}">🎨<span class="text-nano">5</span></button>
+                    <button onclick="applyFilterQuick('anime-ductus')" class="glass-btn px-2.5 py-1 text-tiny font-bold">⚡<span class="text-nano">6</span></button>
+                    <button onclick="applyFilterQuick('halftone-dots')" class="glass-btn px-2.5 py-1 text-tiny font-bold">⚪<span class="text-nano">7</span></button>
+                    <button onclick="applyFilterQuick('glitch-rgb')" class="glass-btn px-2.5 py-1 text-tiny font-bold">💥<span class="text-nano">8</span></button>
+                `;
+            } else if (currentMode === 'pixel' || currentMode === 'pixelgame') {
+                deck.innerHTML = `
+                    <button onclick="setPixelSize(8)" class="glass-btn px-2.5 py-1 text-tiny font-bold">8px<span class="text-nano">1</span></button>
+                    <button onclick="setPixelSize(16)" class="glass-btn px-2.5 py-1 text-tiny font-bold">16px<span class="text-nano">2</span></button>
+                    <button onclick="setPixelSize(32)" class="glass-btn px-2.5 py-1 text-tiny font-bold">32px<span class="text-nano">3</span></button>
+                    <button onclick="applyPixelFilter()" class="glass-btn px-2.5 py-1 text-tiny font-bold">👾<span class="text-nano">4</span></button>
+                    <button onclick="setWheelTarget('size')" class="glass-btn px-2.5 py-1 text-tiny font-bold">📏<span class="text-nano">5</span></button>
+                `;
+            } else if (currentMode === 'paperdoll') {
+                deck.innerHTML = `
+                    <button onclick="placeAsset('🧑‍🎤','Punk','#ff007f')" class="glass-btn px-2.5 py-1 text-tiny font-bold">🎤<span class="text-nano">1</span></button>
+                    <button onclick="placeAsset('🧙','Mage','#9d00ff')" class="glass-btn px-2.5 py-1 text-tiny font-bold">🧙<span class="text-nano">2</span></button>
+                    <button onclick="placeAsset('🥷','Ninja','#00f0ff')" class="glass-btn px-2.5 py-1 text-tiny font-bold">🥷<span class="text-nano">3</span></button>
+                    <button onclick="setWheelTarget('size')" class="glass-btn px-2.5 py-1 text-tiny font-bold">📏<span class="text-nano">4</span></button>
+                    <button onclick="setWheelTarget('rotation')" class="glass-btn px-2.5 py-1 text-tiny font-bold">🔄<span class="text-nano">5</span></button>
+                    <button onclick="duplicateLayer()" class="glass-btn px-2.5 py-1 text-tiny font-bold">📋<span class="text-nano">6</span></button>
+                `;
+            } else if (currentMode === '3d') {
+                deck.innerHTML = `
+                    <button onclick="loadGlbExample()" class="glass-btn px-2.5 py-1 text-tiny font-bold">🧊<span class="text-nano">1</span></button>
+                    <button onclick="toggleGlbFullscreen()" class="glass-btn px-2.5 py-1 text-tiny font-bold">⛶<span class="text-nano">2</span></button>
+                    <button onclick="toggleGlbWireframe()" class="glass-btn px-2.5 py-1 text-tiny font-bold">📐<span class="text-nano">3</span></button>
+                    <button onclick="resetGlbCamera()" class="glass-btn px-2.5 py-1 text-tiny font-bold">🔄<span class="text-nano">4</span></button>
+                    <button onclick="setWheelTarget('size')" class="glass-btn px-2.5 py-1 text-tiny font-bold">📏<span class="text-nano">5</span></button>
+                `;
+            }
+        }
+
+        function setWheelTarget(target) {
+            activeWheelTarget = target;
+            const map = { brightness: '☀️BRT', contrast: '🌓CON', saturation: '🎨SAT', size: '📏SIZE',
+                rotation: '🔄ROT' };
+            document.getElementById('wheel-target-label').innerText = map[target] || '🎯';
+            renderToolDeck();
+            updateDialDisplay();
+        }
+
+        function setPixelSize(px) {
+            activeOverlaySize = px;
+            updateDialDisplay();
+            showToast(`👾 Pixel size: ${px}px`);
+        }
+
+        function applyPixelFilter() {
+            applyFilterQuick('pixel-art');
+        }
+
+        function duplicateLayer() {
+            if (!overlays.length) { showToast('No overlay to duplicate', 'error'); return; }
+            saveState();
+            const idx = selectedOverlayIndex !== null ? selectedOverlayIndex : overlays.length - 1;
+            const src = overlays[idx];
+            overlays.push({
+                ...src,
+                x: src.x + 20,
+                y: src.y + 20,
+                id: 'dup_' + Date.now()
+            });
+            selectedOverlayIndex = overlays.length - 1;
+            compositeLayers();
+            showToast('📋 Duplicated');
+        }
+
+        // ================ GLB VIEWER (simplified) ================
+        let glbInitialized = false;
+
+        function initGlbViewer() {
+            if (glbInitialized) return;
+            glbInitialized = true;
+            const container = document.getElementById('glb-container');
+            container.innerHTML = '<div class="text-tiny text-cyberblue font-bold">🧊 3D VIEWER — Drop GLB file or tap Load</div>';
+            // Placeholder for GLB (full Three.js integration requires CDN)
+            showToast('🧊 3D mode ready — drop GLB file');
+        }
+
+        function loadGlbExample() {
+            showToast('🧊 GLB loading... (demo)');
+            const container = document.getElementById('glb-container');
+            container.innerHTML = `
+                <div class="flex flex-col items-center gap-3">
+                    <span class="text-5xl animate-float">🧊</span>
+                    <span class="text-tiny text-cyberblue font-bold">3D Model Preview</span>
+                    <span class="text-nano text-slate-400">Drop .glb file to load</span>
+                </div>`;
+        }
+
+        function toggleGlbFullscreen() {
+            const fs = document.getElementById('glb-fullscreen');
+            fs.classList.toggle('hidden');
+            if (!fs.classList.contains('hidden')) {
+                const container = document.getElementById('glb-fullscreen-container');
+                container.innerHTML = '<div class="flex items-center justify-center h-full"><span class="text-7xl">🧊</span></div>';
+            }
+            showToast('⛶ Fullscreen toggled');
+        }
+
+        function exitGlbFullscreen() {
+            document.getElementById('glb-fullscreen').classList.add('hidden');
+        }
+
+        function toggleGlbWireframe() {
+            showToast('📐 Wireframe toggled (demo)');
+        }
+
+        function resetGlbCamera() {
+            showToast('🔄 Camera reset');
+        }
+
+        // ================ VAULT ================
+        function openVault() {
+            renderVaultList();
+            document.getElementById('vault-modal').classList.remove('hidden');
+        }
+
+        function closeVault() {
+            document.getElementById('vault-modal').classList.add('hidden');
+        }
+
+        function saveToVault() {
+            if (!canvas.width) { showToast('No canvas', 'error'); return; }
+            const dataUrl = canvas.toDataURL('image/png');
+            vaultItems.push({
+                id: 'vault_' + Date.now(),
+                dataUrl: dataUrl,
+                thumb: dataUrl,
+                name: 'vault_' + vaultItems.length + '_' + Date.now()
+            });
+            showToast('🔐 Saved to vault');
+        }
+
+        function renderVaultList() {
+            const list = document.getElementById('vault-list');
+            if (!vaultItems.length) {
+                list.innerHTML = '<div class="col-span-3 text-tiny text-slate-500 text-center py-6">Empty vault</div>';
+                return;
+            }
+            list.innerHTML = vaultItems.map((item, i) =>
+                `<div class="vault-item" onclick="loadVaultItem('${item.id}')">
+                    <img src="${item.thumb}" class="w-full h-16 object-cover rounded-lg border border-cyberblue/20">
+                    <span class="text-nano text-slate-400">${i+1}</span>
+                </div>`
+            ).join('');
+        }
+
+        function loadVaultItem(id) {
+            const item = vaultItems.find(v => v.id === id);
+            if (!item) return;
+            closeVault();
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                if (layers.length) {
+                    layers[0].canvas.width = img.width;
+                    layers[0].canvas.height = img.height;
+                    layers[0].ctx.drawImage(img, 0, 0);
+                }
+                compositeLayers();
+                saveState();
+                showToast('🔐 Loaded from vault');
+            };
+            img.src = item.dataUrl;
+        }
+
+        function downloadAllVault() {
+            if (!vaultItems.length) { showToast('Vault empty', 'error'); return; }
+            vaultItems.forEach((item, i) => {
+                const a = document.createElement('a');
+                a.href = item.dataUrl;
+                a.download = `vault_${i+1}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            });
+            showToast('💾 All vault items downloading');
+        }
+
+        // ================ GRID PRESETS ================
+        function toggleGridPreset() {
+            const modal = document.getElementById('grid-modal');
+            const presetsContainer = document.getElementById('grid-presets');
+            presetsContainer.innerHTML = Object.entries(gridPresets).map(([key, val]) =>
+                `<button onclick="applyGridPreset('${key}')" class="glass-btn py-2 text-tiny font-bold ${currentGridPreset===key?'active':''}">
+                    ${val.label}<span class="text-nano">${val.cols}×${val.rows}</span>
+                </button>`
+            ).join('');
+            modal.classList.remove('hidden');
+        }
+
+        function closeGridModal() {
+            document.getElementById('grid-modal').classList.add('hidden');
+        }
+
+        function applyGridPreset(key) {
+            currentGridPreset = key;
+            closeGridModal();
+            compositeLayers();
+            showToast(`📐 Grid: ${key}`);
+        }
+
+        // ================ ERASER & MASK ================
+        function toggleEraser() {
+            eraserMode = !eraserMode;
+            document.getElementById('eraser-btn').classList.toggle('active', eraserMode);
+            canvas.style.cursor = eraserMode ? 'cell' : 'default';
+            showToast(`🧹 Eraser ${eraserMode?'ON':'OFF'}`);
+        }
+
+        function toggleMaskMode() {
+            maskMode = !maskMode;
+            document.getElementById('mask-btn').classList.toggle('active', maskMode);
+            if (maskMode) {
+                applyColorMask();
+                showToast('🎭 Mask applied');
+            } else {
+                processImagePipeline();
+                showToast('🎭 Mask removed');
+            }
+        }
+
+        function applyColorMask() {
+            if (!canvas.width || !layers.length) return;
+            const base = layers[0];
+            const w = base.canvas.width,
+                h = base.canvas.height;
+            base.ctx.save();
+            // Simple green screen removal: remove near-green pixels
+            const imgData = base.ctx.getImageData(0, 0, w, h);
+            const d = imgData.data;
+            for (let i = 0; i < d.length; i += 4) {
+                const r = d[i],
+                    g = d[i + 1],
+                    b = d[i + 2];
+                if (g > 100 && g > r * 1.4 && g > b * 1.4) {
+                    d[i + 3] = 0; // transparent
+                }
+            }
+            base.ctx.putImageData(imgData, 0, 0);
+            base.ctx.restore();
+            compositeLayers();
+            // Add outline
+            addOutline();
+        }
+
+        function addOutline() {
+            if (!canvas.width) return;
+            // Simple outline: draw border around non-transparent regions
+            ctx.save();
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 2;
+            ctx.shadowColor = '#00f0ff';
+            ctx.shadowBlur = 8;
+            // Draw a rough outline around the canvas
+            ctx.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+            ctx.restore();
+            showToast('🎭 Outline added');
+        }
+
+        // ================ FILE HANDLING ================
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            if (!files.length) return;
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    const type = file.name.endsWith('.glb') ? 'glb' :
+                        file.name.endsWith('.gif') ? 'gif' :
+                        file.name.endsWith('.mp4') ? 'mp4' :
+                        file.name.endsWith('.mp3') ? 'mp3' :
+                        file.name.endsWith('.m4a') ? 'm4a' :
+                        file.name.endsWith('.html') ? 'html' :
+                        file.name.endsWith('.txt') ? 'txt' :
+                        file.type.startsWith('video') ? 'video' : 'image';
+                    const item = {
+                        id: 'f_' + Math.random().toString(36).substr(2, 8),
+                        name: file.name,
+                        type: type,
+                        dataUrl: ev.target.result,
+                        thumb: type === 'image' || type === 'gif' ? ev.target.result : null
+                    };
+                    library.push(item);
+                    if (library.length === 1 && (type === 'image' || type === 'gif')) {
+                        loadIntoCanvas(item);
+                    }
+                    if (type === 'glb') {
+                        showToast('🧊 GLB loaded — use 3D mode');
+                    }
+                    showToast(`📂 ${file.name} loaded (${type})`);
+                };
+                reader.readAsDataURL(file);
+            });
+            e.target.value = '';
+        }
+
+        function loadIntoCanvas(item) {
+            if (item.type === 'image' || item.type === 'gif') {
+                document.getElementById('canvas-placeholder').classList.add('hidden');
+                canvas.classList.remove('hidden');
+                const img = new Image();
+                img.onload = () => {
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const baseLayer = {
+                        canvas: document.createElement('canvas'),
+                        originalImg: img,
+                        ctx: null
+                    };
+                    baseLayer.canvas.width = img.width;
+                    baseLayer.canvas.height = img.height;
+                    baseLayer.ctx = baseLayer.canvas.getContext('2d', { willReadFrequently: true });
+                    baseLayer.ctx.drawImage(img, 0, 0);
+                    layers = [baseLayer];
+                    overlays = [];
+                    filterLayers = [];
+                    adjustments = { brightness: 0, contrast: 0, saturation: 100 };
+                    historyStack = [];
+                    historyPointer = -1;
+                    selectedOverlayIndex = null;
+                    activeOverlaySize = 75;
+                    activeOverlayRotation = 0;
+                    resetCropBox();
+                    processImagePipeline();
+                    saveState();
+                    resetZoom();
+                    showToast('🖼️ Loaded');
+                };
+                img.src = item.dataUrl;
+            } else {
+                showToast('🎬 Use dedicated viewer', 'error');
+            }
+        }
+
+        // ================ IMAGE PIPELINE ================
+        function processImagePipeline() {
+            if (!layers.length) return;
+            const base = layers[0];
+            const w = base.canvas.width,
+                h = base.canvas.height;
+            base.ctx.clearRect(0, 0, w, h);
+            base.ctx.drawImage(base.originalImg, 0, 0);
+            let imgData = base.ctx.getImageData(0, 0, w, h);
+            let d = imgData.data;
+            const bright = adjustments.brightness;
+            const contrast = adjustments.contrast;
+            const sat = adjustments.saturation / 100;
+            const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+            for (let i = 0; i < d.length; i += 4) {
+                let r = d[i],
+                    g = d[i + 1],
+                    b = d[i + 2];
+                r = factor * (r + bright - 128) + 128;
+                g = factor * (g + bright - 128) + 128;
+                b = factor * (b + bright - 128) + 128;
+                let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                d[i] = Math.min(255, Math.max(0, gray + (r - gray) * sat));
+                d[i + 1] = Math.min(255, Math.max(0, gray + (g - gray) * sat));
+                d[i + 2] = Math.min(255, Math.max(0, gray + (b - gray) * sat));
+            }
+            base.ctx.putImageData(imgData, 0, 0);
+            filterLayers.forEach(fl => {
+                const fC = document.createElement('canvas');
+                fC.width = w;
+                fC.height = h;
+                const fCtx = fC.getContext('2d');
+                fCtx.drawImage(base.canvas, 0, 0);
+                if (fl.type === 'anime-ductus' || fl.type === 'ductus-pro') {
+                    const fd = fCtx.getImageData(0, 0, w, h);
+                    const px = fd.data;
+                    const steps = fl.type === 'ductus-pro' ? 6 : 4;
+                    for (let i = 0; i < px.length; i += 4) {
+                        px[i] = Math.floor(px[i] / (256 / steps)) * (256 / steps);
+                        px[i + 1] = Math.floor(px[i + 1] / (256 / steps)) * (256 / steps);
+                        px[i + 2] = Math.floor(px[i + 2] / (256 / steps)) * (256 / steps);
+                    }
+                    fCtx.putImageData(fd, 0, 0);
+                } else if (fl.type === 'pixel-art') {
+                    const pSize = 8;
+                    fCtx.imageSmoothingEnabled = false;
+                    fCtx.drawImage(base.canvas, 0, 0, w / pSize, h / pSize);
+                    fCtx.drawImage(fC, 0, 0, w / pSize, h / pSize, 0, 0, w, h);
+                }
+                base.ctx.save();
+                base.ctx.globalAlpha = fl.strength / 100;
+                base.ctx.globalCompositeOperation = fl.blendMode || 'overlay';
+                base.ctx.drawImage(fC, 0, 0);
+                base.ctx.restore();
+            });
+            compositeLayers();
+        }
+
+        function applyFilterQuick(type) {
+            if (!canvas.width) { showToast('Load image first', 'error'); return; }
+            saveState();
+            filterLayers = [{ id: 'fl_quick', type: type, strength: 85, blendMode: 'overlay' }];
+            processImagePipeline();
+            showToast(`🌈 Filter: ${type}`);
+        }
+
+        function compositeLayers() {
+            if (!canvas.width || !layers.length) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(layers[0].canvas, 0, 0);
+            overlays.forEach(item => {
+                ctx.save();
+                ctx.translate(item.x, item.y);
+                if (item.rotation) ctx.rotate(item.rotation);
+                ctx.font = `bold ${item.size}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = item.color || '#ffffff';
+                ctx.fillText(item.content, 0, 0);
+                ctx.restore();
+            });
+            // Draw grid overlay
+            if (currentGridPreset !== 'none' && gridPresets[currentGridPreset]) {
+                const preset = gridPresets[currentGridPreset];
+                ctx.save();
+                ctx.strokeStyle = 'rgba(0,240,255,0.25)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([6, 4]);
+                for (let i = 1; i < preset.cols; i++) {
+                    const x = (canvas.width / preset.cols) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke();
+                }
+                for (let i = 1; i < preset.rows; i++) {
+                    const y = (canvas.height / preset.rows) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                    ctx.stroke();
+                }
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+            // Eraser cursor highlight
+            if (eraserMode) {
+                ctx.save();
+                ctx.strokeStyle = '#ff5500';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([3, 3]);
+                ctx.strokeRect(0, 0, canvas.width, canvas.height);
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+        }
+
+        // ================ HISTORY ================
+        function saveState() {
+            if (!canvas.width) return;
+            if (historyPointer < historyStack.length - 1) historyStack = historyStack.slice(0, historyPointer + 1);
+            historyStack.push(canvas.toDataURL());
+            if (historyStack.length > 25) historyStack.shift();
+            historyPointer = historyStack.length - 1;
+        }
+
+        function undo() {
+            if (historyPointer > 0) {
+                historyPointer--;
+                loadHistoryState(historyStack[historyPointer]);
+                showToast('⏪ Undo');
+            } else showToast('⏪ At oldest', 'error');
+        }
+
+        function redo() {
+            if (historyPointer < historyStack.length - 1) {
+                historyPointer++;
+                loadHistoryState(historyStack[historyPointer]);
+                showToast('⏩ Redo');
+            } else showToast('⏩ At newest', 'error');
+        }
+
+        function loadHistoryState(dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                if (layers.length && layers[0].ctx) {
+                    layers[0].ctx.clearRect(0, 0, layers[0].canvas.width, layers[0].canvas.height);
+                    layers[0].ctx.drawImage(img, 0, 0);
+                }
+            };
+            img.src = dataUrl;
+        }
+
+        // ================ SPHERIC WHEEL ================
+        const sphericWheel = document.getElementById('spheric-jog-wheel');
+        let wheelActive = false;
+        let wheelLastY = 0;
+
+        sphericWheel.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            wheelActive = true;
+            wheelLastY = e.touches[0].clientY;
+        }, { passive: false });
+        sphericWheel.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (wheelActive) {
+                const dy = wheelLastY - e.touches[0].clientY;
+                if (Math.abs(dy) > 0.3) {
+                    modifyTargetValue(dy * 4.5);
+                    wheelLastY = e.touches[0].clientY;
+                }
+            }
+        }, { passive: false });
+        sphericWheel.addEventListener('touchend', () => wheelActive = false);
+        sphericWheel.addEventListener('mousedown', (e) => {
+            wheelActive = true;
+            wheelLastY = e.clientY;
+            const onMove = (ev) => {
+                const dy = wheelLastY - ev.clientY;
+                if (Math.abs(dy) > 0.3) { modifyTargetValue(dy * 4.5);
+                    wheelLastY = ev.clientY; }
+            };
+            const onUp = () => { wheelActive = false;
+                window.removeEventListener('mousemove', onMove);
+                window.removeEventListener('mouseup', onUp); };
+            window.addEventListener('mousemove', onMove);
+            window.addEventListener('mouseup', onUp);
+        });
+
+        function modifyTargetValue(delta) {
+            if (activeWheelTarget === 'size') {
+                activeOverlaySize = Math.max(8, Math.min(600, activeOverlaySize + delta));
+                if (selectedOverlayIndex !== null && overlays[selectedOverlayIndex]) overlays[selectedOverlayIndex]
+                    .size = activeOverlaySize;
+            } else if (activeWheelTarget === 'rotation') {
+                activeOverlayRotation = (activeOverlayRotation + delta * 2) % 360;
+                if (selectedOverlayIndex !== null && overlays[selectedOverlayIndex]) overlays[selectedOverlayIndex]
+                    .rotation = activeOverlayRotation * (Math.PI / 180);
+            } else if (activeWheelTarget === 'brightness') {
+                adjustments.brightness = Math.max(-100, Math.min(100, adjustments.brightness + delta));
+                processImagePipeline();
+            } else if (activeWheelTarget === 'contrast') {
+                adjustments.contrast = Math.max(-100, Math.min(100, adjustments.contrast + delta));
+                processImagePipeline();
+            } else if (activeWheelTarget === 'saturation') {
+                adjustments.saturation = Math.max(-100, Math.min(300, adjustments.saturation + delta));
+                processImagePipeline();
+            }
+            updateDialDisplay();
+            compositeLayers();
+        }
+
+        function updateDialDisplay() {
+            let val = Math.round(activeOverlaySize);
+            if (activeWheelTarget === 'brightness') val = Math.round(adjustments.brightness);
+            if (activeWheelTarget === 'contrast') val = Math.round(adjustments.contrast);
+            if (activeWheelTarget === 'saturation') val = Math.round(adjustments.saturation);
+            if (activeWheelTarget === 'rotation') val = Math.round(activeOverlayRotation);
+            document.getElementById('sticker-dial-val').innerText = val;
+        }
+
+        function toggleWheelForm() {
+            sphericWheel.classList.toggle('square');
+        }
+
+        // ================ CANVAS INTERACTIONS ================
+        function getCanvasPoint(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+        let isPanning = false;
+        let lastPanX = 0,
+            lastPanY = 0;
+        container.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) { initialPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1]
+                    .clientX, e.touches[0].clientY - e.touches[1].clientY);
+                initialZoom = currentZoom; return; }
+            if (e.touches.length === 1 && e.target === canvas) {
+                const pt = getCanvasPoint(e.touches[0].clientX, e.touches[0].clientY);
+                if (eraserMode) { eraseAt(pt.x, pt.y); return; }
+                if (maskMode) { maskAt(pt.x, pt.y); return; }
+                for (let i = overlays.length - 1; i >= 0; i--) {
+                    if (Math.hypot(pt.x - overlays[i].x, pt.y - overlays[i].y) < Math.max(40, overlays[i].size)) {
+                        selectedOverlayIndex = i;
+                        isDraggingItem = true;
+                        dragStartX = pt.x - overlays[i].x;
+                        dragStartY = pt.y - overlays[i].y;
+                        return;
+                    }
+                }
+                isPanning = true;
+                lastPanX = e.touches[0].clientX;
+                lastPanY = e.touches[0].clientY;
+            }
+        }, { passive: false });
+        container.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2 && initialPinchDist) { e.preventDefault();
+                const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e
+                    .touches[1].clientY);
+                currentZoom = Math.min(6, Math.max(0.1, initialZoom * (dist / initialPinchDist)));
+                updateTransform(); return; }
+            if (e.touches.length === 1 && isDraggingItem) { e.preventDefault();
+                const pt = getCanvasPoint(e.touches[0].clientX, e.touches[0].clientY);
+                if (selectedOverlayIndex !== null && overlays[selectedOverlayIndex]) { overlays[selectedOverlayIndex]
+                        .x = pt.x - dragStartX;
+                    overlays[selectedOverlayIndex].y = pt.y - dragStartY; }
+                compositeLayers(); } else if (e.touches.length === 1 && isPanning) { e.preventDefault();
+                panX += (e.touches[0].clientX - lastPanX);
+                panY += (e.touches[0].clientY - lastPanY);
+                lastPanX = e.touches[0].clientX;
+                lastPanY = e.touches[0].clientY;
+                updateTransform(); }
+        }, { passive: false });
+        container.addEventListener('touchend', () => { initialPinchDist = null; if (isDraggingItem) saveState();
+            isDraggingItem = false;
+            isPanning = false; });
+
+        function eraseAt(x, y) {
+            if (!canvas.width) return;
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(x, y, 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            saveState();
+        }
+
+        function maskAt(x, y) {
+            if (!canvas.width) return;
+            const imgData = ctx.getImageData(x - 10, y - 10, 20, 20);
+            const d = imgData.data;
+            for (let i = 0; i < d.length; i += 4) {
+                d[i + 3] = 0;
+            }
+            ctx.putImageData(imgData, x - 10, y - 10);
+            saveState();
+        }
+
+        function stampText() {
+            const input = document.getElementById('caption-input');
+            const txt = input.value.trim();
+            if (!txt || !canvas.width) return;
+            saveState();
+            overlays.push({
+                content: txt,
+                x: canvas.width / 2,
+                y: canvas.height / 2,
+                size: activeOverlaySize,
+                rotation: activeOverlayRotation * (Math.PI / 180),
+                color: selectedColor
+            });
+            selectedOverlayIndex = overlays.length - 1;
+            input.value = '';
+            compositeLayers();
+            updateDialDisplay();
+            showToast('💬 Stamped');
+        }
+
+        function updateTransform() { zoomViewport.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`; }
+
+        function resetZoom() { currentZoom = 1;
+            panX = 0;
+            panY = 0;
+            updateTransform(); }
+
+        // ================ EXPORT ================
+        function openExportModal() { if (canvas.width) document.getElementById('export-modal').classList.remove('hidden'); }
+
+        function closeModals() { document.getElementById('export-modal').classList.add('hidden');
+            document.getElementById('vault-modal').classList.add('hidden');
+            document.getElementById('grid-modal').classList.add('hidden'); }
+
+        function exportFile(fmt) {
+            if (!canvas.width) { showToast('No canvas', 'error'); return; }
+            try {
+                const a = document.createElement('a');
+                a.href = canvas.toDataURL(fmt === 'jpg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' :
+                    'image/png', 0.95);
+                a.download = `cyber_vault_${Date.now()}.${fmt}`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                closeModals();
+                showToast(`💾 Exported ${fmt.toUpperCase()}`);
+            } catch (e) { showToast('Export failed', 'error'); }
+        }
+
+        // ================ INIT ================
+        renderAssetStrip();
+        renderToolDeck();
+        updateDialDisplay();
+        console.log('⚡ CYBER🐁MOUSE VAULT STUDIO v9 — Glass Morphism Ed.');
+        console.log('📖 Modes: Comic, Pixel, Paperdoll, 3D, Pixelgame');
+        console.log('🔐 Vault, 🎭 Mask, 🧹 Eraser, 📐 Grids, 🧊 GLB');
+    </script>
+</body>
+</html>
