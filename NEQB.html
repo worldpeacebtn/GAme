@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🐴 Neon Island Farm – Gameboy Wireframe</title>
+    <style>
+        body {
+            margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+            background: radial-gradient(circle at 50% 30%, #0a0f1e, #03050b);
+            font-family: 'Courier New', monospace;
+        }
+        .gameboy {
+            position: relative;
+            width: 520px; height: 780px;
+            background: rgba(15,20,35,0.45);
+            backdrop-filter: blur(10px) saturate(140%);
+            border: 2px solid rgba(0,240,255,0.25);
+            border-radius: 40px;
+            box-shadow: 0 0 60px rgba(0,240,255,0.15), inset 0 0 30px rgba(255,255,255,0.05);
+            display:flex; flex-direction:column; align-items:center;
+            padding: 20px 10px;
+            overflow:hidden;
+        }
+        .gameboy::before {
+            content:''; position:absolute; inset:0; pointer-events:none;
+            background:
+                linear-gradient(to right, rgba(0,255,255,0.06) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,0,255,0.06) 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index:0;
+        }
+        .screen-area {
+            display:flex; gap:10px; margin-bottom:15px; z-index:1;
+        }
+        .main-screen, .hud-screen, .mini-screen {
+            border: 2px solid rgba(0,240,255,0.7);
+            border-radius: 12px;
+            box-shadow: 0 0 20px rgba(0,240,255,0.25), inset 0 0 10px rgba(0,0,0,0.7);
+            image-rendering: pixelated;
+            background: #0a0a0f;
+        }
+        .main-screen {
+            width: 280px; height: 280px;
+        }
+        .side-screens {
+            display:flex; flex-direction:column; gap:8px;
+        }
+        .hud-screen {
+            width: 160px; height: 100px;
+        }
+        .mini-screen {
+            width: 160px; height: 172px;
+        }
+        .controls {
+            display:flex; gap:30px; align-items:center; z-index:1;
+        }
+        .dpad {
+            position: relative; width: 130px; height: 130px;
+        }
+        .dpad button {
+            position:absolute; width: 40px; height: 40px;
+            background: rgba(0,240,255,0.1);
+            border: 1px solid rgba(0,240,255,0.5);
+            border-radius: 8px; color:#0ff; font-size:20px;
+            cursor:pointer; backdrop-filter: blur(4px);
+        }
+        .dpad .up{ top:0; left:45px; }
+        .dpad .down{ bottom:0; left:45px; }
+        .dpad .left{ top:45px; left:0; }
+        .dpad .right{ top:45px; right:0; }
+        .dpad .center{ top:45px; left:45px; background:#0ff2; }
+        .action-buttons {
+            display:flex; gap:12px; flex-wrap:wrap; max-width:160px;
+        }
+        .action-buttons button {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: rgba(255,0,127,0.2);
+            border: 2px solid #ff007f;
+            color:white; font-weight:bold; cursor:pointer;
+            box-shadow:0 0 12px rgba(255,0,127,0.6);
+        }
+        .hint {
+            color:#7f8c8d; font-size:12px; margin-top:15px; text-align:center; z-index:1;
+        }
+    </style>
+</head>
+<body>
+<div class="gameboy">
+    <div class="screen-area">
+        <canvas id="mainCanvas" class="main-screen" width="280" height="280"></canvas>
+        <div class="side-screens">
+            <canvas id="hudCanvas" class="hud-screen" width="160" height="100"></canvas>
+            <canvas id="miniCanvas" class="mini-screen" width="160" height="172"></canvas>
+        </div>
+    </div>
+    <div class="controls">
+        <div class="dpad">
+            <button class="up" id="btnUp">▲</button>
+            <button class="down" id="btnDown">▼</button>
+            <button class="left" id="btnLeft">◀</button>
+            <button class="right" id="btnRight">▶</button>
+            <button class="center" id="btnCenter">✦</button>
+        </div>
+        <div class="action-buttons">
+            <button id="btnA">A</button>
+            <button id="btnB">B</button>
+            <button id="btnX">X</button>
+            <button id="btnY">Y</button>
+            <button id="btnL">L</button>
+            <button id="btnR">R</button>
+        </div>
+    </div>
+    <div class="hint">🐴 Move with D‑Pad • A=Care horse • B=Feed • X=Day/Night • Y=Toggle Wireframe • L/R=Jellyfish</div>
+</div>
+
+<script>
+    const mainCtx = document.getElementById('mainCanvas').getContext('2d');
+    const hudCtx = document.getElementById('hudCanvas').getContext('2d');
+    const miniCtx = document.getElementById('miniCanvas').getContext('2d');
+
+    const TILE = 10;
+    let player = { x: 6, y: 6, dir: 0, anim: 0 };
+    let horse = { x: 12, y: 10, health: 3 };
+    let dayTime = 0; // 0..24
+    let wireframeMode = false;
+    let weather = 'clear';
+
+    function drawIsland(ctx, w, h, isMain) {
+        ctx.clearRect(0,0,w,h);
+        // grass
+        ctx.fillStyle = '#2d5a1e';
+        ctx.fillRect(0,0,w,h);
+        // sand beach (bottom right)
+        ctx.fillStyle = '#d4b06a';
+        ctx.beginPath();
+        ctx.moveTo(w*0.6,h);
+        ctx.lineTo(w,h*0.7);
+        ctx.lineTo(w,h);
+        ctx.fill();
+        // water
+        ctx.fillStyle = '#1a5276';
+        ctx.fillRect(0,h*0.8,w,h*0.2);
+        // tree
+        ctx.fillStyle = '#4a2e0e';
+        ctx.fillRect(20,20,10,30);
+        ctx.fillStyle = '#1e7b1e';
+        ctx.beginPath();
+        ctx.arc(25,15,20,0,Math.PI*2);
+        ctx.fill();
+
+        // horse
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(horse.x*TILE, horse.y*TILE, 25, 15);
+        ctx.fillRect(horse.x*TILE+5, horse.y*TILE-10, 8, 15);
+        ctx.fillRect(horse.x*TILE-5, horse.y*TILE+5, 15, 8);
+        // player (main char)
+        ctx.fillStyle = '#ff00ff';
+        ctx.fillRect(player.x*TILE, player.y*TILE, 10, 15);
+        ctx.fillStyle = '#ffaa00';
+        ctx.fillRect(player.x*TILE+2, player.y*TILE-5, 6, 5);
+
+        // spider
+        ctx.fillStyle = '#333';
+        ctx.fillRect(50, 50, 8, 8);
+        // jellyfish (near water)
+        ctx.fillStyle = 'rgba(255,0,255,0.6)';
+        ctx.beginPath();
+        ctx.arc(180, 220, 15, 0, Math.PI*2);
+        ctx.fill();
+        // day/night overlay
+        if (isMain) {
+            if (dayTime < 6 || dayTime > 18) {
+                ctx.fillStyle = 'rgba(10,10,40,0.4)';
+                ctx.fillRect(0,0,w,h);
+            } else if (dayTime > 6 && dayTime < 8) {
+                ctx.fillStyle = 'rgba(255,150,50,0.2)';
+                ctx.fillRect(0,0,w,h);
+            }
+        }
+        if (wireframeMode && isMain) {
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 1;
+            for (let x=0; x<w; x+=TILE) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+            for (let y=0; y<h; y+=TILE) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+        }
+    }
+
+    function drawHUD() {
+        hudCtx.clearRect(0,0,160,100);
+        hudCtx.fillStyle = '#000';
+        hudCtx.fillRect(0,0,160,100);
+        // hearts
+        let hearts = '❤️'.repeat(Math.max(0, horse.health));
+        hudCtx.fillStyle = 'white';
+        hudCtx.font = '14px monospace';
+        hudCtx.fillText('HP '+hearts, 10, 20);
+        // coins
+        hudCtx.fillText('🪙 5', 10, 40);
+        // time icon
+        let timeIcon = dayTime < 6 ? '🌙' : dayTime < 18 ? '☀️' : '🌙';
+        hudCtx.fillText(timeIcon, 10, 70);
+        hudCtx.fillText(dayTime+':00', 40, 70);
+        hudCtx.fillText('Weather: '+weather, 10, 90);
+    }
+
+    function drawMiniMap() {
+        miniCtx.clearRect(0,0,160,172);
+        miniCtx.fillStyle = '#111';
+        miniCtx.fillRect(0,0,160,172);
+        miniCtx.strokeStyle = '#0ff';
+        miniCtx.strokeRect(5,5,150,160);
+        // draw small island outline
+        miniCtx.fillStyle = '#2d5a1e';
+        miniCtx.beginPath();
+        miniCtx.moveTo(30,150);
+        miniCtx.lineTo(120,150);
+        miniCtx.lineTo(80,40);
+        miniCtx.fill();
+        // player dot
+        miniCtx.fillStyle = '#ff0';
+        miniCtx.fillRect(player.x*2+30, player.y*2+40, 4, 4);
+    }
+
+    function updateGame() {
+        // day cycle
+        dayTime = (dayTime + 0.1) % 24;
+        drawIsland(mainCtx, 280, 280, true);
+        drawHUD();
+        drawMiniMap();
+        requestAnimationFrame(updateGame);
+    }
+
+    // Controls
+    document.getElementById('btnUp').addEventListener('click', () => { player.y = Math.max(0, player.y-1); });
+    document.getElementById('btnDown').addEventListener('click', () => { player.y = Math.min(27, player.y+1); });
+    document.getElementById('btnLeft').addEventListener('click', () => { player.x = Math.max(0, player.x-1); });
+    document.getElementById('btnRight').addEventListener('click', () => { player.x = Math.min(27, player.x+1); });
+    document.getElementById('btnCenter').addEventListener('click', () => { weather = weather === 'clear' ? 'rain' : 'clear'; });
+    document.getElementById('btnA').addEventListener('click', () => { horse.health = Math.min(5, horse.health+1); });
+    document.getElementById('btnB').addEventListener('click', () => { horse.health = Math.max(0, horse.health-1); });
+    document.getElementById('btnX').addEventListener('click', () => { dayTime = (dayTime+6) % 24; });
+    document.getElementById('btnY').addEventListener('click', () => { wireframeMode = !wireframeMode; });
+    document.getElementById('btnL').addEventListener('click', () => { weather = 'clear'; });
+    document.getElementById('btnR').addEventListener('click', () => { weather = 'rain'; });
+
+    // Start loop
+    updateGame();
+</script>
+</body>
+</html>
