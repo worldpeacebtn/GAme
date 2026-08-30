@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🕹️ Jerome's Neon Island – Game Editor</title>
+    <style>
+        :root {
+            --glass-bg: rgba(15, 20, 35, 0.35);
+            --glass-border: rgba(0, 240, 255, 0.4);
+            --neon: #00f0ff;
+            --pink: #ff007f;
+            --purple: #9d00ff;
+            --green: #00ffcc;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background: radial-gradient(circle at 50% 30%, #0a0f1e, #03050b);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', monospace;
+            touch-action: manipulation;
+            overflow: hidden;
+        }
+        .gameboy {
+            position: relative;
+            width: 95vw;
+            max-width: 520px;
+            height: 95vh;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px) saturate(180%);
+            border: 2px solid var(--glass-border);
+            border-radius: 30px;
+            box-shadow: 0 0 60px rgba(0, 240, 255, 0.2), inset 0 0 30px rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+        .gameboy::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: linear-gradient(to right, rgba(0,255,255,0.06) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(255,0,255,0.06) 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index: 1;
+        }
+        .screen-area {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            z-index: 2;
+            margin-bottom: 10px;
+        }
+        canvas {
+            image-rendering: pixelated;
+            background: #0a0a0f;
+            border: 2px solid var(--glass-border);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.25), inset 0 0 10px rgba(0, 0, 0, 0.7);
+        }
+        .main-screen {
+            flex: 2.2;
+            min-width: 0;
+            height: 100%;
+        }
+        .side-screens {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+            min-width: 0;
+        }
+        .hud-screen {
+            width: 100%;
+            flex: 1;
+        }
+        .mini-screen {
+            width: 100%;
+            flex: 1.5;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            z-index: 5;
+            width: 100%;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .joystick-area {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(0, 240, 255, 0.1);
+            border: 2px solid var(--glass-border);
+            touch-action: none;
+        }
+        .joystick-knob {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, #fff, var(--neon));
+            box-shadow: 0 0 15px var(--neon);
+            top: 30px;
+            left: 30px;
+            pointer-events: none;
+        }
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            width: 180px;
+        }
+        .action-buttons button {
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: rgba(255, 0, 127, 0.25);
+            border: 2px solid var(--pink);
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(255, 0, 127, 0.6);
+            backdrop-filter: blur(4px);
+            transition: transform 0.1s;
+        }
+        .action-buttons button:active {
+            transform: scale(0.8);
+            background: rgba(255, 0, 127, 0.5);
+        }
+        .menu-buttons {
+            display: flex;
+            gap: 10px;
+            z-index: 6;
+            width: 100%;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .menu-buttons button {
+            background: rgba(0, 240, 255, 0.2);
+            border: 1px solid var(--neon);
+            border-radius: 8px;
+            padding: 6px 12px;
+            color: var(--neon);
+            font-size: 14px;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+        }
+        .menu-buttons button.active {
+            background: rgba(0, 240, 255, 0.5);
+            color: #000;
+        }
+        .hud-overlay {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            z-index: 20;
+            pointer-events: none;
+            color: white;
+            font-size: 14px;
+        }
+        .hp-bar {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            width: 150px;
+            height: 18px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 5px;
+            border: 1px solid var(--neon);
+            z-index: 20;
+            overflow: hidden;
+        }
+        .hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f00, #ff0);
+            transition: width 0.2s;
+        }
+        .emoji-set {
+            position: absolute;
+            bottom: 120px;
+            right: 15px;
+            display: flex;
+            gap: 5px;
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px;
+            border-radius: 15px;
+        }
+        .emoji-set span {
+            font-size: 24px;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        .dialogue-box {
+            position: absolute;
+            left: 20px;
+            right: 20px;
+            bottom: 180px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid var(--pink);
+            border-radius: 12px;
+            padding: 12px;
+            color: white;
+            font-size: 16px;
+            display: none;
+            z-index: 30;
+        }
+        .dialogue-box.active {
+            display: block;
+        }
+        .library-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 50;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        .library-modal.active {
+            display: flex;
+        }
+        .library-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-height: 60%;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .library-item {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--neon);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            cursor: pointer;
+        }
+        .play-pause {
+            background: none;
+            border: none;
+            font-size: 30px;
+            color: var(--neon);
+            cursor: pointer;
+            z-index: 25;
+        }
+        @media (max-width: 600px) {
+            .gameboy {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+                border: none;
+            }
+            .action-buttons {
+                width: 150px;
+            }
+            .joystick-area {
+                width: 80px;
+                height: 80px;
+            }
+            .joystick-knob {
+                width: 30px;
+                height: 30px;
+                top: 25px;
+                left: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="gameboy" id="gameboy">
+    <!-- Screens -->
+    <div class="screen-area">
+        <canvas id="mainCanvas" class="main-screen" width="500" height="400"></canvas>
+        <div class="side-screens">
+            <canvas id="hudCanvas" class="hud-screen" width="200" height="100"></canvas>
+            <canvas id="miniCanvas" class="mini-screen" width="200" height="140"></canvas>
+        </div>
+    </div>
+
+    <!-- Controls Row -->
+    <div class="controls">
+        <div class="joystick-area" id="joystickArea">
+            <div class="joystick-knob" id="joystickKnob"></div>
+        </div>
+        <div class="action-buttons">
+            <button id="btnDash">💨</button>
+            <button id="btnJump">⬆️</button>
+            <button id="btnCrouch">⬇️</button>
+            <button id="btnScan">🔍</button>
+            <button id="btnAttack">🐝</button>
+            <button id="btnHolo">🛡️</button>
+            <button id="btnHouse">🏠</button>
+            <button id="btnPlayPause" class="play-pause">▶️</button>
+        </div>
+    </div>
+
+    <!-- Menu Buttons (3 rows) -->
+    <div class="menu-buttons">
+        <button onclick="openLibrary()">📚 Library</button>
+        <button onclick="openMap()">🗺️ Map</button>
+        <button onclick="toggleEditor()">🎨 Editor</button>
+        <button onclick="showDialogue('Jerome: Hello!')">💬 Talk</button>
+        <button onclick="toggleEmotion()">❤️ Mood</button>
+        <button onclick="togglePause()" id="pauseBtn">⏸️ Pause</button>
+    </div>
+
+    <!-- HUD Overlay -->
+    <div class="hp-bar"><div class="hp-fill" id="hpFill" style="width:100%"></div></div>
+    <div class="emoji-set" id="emojiSet">
+        <span data-emotion="love">❤️</span>
+        <span data-emotion="spade">♠️</span>
+        <span data-emotion="club">♣️</span>
+        <span data-emotion="diamond">♦️</span>
+        <span data-emotion="wave">🌊</span>
+        <span data-emotion="whale">🐋</span>
+        <span data-emotion="letter">💌</span>
+        <span data-emotion="sparkle">✨</span>
+    </div>
+
+    <!-- Dialogue Box -->
+    <div class="dialogue-box" id="dialogueBox">
+        <span id="dialogueText">Hello!</span>
+        <button onclick="closeDialogue()" style="float:right; background:none; border:none; color:#ff007f;">✖️</button>
+    </div>
+
+    <!-- Library Modal -->
+    <div class="library-modal" id="libraryModal">
+        <h2>📚 Asset Library</h2>
+        <div class="library-grid" id="libraryGrid">
+            <!-- Populated by JS -->
+        </div>
+        <button onclick="closeLibrary()" style="margin-top:20px; background:var(--neon); padding:10px 30px; border:none; border-radius:8px; font-weight:bold;">Close</button>
+    </div>
+</div>
+
+<script>
+    // ========== GAME STATE ==========
+    const player = {
+        x: 8, y: 8,
+        hp: 42, maxHp: 42,
+        emotion: 'love',
+        isDead: false,
+        ghostTimer: 0,
+        apples: 0, peaches: 0,
+        hasHouse: false,
+    };
+    const horse = { x: 15, y: 10, health: 5 };
+    let dayTime = 10;
+    let wireframe = false;
+    let hitboxMode = false;
+    let editorActive = false;
+    let dialogueActive = false;
+    let paused = false;
+    let zoom = 1;
+    let wasps = [];
+    let enemies = [];
+    let houses = [];
+    let trees = [
+        {x: 4, y: 4, fruit: 'apple'}, {x: 12, y: 5, fruit: 'peach'}, {x: 18, y: 12, fruit: 'apple'}
+    ];
+    let oasis = {x: 10, y: 15};
+    let ghosts = [];
+
+    // ========== CANVAS SETUP ==========
+    const mainCtx = document.getElementById('mainCanvas').getContext('2d');
+    const hudCtx = document.getElementById('hudCanvas').getContext('2d');
+    const miniCtx = document.getElementById('miniCanvas').getContext('2d');
+    const TILE = 25;
+
+    function updateHUD() {
+        document.getElementById('hpFill').style.width = (player.hp / player.maxHp) * 100 + '%';
+        // HUD canvas
+        hudCtx.clearRect(0,0,200,100);
+        hudCtx.fillStyle = '#000';
+        hudCtx.fillRect(0,0,200,100);
+        hudCtx.fillStyle = 'white';
+        hudCtx.font = '12px monospace';
+        hudCtx.fillText('HP '+Math.floor(player.hp)+'/'+player.maxHp, 10, 20);
+        hudCtx.fillText('Apples: '+player.apples+' Peaches: '+player.peaches, 10, 40);
+        hudCtx.fillText('Emotion: '+player.emotion, 10, 60);
+        hudCtx.fillText('Day: '+Math.floor(dayTime)+':00', 10, 80);
+    }
+
+    function drawMain() {
+        mainCtx.clearRect(0,0,500,400);
+        // Grass
+        mainCtx.fillStyle = '#2d5a1e';
+        mainCtx.fillRect(0,0,500,400);
+        // Water (bottom)
+        mainCtx.fillStyle = '#1a5276';
+        mainCtx.fillRect(0,300,500,100);
+        // Sand
+        mainCtx.fillStyle = '#d4b06a';
+        mainCtx.fillRect(300,250,200,50);
+        // Fire area (center)
+        mainCtx.fillStyle = '#ff4500';
+        mainCtx.beginPath();
+        mainCtx.arc(250,200,30,0,Math.PI*2);
+        mainCtx.fill();
+        // Trees
+        trees.forEach(t => {
+            mainCtx.fillStyle = '#4a2e0e';
+            mainCtx.fillRect(t.x*TILE, t.y*TILE, 10, 20);
+            mainCtx.fillStyle = '#1e7b1e';
+            mainCtx.beginPath();
+            mainCtx.arc(t.x*TILE+5, t.y*TILE-5, 20,0,Math.PI*2);
+            mainCtx.fill();
+            // fruit emoji
+            mainCtx.fillStyle = 'white';
+            mainCtx.font = '20px monospace';
+            mainCtx.fillText(t.fruit==='apple' ? '🍎' : '🍑', t.x*TILE, t.y*TILE-10);
+        });
+        // Horse
+        mainCtx.fillStyle = '#8B4513';
+        mainCtx.fillRect(horse.x*TILE, horse.y*TILE, 20, 12);
+        mainCtx.fillRect(horse.x*TILE+4, horse.y*TILE-8, 6, 12);
+        // Player (Jerome)
+        if (!player.isDead) {
+            mainCtx.fillStyle = '#ff00ff';
+            mainCtx.fillRect(player.x*TILE, player.y*TILE, 10, 18);
+            mainCtx.fillStyle = '#ffaa00';
+            mainCtx.fillRect(player.x*TILE+2, player.y*TILE-6, 6, 5);
+            // bunny ears
+            mainCtx.fillStyle = '#ff77aa';
+            mainCtx.fillRect(player.x*TILE+1, player.y*TILE-12, 3, 8);
+            mainCtx.fillRect(player.x*TILE+6, player.y*TILE-12, 3, 8);
+        } else {
+            // ghost form
+            mainCtx.fillStyle = 'rgba(255,255,255,0.69)';
+            mainCtx.font = '30px monospace';
+            mainCtx.fillText('👻', player.x*TILE-5, player.y*TILE+15);
+        }
+        // Wasps
+        wasps.forEach(w => {
+            mainCtx.fillStyle = 'yellow';
+            mainCtx.fillRect(w.x, w.y, 6,6);
+        });
+        // Enemies
+        enemies.forEach(e => {
+            mainCtx.fillStyle = '#8B0000';
+            mainCtx.fillRect(e.x*TILE, e.y*TILE, 10,10);
+        });
+        // Houses
+        houses.forEach(h => {
+            mainCtx.fillStyle = '#8B4513';
+            mainCtx.fillRect(h.x, h.y, 30,20);
+            mainCtx.fillStyle = '#000';
+            mainCtx.fillRect(h.x+5, h.y+5, 8,8);
+        });
+        // Oasis
+        mainCtx.fillStyle = '#00ffff';
+        mainCtx.beginPath();
+        mainCtx.arc(oasis.x*TILE, oasis.y*TILE, 20,0,Math.PI*2);
+        mainCtx.fill();
+        mainCtx.fillStyle = 'white';
+        mainCtx.font = '20px monospace';
+        mainCtx.fillText('🌴', oasis.x*TILE-10, oasis.y*TILE-15);
+        // Day/Night overlay
+        if (dayTime < 6 || dayTime > 18) {
+            mainCtx.fillStyle = 'rgba(10,10,40,0.4)';
+            mainCtx.fillRect(0,0,500,400);
+        }
+        if (wireframe) {
+            mainCtx.strokeStyle = '#0ff';
+            mainCtx.lineWidth = 1;
+            for (let x=0; x<500; x+=TILE) { mainCtx.beginPath(); mainCtx.moveTo(x,0); mainCtx.lineTo(x,400); mainCtx.stroke(); }
+            for (let y=0; y<400; y+=TILE) { mainCtx.beginPath(); mainCtx.moveTo(0,y); mainCtx.lineTo(500,y); mainCtx.stroke(); }
+        }
+        if (hitboxMode) {
+            mainCtx.strokeStyle = '#f0f';
+            mainCtx.strokeRect(player.x*TILE, player.y*TILE, 10,18);
+        }
+    }
+
+    function drawMiniMap() {
+        miniCtx.clearRect(0,0,200,140);
+        miniCtx.fillStyle = '#111';
+        miniCtx.fillRect(0,0,200,140);
+        miniCtx.strokeStyle = '#0ff';
+        miniCtx.strokeRect(5,5,190,130);
+        miniCtx.fillStyle = '#2d5a1e';
+        miniCtx.fillRect(20,20,160,100);
+        miniCtx.fillStyle = '#ff0';
+        miniCtx.fillRect(30+player.x*5, 25+player.y*5, 4,4);
+    }
+
+    function gameLoop() {
+        if (!paused) {
+            // day cycle
+            dayTime = (dayTime + 0.02) % 24;
+            // hazard checks
+            let dx = Math.abs(player.x - 10);
+            let dy = Math.abs(player.y - 8);
+            if (Math.sqrt(dx*dx+dy*dy) < 2 && !player.isDead) {
+                player.hp = Math.max(0, player.hp - 0.5);
+                if (player.hp <= 0) die();
+            }
+            // water heal
+            if (player.y > 12 && !player.isDead) {
+                player.hp = Math.min(player.maxHp, player.hp + 0.2);
+            }
+            // grass heal (top left)
+            if (player.x < 5 && player.y < 5) {
+                player.hp = Math.min(player.maxHp, player.hp + 0.1);
+            }
+            // tree fruit collection
+            trees.forEach(t => {
+                if (Math.abs(player.x - t.x) < 2 && Math.abs(player.y - t.y) < 2) {
+                    if (t.fruit === 'apple') player.apples++;
+                    else player.peaches++;
+                    t.fruit = null;
+                }
+            });
+            // ghost timer
+            if (player.isDead) {
+                player.ghostTimer--;
+                if (player.ghostTimer <= 0) {
+                    player.isDead = false;
+                    player.hp = 10;
+                }
+            }
+            // spawn wasps occasionally
+            if (Math.random() < 0.01 && wasps.length < 10) {
+                wasps.push({x: Math.random()*500, y: Math.random()*400});
+            }
+            wasps.forEach(w => { w.x += Math.random()*2-1; w.y += Math.random()*2-1; });
+            // spawn enemies near oasis
+            if (Math.random() < 0.005 && enemies.length < 3) {
+                enemies.push({x: oasis.x + Math.floor(Math.random()*5)-2, y: oasis.y + Math.floor(Math.random()*5)-2});
+            }
+        }
+        drawMain();
+        drawMiniMap();
+        updateHUD();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function die() {
+        player.isDead = true;
+        player.hp = 0;
+        player.ghostTimer = 60; // seconds
+        showDialogue('Jerome died! You are a ghost. Run to a tree and eat an apple to revive!');
+    }
+
+    function showDialogue(text) {
+        document.getElementById('dialogueText').innerText = text;
+        document.getElementById('dialogueBox').classList.add('active');
+    }
+    function closeDialogue() {
+        document.getElementById('dialogueBox').classList.remove('active');
+    }
+
+    function togglePause() {
+        paused = !paused;
+        document.getElementById('pauseBtn').innerText = paused ? '▶️' : '⏸️';
+    }
+
+    function toggleEmotion() {
+        const emotions = ['love','spade','club','diamond','wave','whale','letter','sparkle'];
+        const idx = emotions.indexOf(player.emotion);
+        player.emotion = emotions[(idx+1)%emotions.length];
+        showDialogue('Emotion: '+player.emotion);
+    }
+
+    function openLibrary() {
+        document.getElementById('libraryModal').classList.add('active');
+        const grid = document.getElementById('libraryGrid');
+        const assets = ['🐴','🐝','🕷️','🪼','🍎','🍑','🌳','🌊','❤️','♠️','♣️','♦️','✨','🐋','💌','🏠','🛡️','⚔️'];
+        grid.innerHTML = assets.map(a => `<div class="library-item" onclick="placeAsset('${a}')">${a}</div>`).join('');
+    }
+    function closeLibrary() {
+        document.getElementById('libraryModal').classList.remove('active');
+    }
+    function placeAsset(emoji) {
+        // Simple: add to houses or wasps based on emoji
+        if (emoji === '🏠') houses.push({x: player.x*TILE, y: player.y*TILE});
+        else if (emoji === '🐝') wasps.push({x: player.x*TILE, y: player.y*TILE});
+        else showDialogue('Placed '+emoji);
+        closeLibrary();
+    }
+
+    function openMap() {
+        showDialogue('Map: Oasis at (10,15). Trees at (4,4), (12,5), (18,12).');
+    }
+
+    function toggleEditor() {
+        editorActive = !editorActive;
+        showDialogue(editorActive ? 'Editor mode ON' : 'Editor mode OFF');
+    }
+
+    // Joystick control
+    const joystickArea = document.getElementById('joystickArea');
+    const joystickKnob = document.getElementById('joystickKnob');
+    let joystickActive = false;
+    joystickArea.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        joystickActive = true;
+        moveKnob(e.touches[0]);
+    });
+    joystickArea.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (joystickActive) moveKnob(e.touches[0]);
+    });
+    joystickArea.addEventListener('touchend', () => {
+        joystickActive = false;
+        joystickKnob.style.left = '30px';
+        joystickKnob.style.top = '30px';
+    });
+
+    function moveKnob(touch) {
+        const rect = joystickArea.getBoundingClientRect();
+        const cx = rect.left + rect.width/2;
+        const cy = rect.top + rect.height/2;
+        let dx = touch.clientX - cx;
+        let dy = touch.clientY - cy;
+        const maxDist = 30;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        if (dist > maxDist) {
+            dx = dx/dist*maxDist;
+            dy = dy/dist*maxDist;
+        }
+        joystickKnob.style.left = (30+dx) + 'px';
+        joystickKnob.style.top = (30+dy) + 'px';
+        // Move player based on direction
+        if (Math.abs(dx) > 10) player.x += Math.sign(dx);
+        if (Math.abs(dy) > 10) player.y += Math.sign(dy);
+        player.x = Math.max(0, Math.min(19, player.x));
+        player.y = Math.max(0, Math.min(19, player.y));
+    }
+
+    // Button actions
+    document.getElementById('btnDash').addEventListener('click', () => { player.x += 5; });
+    document.getElementById('btnJump').addEventListener('click', () => { player.y -= 2; });
+    document.getElementById('btnCrouch').addEventListener('click', () => { player.y += 1; });
+    document.getElementById('btnScan').addEventListener('click', () => { showDialogue('Scanning... You see trees, oasis, and enemies.'); });
+    document.getElementById('btnAttack').addEventListener('click', () => { wasps.push({x: player.x*TILE, y: player.y*TILE}); });
+    document.getElementById('btnHolo').addEventListener('click', () => { showDialogue('Holo illusion activated!'); });
+    document.getElementById('btnHouse').addEventListener('click', () => { houses.push({x: player.x*TILE, y: player.y*TILE}); });
+    document.getElementById('btnPlayPause').addEventListener('click', togglePause);
+
+    // Emoji set
+    document.querySelectorAll('#emojiSet span').forEach(el => {
+        el.addEventListener('click', () => { player.emotion = el.dataset.emotion; });
+    });
+
+    // Start
+    gameLoop();
+</script>
+</body>
+</html>
