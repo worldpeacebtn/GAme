@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROSENSTEINQUASTAR // Universal Media Engine</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --utopia-cyan: #00f3ff;
+            --utopia-gold: #ffb700;
+            --dystopia-pink: #ff0055;
+            --dystopia-dark: #070913;
+            --glass-bg: rgba(12, 16, 32, 0.65);
+            --glass-border: rgba(0, 243, 255, 0.25);
+            --text-main: #e0f7fc;
+        }
+
+        [data-theme="dystopia"] {
+            --utopia-cyan: #ff0055;
+            --utopia-gold: #7000ff;
+            --glass-bg: rgba(15, 5, 12, 0.85);
+            --glass-border: rgba(ff, 0, 85, 0.35);
+            --text-main: #ffccd5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--dystopia-dark);
+            color: var(--text-main);
+            transition: background 0.8s ease;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Glassmorphism UI Layout */
+        .app-overlay {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: 340px 1fr 380px;
+            grid-template-rows: 70px 1fr 120px;
+            gap: 15px;
+            padding: 15px;
+            pointer-events: none;
+        }
+
+        .interactive {
+            pointer-events: auto;
+        }
+
+        header {
+            grid-column: 1 / -1;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 25px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .brand-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, var(--utopia-cyan), var(--utopia-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            text-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background: var(--utopia-cyan);
+            color: #000;
+            box-shadow: 0 0 15px var(--utopia-cyan);
+        }
+
+        /* Sidebar Playlist */
+        .sidebar {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow: hidden;
+        }
+
+        .sidebar h3 {
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--utopia-cyan);
+        }
+
+        .playlist {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .playlist::-webkit-scrollbar { width: 4px; }
+        .playlist::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
+
+        .track-item {
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid transparent;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .track-item:hover, .track-item.active {
+            background: rgba(0, 243, 255, 0.1);
+            border-color: var(--utopia-cyan);
+            transform: translateX(4px);
+        }
+
+        .track-tag {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            text-transform: uppercase;
+        }
+
+        /* Center Display / Stage */
+        .stage {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .media-viewer {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .media-viewer img, .media-viewer video, .media-viewer iframe {
+            max-width: 90%;
+            max-height: 85%;
+            border-radius: 12px;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--glass-border);
+            object-fit: contain;
+            transition: opacity 0.6s ease;
+        }
+
+        .text-preview {
+            width: 85%;
+            height: 80%;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--glass-border);
+            padding: 20px;
+            border-radius: 8px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            color: #00ffaa;
+        }
+
+        /* Drop Area Notification Overlay */
+        .drop-zone-hint {
+            position: absolute;
+            bottom: 20px;
+            background: var(--glass-bg);
+            border: 1px dashed var(--utopia-cyan);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.03); }
+        }
+
+        /* Quantum AI Commentator Box */
+        .ai-commentary {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .ai-avatar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--utopia-gold);
+            font-size: 0.85rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .ai-avatar-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--utopia-gold);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--utopia-gold);
+        }
+
+        .comment-text {
+            font-size: 0.85rem;
+            line-height: 1.4;
+            color: var(--text-main);
+            font-style: italic;
+        }
+
+        /* Footer Player Controls */
+        footer {
+            grid-column: 1 / -1;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 0 25px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--utopia-cyan);
+            color: #000;
+            box-shadow: 0 0 12px var(--utopia-cyan);
+        }
+
+        .scrubber-container {
+            flex: 1;
+            margin: 0 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .scrubber {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .scrubber-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--utopia-cyan), var(--utopia-gold));
+            transition: width 0.1s linear;
+        }
+
+        .track-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.6);
+        }
+    </style>
+</head>
+<body data-theme="utopia">
+
+    <div id="canvas-container"></div>
+
+    <div class="app-overlay">
+        
+        <header class="interactive">
+            <div class="brand-title">ROSENSTEINQUASTAR</div>
+            <button class="theme-toggle" id="theme-btn">TOGGLE DYSTOPIA / UTOPIA</button>
+        </header>
+
+        <aside class="sidebar interactive">
+            <h3>QUANTUM TIME-CAPSULE ALBUM</h3>
+            <div class="playlist" id="playlist">
+                </div>
+            <input type="file" id="file-input" multiple style="display:none;" />
+            <button class="theme-toggle" style="width:100%" onclick="document.getElementById('file-input').click()">+ UPLOAD MEDIA</button>
+        </aside>
+
+        <main class="stage">
+            <div class="media-viewer interactive" id="media-stage">
+                </div>
+            <div class="drop-zone-hint">DRAG & DROP FILES INTO ROSENSTEINQUASTAR SPHERE</div>
+        </main>
+
+        <aside class="ai-commentary interactive">
+            <div class="ai-avatar">
+                <div class="ai-avatar-dot"></div>
+                QUASTAR AI // QUANTUM SPEECH ENGINE
+            </div>
+            <div class="comment-text" id="ai-comment">
+                "Initiating temporal capsule... Drop any file into the central singularity to compute quantum entanglement matrix."
+            </div>
+        </aside>
+
+        <footer class="interactive">
+            <div class="controls">
+                <button class="btn" id="prev-btn">⏮</button>
+                <button class="btn" id="play-btn">▶</button>
+                <button class="btn" id="next-btn">⏭</button>
+            </div>
+            
+            <div class="scrubber-container">
+                <div class="track-info">
+                    <span id="now-playing-title">No Track Selected</span>
+                    <span id="time-display">00:00 / 00:00</span>
+                </div>
+                <div class="scrubber" id="scrubber"><div class="scrubber-fill" id="scrubber-fill"></div></div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        /* -------------------------------------------------------------
+         * 1. CHEEKY QUANTUM COMMENTS ENGINE (WITH SPEECH SYNTHESIS)
+         * ------------------------------------------------------------- */
+        const quantumQuotes = [
+            "Fascinating byte entropy! In an infinite multiverse, this song is already #1 on Andromeda's chart.",
+            "Collapsing wave function for your media upload... Schrödinger's cat gives this album two paws up!",
+            "Spin 1/2 particle detected! Sorting your temporal time-capsule to prevent past human mistakes.",
+            "Fun fact: You are floating through a futuristic sponge city right now while your mind stays 100% intact.",
+            "Analyzing file density... The quantum entanglement between your music and visual state is reaching maximum dopamine!",
+            "Is it Utopia or Dystopia? Either way, this user experience is optimized for long isolation endurance!"
+        ];
+
+        function speakCommentary(text) {
+            document.getElementById('ai-comment').innerText = `"${text}"`;
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.pitch = 1.1;
+                utterance.rate = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        /* -------------------------------------------------------------
+         * 2. THREE.JS 3D SPHERICAL DROPZONE (ROSENSTEINQUASTAR)
+         * ------------------------------------------------------------- */
+        let scene, camera, renderer, sphere, particleSystem;
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 8;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // ROSENSTEINQUASTAR Core Sphere
+            const geometry = new THREE.IcosahedronGeometry(2.2, 3);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x00f3ff,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.6
+            });
+            sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);
+
+            // Particle Cloud Atmosphere
+            const particleGeo = new THREE.BufferGeometry();
+            const count = 1200;
+            const positions = new Float32Array(count * 3);
+            for (let i = 0; i < count * 3; i++) {
+                positions[i] = (Math.random() - 0.5) * 20;
+            }
+            particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            const particleMat = new THREE.PointsMaterial({
+                color: 0xffb700,
+                size: 0.04,
+                transparent: true,
+                opacity: 0.8
+            });
+            particleSystem = new THREE.Points(particleGeo, particleMat);
+            scene.add(particleSystem);
+
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if (sphere) {
+                sphere.rotation.x += 0.003;
+                sphere.rotation.y += 0.005;
+            }
+            if (particleSystem) {
+                particleSystem.rotation.y -= 0.001;
+            }
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        init3D();
+
+        /* -------------------------------------------------------------
+         * 3. MEDIA & PLAYLIST ENGINE
+         * ------------------------------------------------------------- */
+        let playlist = [];
+        let currentTrackIndex = 0;
+        let audioPlayer = new Audio();
+        let isPlaying = false;
+
+        const mediaStage = document.getElementById('media-stage');
+        const playlistUI = document.getElementById('playlist');
+        const playBtn = document.getElementById('play-btn');
+        const scrubberFill = document.getElementById('scrubber-fill');
+        const nowPlayingTitle = document.getElementById('now-playing-title');
+        const timeDisplay = document.getElementById('time-display');
+
+        // Initial Sample Media Items
+        const sampleItems = [
+            { name: "Sponge_City_Launch.mp3", type: "audio", tag: "MP3", url: "" },
+            { name: "Quantum_Timecapsule.png", type: "image", tag: "PIC", url: "https://picsum.photos/800/600?random=1" },
+            { name: "Dystopian_Developer_Mind.txt", type: "text", tag: "TXT", content: "ROSENSTEINQUASTAR LOG:\n- Keeping the mind intact during long isolation.\n- Flying through futuristic sponge city safely.\n- Universal audio/visual synchronization active." }
+        ];
+
+        function loadPlaylist() {
+            playlistUI.innerHTML = "";
+            playlist.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = `track-item ${index === currentTrackIndex ? 'active' : ''}`;
+                el.innerHTML = `
+                    <span>${item.name}</span>
+                    <span class="track-tag">${item.tag}</span>
+                `;
+                el.onclick = () => playTrack(index);
+                playlistUI.appendChild(el);
+            });
+        }
+
+        function playTrack(index) {
+            if (playlist.length === 0) return;
+            currentTrackIndex = index;
+            const item = playlist[index];
+            nowPlayingTitle.innerText = item.name;
+            loadPlaylist();
+
+            if (item.type === 'audio') {
+                if (item.url) {
+                    audioPlayer.src = item.url;
+                    audioPlayer.play();
+                    isPlaying = true;
+                    playBtn.innerText = '⏸';
+                }
+            } else {
+                renderVisualMedia(item);
+            }
+
+            // Cheeky Quantum Speech
+            const randomQuote = quantumQuotes[Math.floor(Math.random() * quantumQuotes.length)];
+            speakCommentary(randomQuote);
+        }
+
+        function renderVisualMedia(item) {
+            mediaStage.innerHTML = '';
+            if (item.type === 'image') {
+                const img = document.createElement('img');
+                img.src = item.url;
+                mediaStage.appendChild(img);
+            } else if (item.type === 'video') {
+                const video = document.createElement('video');
+                video.src = item.url;
+                video.controls = true;
+                video.autoplay = true;
+                mediaStage.appendChild(video);
+            } else if (item.type === 'text') {
+                const div = document.createElement('div');
+                div.className = 'text-preview';
+                div.innerText = item.content || "Text File Preview Loaded.";
+                mediaStage.appendChild(div);
+            } else if (item.type === 'pdf' || item.type === 'html') {
+                const iframe = document.createElement('iframe');
+                iframe.src = item.url;
+                iframe.style.width = "85%";
+                iframe.style.height = "80%";
+                mediaStage.appendChild(iframe);
+            }
+        }
+
+        /* Controls Listener */
+        playBtn.onclick = () => {
+            if (!audioPlayer.src && playlist.length > 0) {
+                playTrack(0);
+                return;
+            }
+            if (isPlaying) {
+                audioPlayer.pause();
+                playBtn.innerText = '▶';
+            } else {
+                audioPlayer.play();
+                playBtn.innerText = '⏸';
+            }
+            isPlaying = !isPlaying;
+        };
+
+        document.getElementById('next-btn').onclick = () => {
+            if (playlist.length > 0) playTrack((currentTrackIndex + 1) % playlist.length);
+        };
+
+        document.getElementById('prev-btn').onclick = () => {
+            if (playlist.length > 0) playTrack((currentTrackIndex - 1 + playlist.length) % playlist.length);
+        };
+
+        audioPlayer.ontimeupdate = () => {
+            if (audioPlayer.duration) {
+                const pct = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                scrubberFill.style.width = pct + '%';
+                
+                const curM = Math.floor(audioPlayer.currentTime / 60);
+                const curS = Math.floor(audioPlayer.currentTime % 60).toString().padStart(2, '0');
+                const durM = Math.floor(audioPlayer.duration / 60);
+                const durS = Math.floor(audioPlayer.duration % 60).toString().padStart(2, '0');
+                timeDisplay.innerText = `${curM}:${curS} / ${durM}:${durS}`;
+            }
+        };
+
+        audioPlayer.onended = () => {
+            // Continuous Automated Playback
+            document.getElementById('next-btn').click();
+        };
+
+        /* -------------------------------------------------------------
+         * 4. DRAG & DROP INTO ROSENSTEINQUASTAR
+         * ------------------------------------------------------------- */
+        window.ondragover = (e) => e.preventDefault();
+        window.ondrop = (e) => {
+            e.preventDefault();
+            const files = Array.from(e.dataTransfer.files);
+            handleFilesUpload(files);
+        };
+
+        document.getElementById('file-input').onchange = (e) => {
+            const files = Array.from(e.target.files);
+            handleFilesUpload(files);
+        };
+
+        function handleFilesUpload(files) {
+            files.forEach(file => {
+                const ext = file.name.split('.').pop().toLowerCase();
+                const blobUrl = URL.createObjectURL(file);
+                let mediaType = 'unknown';
+
+                if (['mp3', 'm4a', 'wav'].includes(ext)) mediaType = 'audio';
+                else if (['mp4', 'webm'].includes(ext)) mediaType = 'video';
+                else if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) mediaType = 'image';
+                else if (['txt', 'json', 'js', 'css'].includes(ext)) mediaType = 'text';
+                else if (['pdf', 'html'].includes(ext)) mediaType = 'pdf';
+                else if (['glb', 'gltf'].includes(ext)) mediaType = '3d';
+
+                const newItem = {
+                    name: file.name,
+                    type: mediaType,
+                    tag: ext.toUpperCase(),
+                    url: blobUrl
+                };
+
+                if (mediaType === 'text') {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        newItem.content = evt.target.result;
+                        playlist.push(newItem);
+                        loadPlaylist();
+                    };
+                    reader.readAsText(file);
+                } else {
+                    playlist.push(newItem);
+                    loadPlaylist();
+                }
+            });
+
+            // Pulse sphere animation on upload
+            if (sphere) {
+                sphere.scale.set(1.4, 1.4, 1.4);
+                setTimeout(() => sphere.scale.set(1, 1, 1), 500);
+            }
+
+            speakCommentary("Files successfully ingested into ROSENSTEINQUASTAR singularity! Re-calculating timecapsule data...");
+        }
+
+        /* -------------------------------------------------------------
+         * 5. UTOPIA / DYSTOPIA THEME SWITCHER
+         * ------------------------------------------------------------- */
+        document.getElementById('theme-btn').onclick = () => {
+            const currentTheme = document.body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'utopia' ? 'dystopia' : 'utopia';
+            document.body.setAttribute('data-theme', newTheme);
+            
+            if (sphere) {
+                sphere.material.color.setHex(newTheme === 'utopia' ? 0x00f3ff : 0xff0055);
+            }
+            speakCommentary(`Shifting temporal reality state to ${newTheme.toUpperCase()} mode.`);
+        };
+
+        // Initialize default sample playlist
+        playlist = sampleItems;
+        loadPlaylist();
+    </script>
+</body>
+</html>
