@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>⚡ NEON COMIC VAULT v21 — Ghost Bunny & Sticker Mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ... previous styles preserved ... */
+
+        /* Ghost Bunny TV */
+        .ghost-tv {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 120px;
+            height: 90px;
+            border: 3px solid #00f0ff;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            box-shadow: 0 0 25px rgba(0,240,255,0.6), inset 0 0 15px rgba(157,0,255,0.4);
+            animation: glitch 2s infinite;
+            z-index: 100;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .ghost-bunny {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 40px;
+            filter: drop-shadow(0 0 8px #ff007f);
+            animation: float 2s ease-in-out infinite;
+        }
+        .ghost-ears {
+            position: absolute;
+            top: 5px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .ghost-ear {
+            width: 15px;
+            height: 30px;
+            background: linear-gradient(to top, #ff00ff, #00f0ff);
+            border-radius: 10px 10px 0 0;
+            animation: earGlow 1.5s alternate infinite;
+        }
+        .ghost-ear.left { transform: rotate(-15deg); }
+        .ghost-ear.right { transform: rotate(15deg); }
+
+        /* Sticker preview */
+        .sticker-preview {
+            position: absolute;
+            border: 2px solid rgba(255,255,255,0.8);
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,240,255,0.5), 0 4px 10px rgba(0,0,0,0.5);
+            cursor: pointer;
+            touch-action: none;
+            animation: levitate 3s ease-in-out infinite;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(2px);
+            padding: 4px;
+        }
+        .sticker-preview img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 8px;
+        }
+        .sticker-preview.circular {
+            border-radius: 50%;
+        }
+        .sticker-preview.speech-bubble {
+            border-radius: 20px 20px 20px 5px;
+            background: white;
+            color: black;
+            padding: 8px 12px;
+        }
+
+        /* HUD bottom rows */
+        .hud-bottom-row {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+            pointer-events: auto;
+            padding: 4px;
+        }
+    </style>
+</head>
+<body class="text-slate-100 h-[100dvh] w-screen flex flex-col overflow-hidden animated-bg">
+    <!-- Ghost Bunny TV -->
+    <div class="ghost-tv">
+        <div class="ghost-ears">
+            <div class="ghost-ear left"></div>
+            <div class="ghost-ear right"></div>
+        </div>
+        <span class="ghost-bunny">🐰</span>
+    </div>
+
+    <!-- Canvas & Layers -->
+    <div id="canvas-container" class="absolute inset-x-0 top-0 bottom-40 z-0 touch-none flex items-center justify-center overflow-hidden">
+        <!-- Layered frames behind canvas -->
+        <div id="layer-stack" class="absolute inset-0 flex items-center justify-center opacity-50 pointer-events-none"></div>
+        <div id="zoom-viewport" class="relative w-full h-full flex items-center justify-center origin-center transition-transform duration-300 ease-out cursor-grab active:cursor-grabbing">
+            <canvas id="studio-canvas" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg border border-cyberblue/30"></canvas>
+        </div>
+    </div>
+
+    <!-- HUD (bottom two rows) -->
+    <div class="absolute bottom-0 left-0 right-0 z-50 flex flex-col gap-1 p-2 pointer-events-none">
+        <!-- Row 1: Filters & Styles -->
+        <div class="hud-bottom-row glass" id="filter-row">
+            <button onclick="applyStyle('anime')" class="glass-btn">⚡ANIME</button>
+            <button onclick="applyStyle('manga')" class="glass-btn">🌸MANGA</button>
+            <button onclick="applyStyle('comic')" class="glass-btn">💥COMIC</button>
+            <button onclick="applyStyle('neon')" class="glass-btn">🌈NEON</button>
+            <button onclick="applyStyle('ductus')" class="glass-btn">🏮DUCTUS</button>
+            <button onclick="applyStyle('pixel')" class="glass-btn">👾PIXEL</button>
+            <button onclick="applyStyle('jrpg')" class="glass-btn">⚔️JRPG</button>
+            <button onclick="applyStyle('flattened')" class="glass-btn">🔳FLAT</button>
+            <button onclick="applyStyle('pendot')" class="glass-btn">⚫PENDOT</button>
+            <button onclick="applyStyle('cybermix')" class="glass-btn">🌀CYBERMIX</button>
+        </div>
+        <!-- Row 2: Actions & Tools -->
+        <div class="hud-bottom-row glass" id="action-row">
+            <button onclick="undo()" class="glass-btn">⏪</button>
+            <button onclick="redo()" class="glass-btn">⏩</button>
+            <button onclick="openVault()" class="glass-btn">🔐</button>
+            <button onclick="pinFrame()" class="glass-btn">📌</button>
+            <button onclick="captureFrame()" class="glass-btn">📸</button>
+            <button onclick="playAnimation()" class="glass-btn">▶️</button>
+            <button onclick="stopAnimation()" class="glass-btn">⏹️</button>
+            <button onclick="toggleStickerMode()" id="sticker-mode-btn" class="glass-btn">🖼️</button>
+            <button onclick="addSpeechBubble()" class="glass-btn">💬</button>
+            <button onclick="addCircularSticker()" class="glass-btn">⭕</button>
+            <button onclick="openResolutionMenu()" class="glass-btn">📐</button>
+            <button onclick="enterReaderMode()" class="glass-btn">📖</button>
+        </div>
+    </div>
+
+    <!-- Top library preview strip -->
+    <div id="top-library" class="absolute top-2 left-2 right-2 z-40 flex gap-2 overflow-x-auto glass p-1"></div>
+
+    <script>
+        // ... (preserve previous functions) ...
+
+        // ========== NEW: GHOST BUNNY TV ANIMATION ==========
+        function initGhostBunny() {
+            // Already in DOM; add periodic random glitch
+            setInterval(() => {
+                const tv = document.querySelector('.ghost-tv');
+                tv.style.transform = `translate(${Math.random()*4-2}px, ${Math.random()*2-1}px) rotate(${Math.random()*2-1}deg)`;
+                setTimeout(() => { tv.style.transform = 'none'; }, 150);
+            }, 2000);
+        }
+
+        // ========== NEW: STICKER MODE ==========
+        let stickerMode = false;
+        function toggleStickerMode() {
+            stickerMode = !stickerMode;
+            document.getElementById('sticker-mode-btn').classList.toggle('active', stickerMode);
+            showToast(stickerMode ? '🖼️ Sticker mode ON' : '🖼️ Sticker mode OFF');
+        }
+
+        function createStickerFromLibrary(id) {
+            const item = library.find(x => x.id === id);
+            if (!item) return;
+            const sticker = document.createElement('div');
+            sticker.className = 'sticker-preview';
+            if (item.type === 'image') {
+                sticker.innerHTML = `<img src="${item.dataUrl}">`;
+            } else {
+                sticker.innerHTML = `<span style="font-size:30px;">${item.type === 'audio' ? '🎵' : item.type === 'video' ? '🎬' : '📄'}</span>`;
+            }
+            sticker.style.left = '50%';
+            sticker.style.top = '50%';
+            sticker.style.width = '20%';
+            sticker.style.maxWidth = '150px';
+            document.getElementById('canvas-container').appendChild(sticker);
+            makeStickerDraggable(sticker);
+            // Play pop sound
+            playPopSound();
+        }
+
+        function makeStickerDraggable(el) {
+            let startX, startY, origX, origY;
+            el.addEventListener('touchstart', e => {
+                const touch = e.touches[0];
+                startX = touch.clientX; startY = touch.clientY;
+                origX = el.offsetLeft; origY = el.offsetTop;
+                el.style.animation = 'none'; // stop levitation while dragging
+                e.preventDefault();
+            }, {passive:false});
+            el.addEventListener('touchmove', e => {
+                const touch = e.touches[0];
+                const dx = touch.clientX - startX;
+                const dy = touch.clientY - startY;
+                el.style.left = origX + dx + 'px';
+                el.style.top = origY + dy + 'px';
+                e.preventDefault();
+            }, {passive:false});
+            el.addEventListener('touchend', () => {
+                el.style.animation = 'levitate 3s ease-in-out infinite';
+            });
+        }
+
+        function playPopSound() {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(600, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+            gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.1);
+        }
+
+        // ========== NEW: SPEECH BUBBLE & CIRCULAR STICKER ==========
+        function addSpeechBubble() {
+            const text = prompt('Bubble text', '✨ Hello!');
+            if (text) {
+                const bubble = document.createElement('div');
+                bubble.className = 'sticker-preview speech-bubble';
+                bubble.innerText = text;
+                bubble.style.left = '60%';
+                bubble.style.top = '50%';
+                document.getElementById('canvas-container').appendChild(bubble);
+                makeStickerDraggable(bubble);
+            }
+        }
+
+        function addCircularSticker() {
+            const url = prompt('Image URL or pick from library?', '');
+            if (url) {
+                const sticker = document.createElement('div');
+                sticker.className = 'sticker-preview circular';
+                sticker.innerHTML = `<img src="${url}">`;
+                sticker.style.left = '40%';
+                sticker.style.top = '50%';
+                document.getElementById('canvas-container').appendChild(sticker);
+                makeStickerDraggable(sticker);
+            }
+        }
+
+        // ========== NEW: LAYERED CANVAS (stack behind) ==========
+        function updateLayerStack() {
+            const stack = document.getElementById('layer-stack');
+            if (!panels.length) { stack.innerHTML = ''; return; }
+            // Show last 3 panels behind current
+            const start = Math.max(0, panels.length - 4);
+            stack.innerHTML = panels.slice(start, panels.length - 1).map(p => 
+                `<img src="${p.thumb}" style="max-width:70%; max-height:70%; opacity:0.3; position:absolute; transform: translateX(${(panels.indexOf(p) - panels.length + 1) * 15}px);">`
+            ).join('');
+        }
+
+        // Call after pinFrame / captureFrame
+        const origPinFrame = pinFrame;
+        pinFrame = function() { origPinFrame(); updateLayerStack(); };
+
+        // ========== NEW: FILTERS (flattened, pendot, cybermix) ==========
+        function applyStyle(style) {
+            if(!canvas.width) return;
+            filterLayers = [];
+            adjustments = { brightness:0, contrast:0, saturation:100 };
+            switch(style) {
+                case 'flattened': adjustments={brightness:5,contrast:40,saturation:70}; filterLayers.push({type:'posterize',strength:4,blendMode:'normal'}); break;
+                case 'pendot': adjustments={brightness:0,contrast:50,saturation:100}; filterLayers.push({type:'manga-dot',strength:80,blendMode:'multiply'}); break;
+                case 'cybermix': adjustments={brightness:10,contrast:60,saturation:160}; filterLayers.push({type:'neon-glow',strength:50,blendMode:'screen'}); filterLayers.push({type:'ductus-pro',strength:30,blendMode:'overlay'}); break;
+                // ... existing cases ...
+            }
+            processImagePipeline();
+        }
+
+        // ========== INIT ==========
+        initGhostBunny();
+        updateTopLibrary();
+        setMode('jrpg');
+        applyStyle('jrpg');
+    </script>
+</body>
+</html>
