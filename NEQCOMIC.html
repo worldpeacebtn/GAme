@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>⚡ NEON COMIC VAULT v16 — Reader & Media</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#03050b',
+                        darkcard: '#080d1a',
+                        cyberblue: '#00f0ff',
+                        cyberpurple: '#9d00ff',
+                        cyberpink: '#ff007f',
+                        cyberorange: '#ff5500',
+                        neongreen: '#00ffcc',
+                        glasswhite: 'rgba(255,255,255,0.08)'
+                    },
+                    animation: {
+                        'float': 'float 4s ease-in-out infinite',
+                        'glow-pulse': 'glowPulse 2.5s ease-in-out infinite',
+                        'grid-shift': 'gridShift 8s linear infinite',
+                        'bubble-rise': 'bubbleRise 6s ease-in-out infinite',
+                        'shimmer': 'shimmer 3s ease-in-out infinite',
+                        'butterfly': 'butterflyFlap 0.8s ease-in-out infinite',
+                        'particle': 'particleMove 4s linear infinite',
+                        'mouse-move': 'mouseMove 6s ease-in-out infinite'
+                    },
+                    keyframes: {
+                        float: { '0%,100%': { transform: 'translateY(0px)' }, '50%': { transform: 'translateY(-8px)' } },
+                        glowPulse: { '0%,100%': { boxShadow: '0 0 20px rgba(0,240,255,0.3)' }, '50%': { boxShadow: '0 0 40px rgba(0,240,255,0.7)' } },
+                        gridShift: { '0%': { backgroundPosition: '0 0, 0 0' }, '100%': { backgroundPosition: '32px 32px, 32px 32px' } },
+                        bubbleRise: { '0%,100%': { transform: 'translateY(0) scale(1)' }, '50%': { transform: 'translateY(-12px) scale(1.05)' } },
+                        shimmer: { '0%,100%': { opacity: '0.6' }, '50%': { opacity: '1' } },
+                        butterflyFlap: { '0%,100%': { transform: 'rotate(10deg)' }, '50%': { transform: 'rotate(-10deg)' } },
+                        particleMove: { '0%': { transform: 'translateY(0) scale(1)', opacity: '0.8' }, '100%': { transform: 'translateY(-80px) scale(0)', opacity: '0' } },
+                        mouseMove: { '0%': { transform: 'translate(0,0)' }, '25%': { transform: 'translate(60px,30px)' }, '50%': { transform: 'translate(30px,-40px)' }, '75%': { transform: 'translate(-50px,20px)' }, '100%': { transform: 'translate(0,0)' } }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Press+Start+2P&display=swap');
+
+        :root {
+            --glass-bg: rgba(10, 15, 30, 0.45);
+            --glass-border: rgba(0, 240, 255, 0.2);
+            --glass-highlight: rgba(255, 255, 255, 0.06);
+            --glass-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+            --cyber-glow: 0 0 25px rgba(0, 240, 255, 0.5);
+            --rainbow: conic-gradient(#ff0000, #ff8800, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+            --glass-radius: 12px;
+        }
+
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            background: #03050b;
+            overscroll-behavior-y: none;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            overflow: hidden;
+            height: 100dvh;
+            width: 100vw;
+            touch-action: none;
+            color: #e2e8f0;
+        }
+        ::-webkit-scrollbar { width: 0px; height: 0px; display: none; }
+        * { scrollbar-width: none; }
+
+        .animated-bg {
+            background-color: #03050b;
+            background-image:
+                radial-gradient(circle at 50% 50%, rgba(157,0,255,0.10) 0%, transparent 70%),
+                radial-gradient(circle at 15% 25%, rgba(0,240,255,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 85% 75%, rgba(255,0,127,0.06) 0%, transparent 50%),
+                linear-gradient(to right, rgba(0,240,255,0.04) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,85,0,0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+            animation: gridShift 12s linear infinite;
+        }
+
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px) saturate(120%);
+            -webkit-backdrop-filter: blur(10px) saturate(120%);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            border-radius: var(--glass-radius);
+        }
+
+        .glass-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+            border-radius: 10px;
+            transition: all 0.07s ease;
+            cursor: pointer;
+            touch-action: manipulation;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 2px;
+            padding: 6px 8px;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: #e2e8f0;
+            white-space: nowrap;
+            min-width: 44px;
+            min-height: 44px;
+        }
+        .glass-btn:active, .glass-btn.active {
+            transform: scale(0.94);
+            background: linear-gradient(135deg, rgba(157,0,255,0.5) 0%, rgba(0,240,255,0.4) 100%);
+            border-color: #00f0ff;
+            box-shadow: var(--cyber-glow);
+        }
+        .glass-btn .btn-num { font-size: 9px; color: #00f0ff; font-weight: 800; }
+
+        .hud-side {
+            background: transparent;
+            border: none;
+            backdrop-filter: none;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            pointer-events: auto;
+            z-index: 50;
+            padding: 4px;
+        }
+        .hud-side .glass-btn {
+            background: rgba(10, 15, 30, 0.5);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            min-width: 48px;
+            min-height: 48px;
+            font-size: 14px;
+        }
+
+        .spheric-wheel {
+            background: radial-gradient(circle at 30% 30%, #ffffff 0%, #00f0ff 20%, #9d00ff 55%, #03050b 90%);
+            box-shadow: inset 0 -10px 25px rgba(0,0,0,0.85), inset 0 6px 15px rgba(255,255,255,0.2), 0 0 20px rgba(0,240,255,0.4);
+            border: 2px solid rgba(255,255,255,0.7);
+            border-radius: 50%;
+            width: 52px;
+            height: 52px;
+            touch-action: none;
+            cursor: grab;
+            transition: border-radius 0.3s ease, transform 0.1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .spheric-wheel:active { transform: scale(0.85); border-color: #ff007f; box-shadow: 0 0 40px rgba(255,0,127,0.8); }
+
+        .butterfly { position: absolute; font-size: 24px; animation: butterflyFlap 0.5s ease-in-out infinite, float 4s ease-in-out infinite; filter: drop-shadow(0 0 6px rgba(0,255,204,0.7)); pointer-events: none; z-index: 30; }
+        .node-connector-canvas { position: absolute; inset: 0; pointer-events: none; z-index: 20; }
+
+        .timeline-track { display: flex; gap: 4px; overflow-x: auto; padding: 4px; scroll-snap-type: x proximity; }
+        .timeline-frame { background: rgba(8,13,26,0.7); border: 2px solid rgba(0,240,255,0.3); border-radius: 6px; min-width: 48px; height: 48px; object-fit: cover; scroll-snap-align: start; cursor: pointer; transition: all 0.1s ease; position: relative; }
+        .timeline-frame.active { border-color: #ff007f; box-shadow: 0 0 20px rgba(255,0,127,0.6); }
+        .timeline-frame .frame-num { position: absolute; bottom: 0; right: 0; font-size: 8px; background: rgba(0,0,0,0.7); color: #00f0ff; padding: 1px 3px; border-radius: 2px; }
+
+        .vault-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; }
+        .vault-item { background: rgba(8,13,26,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 4px; cursor: pointer; transition: all 0.1s ease; aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+        .vault-item img { width: 100%; height: auto; max-height: 80%; object-fit: contain; }
+        .vault-item:active { transform: scale(0.92); border-color: #00f0ff; box-shadow: var(--cyber-glow); }
+
+        .crop-overlay { position: absolute; border: 2px dashed #00f0ff; pointer-events: none; z-index: 40; box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); }
+        .crop-handle { position: absolute; width: 20px; height: 20px; background: rgba(0,240,255,0.8); border-radius: 50%; pointer-events: auto; z-index: 45; }
+
+        /* Mouse guide */
+        .mouse-guide {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 200;
+            animation: mouseMove 6s ease-in-out infinite;
+            filter: drop-shadow(0 0 8px #00f0ff);
+        }
+        .mouse-guide::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #00f0ff;
+            border-radius: 50%;
+            opacity: 0.7;
+        }
+
+        /* Reader mode */
+        .reader-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 150;
+            background: rgba(0,0,0,0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+        }
+        .reader-panel {
+            max-width: 80vw;
+            max-height: 70vh;
+            border: 2px solid #00f0ff;
+            border-radius: 20px;
+            box-shadow: 0 0 30px rgba(0,240,255,0.6);
+        }
+        .reader-progress {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            pointer-events: auto;
+        }
+        .schrodinger-cat {
+            font-size: 28px;
+            position: absolute;
+            transition: left 0.5s ease;
+        }
+    </style>
+</head>
+<body class="text-slate-100 h-[100dvh] w-screen flex flex-col overflow-hidden animated-bg">
+
+    <!-- Butterflies -->
+    <div class="butterfly" style="top:15%; left:10%; animation-delay:0s;">🦋</div>
+    <div class="butterfly" style="top:65%; left:80%; animation-delay:1.2s;">🦋</div>
+    <div class="butterfly" style="top:30%; left:85%; animation-delay:2.5s;">🦋</div>
+    <div class="butterfly" style="top:80%; left:20%; animation-delay:0.8s;">🦋</div>
+    <div class="butterfly" style="top:45%; left:55%; animation-delay:3.2s;">🦋</div>
+
+    <!-- Node connection canvas -->
+    <canvas id="node-connection-canvas" class="node-connector-canvas"></canvas>
+
+    <!-- Mouse guide -->
+    <div id="mouse-guide" class="mouse-guide" style="left: 20%; top: 30%;"></div>
+
+    <!-- Toast -->
+    <div id="toast-container" class="fixed top-14 right-3 left-3 sm:left-auto z-[300] flex flex-col gap-2 pointer-events-none items-center sm:items-end"></div>
+
+    <!-- LEFT HUD SIDEBAR -->
+    <aside class="absolute left-2 top-12 bottom-24 z-50 hud-side" id="left-hud">
+        <button onclick="setMode('jrpg')" id="mode-jrpg" class="glass-btn active">⚔️<span class="btn-num">1</span></button>
+        <button onclick="setMode('comic')" id="mode-comic" class="glass-btn">📖<span class="btn-num">2</span></button>
+        <button onclick="setMode('manga')" id="mode-manga" class="glass-btn">🌸<span class="btn-num">3</span></button>
+        <button onclick="setMode('anime')" id="mode-anime" class="glass-btn">⚡<span class="btn-num">4</span></button>
+        <button onclick="setMode('neon')" id="mode-neon" class="glass-btn">🌈<span class="btn-num">5</span></button>
+        <button onclick="setMode('pixel')" id="mode-pixel" class="glass-btn">👾<span class="btn-num">6</span></button>
+        <button onclick="setMode('lichtenstein')" id="mode-lichtenstein" class="glass-btn">🎯<span class="btn-num">7</span></button>
+        <button onclick="setMode('psp')" id="mode-psp" class="glass-btn">🎮<span class="btn-num">8</span></button>
+        <button onclick="applyStyle('flat')" class="glass-btn">🔳<span class="btn-num">9</span></button>
+        <button onclick="applyStyle('xray')" class="glass-btn">👻<span class="btn-num">10</span></button>
+    </aside>
+
+    <!-- RIGHT HUD SIDEBAR -->
+    <aside class="absolute right-2 top-12 bottom-24 z-50 hud-side items-end" id="right-hud">
+        <button onclick="undo()" class="glass-btn">⏪<span class="btn-num">1</span></button>
+        <button onclick="redo()" class="glass-btn">⏩<span class="btn-num">2</span></button>
+        <button onclick="openVault()" class="glass-btn">🔐<span class="btn-num">3</span></button>
+        <button onclick="pinFrame()" class="glass-btn">📌<span class="btn-num">4</span></button>
+        <button onclick="openResolutionMenu()" class="glass-btn">📐<span class="btn-num">5</span></button>
+        <button onclick="document.getElementById('file-input-placeholder').click()" class="glass-btn">📂<span class="btn-num">6</span></button>
+        <button onclick="toggleGridPreset()" class="glass-btn">🔲<span class="btn-num">7</span></button>
+        <button onclick="addText()" class="glass-btn">💬<span class="btn-num">8</span></button>
+        <button onclick="addSticker()" class="glass-btn">🩹<span class="btn-num">9</span></button>
+        <button onclick="toggleBrushMode()" id="brush-btn" class="glass-btn">🖌️<span class="btn-num">10</span></button>
+        <button onclick="toggleEraser()" id="eraser-btn" class="glass-btn">🧹<span class="btn-num">11</span></button>
+        <button onclick="toggleCropMode()" id="crop-btn" class="glass-btn">✂️<span class="btn-num">12</span></button>
+        <button onclick="applyCrop()" class="glass-btn">✅✂️<span class="btn-num">13</span></button>
+        <button onclick="enterReaderMode()" class="glass-btn">📖▶️<span class="btn-num">14</span></button>
+    </aside>
+
+    <!-- MAIN CANVAS AREA -->
+    <div id="canvas-container" class="absolute inset-x-0 top-12 bottom-28 z-0 touch-none flex items-center justify-center overflow-hidden">
+        <div id="zoom-viewport" class="relative w-full h-full flex items-center justify-center origin-center transition-transform duration-75 cursor-grab active:cursor-grabbing" style="transform: scale(1);">
+            <canvas id="studio-canvas" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg border border-cyberblue/30"></canvas>
+            <div id="crop-overlay-container" class="absolute inset-0 pointer-events-none hidden"></div>
+        </div>
+        <div id="canvas-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-darkbg/60 backdrop-blur-xl z-30 pointer-events-auto p-4 text-center">
+            <div class="glass p-6 flex flex-col items-center gap-3 rounded-3xl animate-float max-w-sm">
+                <span class="text-4xl">⚡🌆</span>
+                <span class="text-sm font-bold">Drop Media • Load Assets</span>
+                <span class="text-[8px] text-cyberblue font-bold">✨ GLB • PNG • GIF • MP4 • HTML • TXT ✨</span>
+                <button onclick="document.getElementById('file-input-placeholder').click()" class="glass-btn px-4 py-2 text-sm font-bold text-neongreen">📂 BROWSE</button>
+                <input type="file" id="file-input-placeholder" multiple accept="image/*,video/*,.glb,.gif,.png,.jpg,.jpeg,.mp4,.mp3,.m4a,.txt,.html" class="hidden" onchange="handleFileSelect(event)">
+            </div>
+        </div>
+    </div>
+
+    <!-- BOTTOM BAR (moved from top, scaled down) -->
+    <div class="absolute bottom-0 left-0 right-0 z-60 flex flex-col gap-1 p-2 pointer-events-none">
+        <!-- Spheric wheels row -->
+        <div class="flex items-center justify-center gap-2 pointer-events-auto glass px-2 py-1 rounded-xl mx-auto">
+            <span class="text-[9px] text-cyberblue font-bold uppercase">🎨STYLE</span>
+            <div id="spheric-style-wheel" class="spheric-wheel" data-wheel="style" style="width:40px;height:40px;"><i class="fa-solid fa-palette text-neongreen text-xs"></i></div>
+            <span class="text-[9px] text-cyberblue font-bold uppercase">🔥INT</span>
+            <div id="spheric-intensity-wheel" class="spheric-wheel" data-wheel="intensity" style="width:40px;height:40px;"><i class="fa-solid fa-fire text-cyberpink text-xs"></i></div>
+            <span class="text-[9px] text-cyberblue font-bold uppercase">📏SIZE</span>
+            <div id="spheric-size-wheel" class="spheric-wheel" data-wheel="size" style="width:40px;height:40px;"><i class="fa-solid fa-expand text-neongreen text-xs"></i></div>
+            <span class="text-[9px] text-cyberblue font-bold uppercase">🌈COL</span>
+            <div id="spheric-color-wheel" class="spheric-wheel" data-wheel="color" style="width:40px;height:40px;background:var(--rainbow);"><i class="fa-solid fa-circle text-white text-xs"></i></div>
+            <span class="text-[9px] text-cyberblue font-bold uppercase">🖌️BR</span>
+            <div id="spheric-brush-wheel" class="spheric-wheel" data-wheel="brush" style="width:40px;height:40px;"><i class="fa-solid fa-paint-brush text-white text-xs"></i></div>
+        </div>
+        <!-- Timeline strip -->
+        <div class="pointer-events-auto px-2">
+            <div id="timeline-strip" class="timeline-track no-scrollbar"></div>
+        </div>
+        <!-- Filter/style buttons row -->
+        <div class="flex items-center gap-1 overflow-x-auto no-scrollbar pointer-events-auto px-2 py-1">
+            <button onclick="applyStyle('anime')" class="glass-btn px-2 py-1">⚡ANIME<span class="btn-num">1</span></button>
+            <button onclick="applyStyle('manga')" class="glass-btn px-2 py-1">🌸MANGA<span class="btn-num">2</span></button>
+            <button onclick="applyStyle('comic')" class="glass-btn px-2 py-1">💥COMIC<span class="btn-num">3</span></button>
+            <button onclick="applyStyle('neon')" class="glass-btn px-2 py-1">🌈NEON<span class="btn-num">4</span></button>
+            <button onclick="applyStyle('ductus')" class="glass-btn px-2 py-1">🏮DUCTUS<span class="btn-num">5</span></button>
+            <button onclick="applyStyle('pixel')" class="glass-btn px-2 py-1">👾PIXEL<span class="btn-num">6</span></button>
+            <button onclick="applyStyle('street')" class="glass-btn px-2 py-1">🎨STREET<span class="btn-num">7</span></button>
+            <button onclick="applyStyle('jrpg')" class="glass-btn px-2 py-1">⚔️JRPG<span class="btn-num">8</span></button>
+            <button onclick="applyStyle('lichtenstein')" class="glass-btn px-2 py-1">🎯LICHT<span class="btn-num">9</span></button>
+            <button onclick="applyStyle('psp')" class="glass-btn px-2 py-1">🎮PSP<span class="btn-num">10</span></button>
+            <button onclick="applyStyle('manga-dot')" class="glass-btn px-2 py-1">🔵DOT<span class="btn-num">11</span></button>
+            <button onclick="applyStyle('flat')" class="glass-btn px-2 py-1">🔳FLAT<span class="btn-num">12</span></button>
+            <button onclick="applyStyle('xray')" class="glass-btn px-2 py-1">👻XRAY<span class="btn-num">13</span></button>
+            <button onclick="applyAnonymize()" class="glass-btn px-2 py-1">🎭ANON<span class="btn-num">14</span></button>
+            <button onclick="toggleMaskMode()" id="mask-btn" class="glass-btn px-2 py-1">🎭MASK<span class="btn-num">15</span></button>
+            <button onclick="playAnimation()" class="glass-btn px-2 py-1">▶️PLAY<span class="btn-num">16</span></button>
+            <button onclick="stopAnimation()" class="glass-btn px-2 py-1">⏹️STOP<span class="btn-num">17</span></button>
+            <button onclick="captureFrame()" class="glass-btn px-2 py-1">📸CAP<span class="btn-num">18</span></button>
+            <button onclick="applyPixelSize(8)" class="glass-btn px-2 py-1">8px<span class="btn-num">19</span></button>
+            <button onclick="applyPixelSize(16)" class="glass-btn px-2 py-1">16px<span class="btn-num">20</span></button>
+            <button onclick="applyPixelSize(32)" class="glass-btn px-2 py-1">32px<span class="btn-num">21</span></button>
+            <button onclick="applyPixelSize(64)" class="glass-btn px-2 py-1">64px<span class="btn-num">22</span></button>
+            <button onclick="exportWebExperience()" class="glass-btn px-2 py-1">🌐EXPORT<span class="btn-num">23</span></button>
+        </div>
+    </div>
+
+    <!-- MODALS (same structure, adjusted for bottom) -->
+    <div id="vault-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-3">
+        <div class="glass rounded-3xl w-full max-w-md p-4 space-y-3 max-h-[80vh] overflow-y-auto no-scrollbar">
+            <div class="flex items-center justify-between border-b border-white/10 pb-2">
+                <span class="text-xl font-bold text-cyberblue">🔐 VAULT GRID</span>
+                <button onclick="closeVault()" class="text-2xl text-slate-400">✕</button>
+            </div>
+            <div id="vault-list" class="vault-grid"></div>
+            <button onclick="downloadSpriteSheet()" class="glass-btn w-full py-2 text-sm font-bold text-neongreen">💾 SPRITE SHEET</button>
+            <button onclick="downloadAllVault()" class="glass-btn w-full py-2 text-sm font-bold text-neongreen">💾 ALL PNG</button>
+        </div>
+    </div>
+    <div id="export-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-3">
+        <div class="glass rounded-3xl w-full max-w-sm p-4 space-y-3">
+            <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                <span class="text-xl font-bold text-neongreen">💾 EXPORT</span>
+                <button onclick="closeModals()" class="text-2xl">✕</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+                <button onclick="exportFile('png')" class="glass-btn py-3 text-lg">PNG</button>
+                <button onclick="exportFile('jpg')" class="glass-btn py-3 text-lg">JPG</button>
+                <button onclick="exportFile('webp')" class="glass-btn py-3 text-lg">WEBP</button>
+            </div>
+        </div>
+    </div>
+    <div id="grid-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-3">
+        <div class="glass rounded-3xl w-full max-w-sm p-4 space-y-3">
+            <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                <span class="text-xl font-bold text-cyberorange">📐 GRID</span>
+                <button onclick="closeGridModal()" class="text-2xl">✕</button>
+            </div>
+            <div class="grid grid-cols-4 gap-2" id="grid-presets"></div>
+        </div>
+    </div>
+    <div id="resolution-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-[100] hidden flex items-center justify-center p-3">
+        <div class="glass rounded-3xl w-full max-w-sm p-4 space-y-3">
+            <div class="flex justify-between items-center border-b border-white/10 pb-2">
+                <span class="text-xl font-bold text-cyberorange">📐 RESOLUTION</span>
+                <button onclick="closeResolutionModal()" class="text-2xl">✕</button>
+            </div>
+            <div class="space-y-2">
+                <button onclick="setResolution(64)" class="glass-btn w-full py-2 text-sm">64x64</button>
+                <button onclick="setResolution(128)" class="glass-btn w-full py-2 text-sm">128x128</button>
+                <button onclick="setResolution(256)" class="glass-btn w-full py-2 text-sm">256x256</button>
+                <button onclick="setResolution(512)" class="glass-btn w-full py-2 text-sm">512x512</button>
+                <button onclick="setResolution(1024)" class="glass-btn w-full py-2 text-sm">1024x1024</button>
+                <button onclick="setResolution(2048)" class="glass-btn w-full py-2 text-sm">2048x2048</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- READER MODE OVERLAY -->
+    <div id="reader-overlay" class="reader-overlay hidden">
+        <div class="reader-progress">
+            <button onclick="readerPrev()" class="glass-btn px-4 py-2 text-sm">⏪</button>
+            <div style="flex:1; height:4px; background:rgba(255,255,255,0.2); border-radius:2px; position:relative; margin:0 10px;">
+                <div id="reader-progress-bar" style="height:100%; background:#00f0ff; border-radius:2px; width:0%;"></div>
+                <span id="schrodinger-cat" class="schrodinger-cat" style="top:-14px; left:0%;">🐱</span>
+            </div>
+            <button onclick="readerNext()" class="glass-btn px-4 py-2 text-sm">⏩</button>
+            <button onclick="exitReaderMode()" class="glass-btn px-4 py-2 text-sm ml-2">✕</button>
+        </div>
+        <img id="reader-panel-img" class="reader-panel" src="" alt="panel">
+    </div>
+
+    <script>
+        // ========== STATE ==========
+        let library = [];
+        let vaultItems = [];
+        let panels = []; // {id, dataUrl, thumb}
+        let animationFrames = [];
+        let currentPanelIndex = -1;
+        let layers = [];
+        let filterLayers = [];
+        let overlays = [];
+        let adjustments = { brightness: 0, contrast: 0, saturation: 100 };
+        let currentMode = 'jrpg';
+        let activeWheelTarget = 'size';
+        let isCropActive = false;
+        let cropBox = { x: 0, y: 0, w: 0, h: 0 };
+        let selectedOverlayIndex = null;
+        let activeOverlaySize = 75;
+        let activeOverlayRotation = 0;
+        let selectedColor = '#ffffff';
+        let brushSize = 10;
+        let brushMode = false;
+        let eraserMode = false;
+        let maskMode = false;
+        let currentGridPreset = 'none';
+        let currentResolution = 512;
+        let historyStack = [];
+        let historyPointer = -1;
+        let isDraggingItem = false;
+        let dragStartX = 0,
+            dragStartY = 0;
+        let initialPinchDist = null;
+        let initialZoom = 1;
+        let isPanning = false;
+        let lastPanX = 0,
+            lastPanY = 0;
+        let isPlayingAnimation = false;
+        let animationInterval = null;
+        let animationFrameIndex = 0;
+        let readerModeActive = false;
+        let readerIndex = 0;
+
+        let canvas = document.getElementById('studio-canvas');
+        let ctx = canvas.getContext('2d', { willReadFrequently: true });
+        let currentZoom = 1.0,
+            panX = 0,
+            panY = 0;
+        const zoomViewport = document.getElementById('zoom-viewport');
+        const container = document.getElementById('canvas-container');
+        const cropOverlayContainer = document.getElementById('crop-overlay-container');
+
+        const nodeCanvas = document.getElementById('node-connection-canvas');
+        const nodeCtx = nodeCanvas.getContext('2d');
+        let nodeParticles = [];
+
+        // Mouse guide element
+        const mouseGuide = document.getElementById('mouse-guide');
+
+        // ========== TOAST ==========
+        function showToast(msg, type = 'success') {
+            const c = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className =
+                `px-4 py-2 rounded-xl text-sm font-bold shadow-2xl flex items-center gap-2 transition transform translate-y-2 opacity-0 pointer-events-auto ${
+                type === 'success' ? 'bg-cyberpurple/95 text-white border border-cyberblue/40 backdrop-blur-md' : 'bg-red-600/95 text-white backdrop-blur-md'
+                }`;
+            t.innerHTML = `<span>${type==='success'?'⚡':'⚠️'}</span> ${msg}`;
+            c.appendChild(t);
+            requestAnimationFrame(() => t.classList.remove('translate-y-2', 'opacity-0'));
+            setTimeout(() => { t.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => t.remove(), 300); }, 2000);
+        }
+
+        // ========== MODE ==========
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.hud-side .glass-btn').forEach(p => p.classList.remove('active'));
+            const btn = document.getElementById(`mode-${mode}`);
+            if (btn) btn.classList.add('active');
+            if (mode === 'jrpg') applyStyle('jrpg');
+            else if (mode === 'comic') applyStyle('comic');
+            else if (mode === 'manga') applyStyle('manga');
+            else if (mode === 'anime') applyStyle('anime');
+            else if (mode === 'neon') applyStyle('neon');
+            else if (mode === 'pixel') applyStyle('pixel');
+            else if (mode === 'lichtenstein') applyStyle('lichtenstein');
+            else if (mode === 'psp') applyStyle('psp');
+            else if (mode === 'flat') applyStyle('flat');
+            else if (mode === 'xray') applyStyle('xray');
+            showToast(`📖 ${mode}`);
+        }
+
+        // ========== SPHERIC WHEELS ==========
+        const wheels = [
+            { element: document.getElementById('spheric-style-wheel'), target: 'style' },
+            { element: document.getElementById('spheric-intensity-wheel'), target: 'intensity' },
+            { element: document.getElementById('spheric-size-wheel'), target: 'size' },
+            { element: document.getElementById('spheric-color-wheel'), target: 'color' },
+            { element: document.getElementById('spheric-brush-wheel'), target: 'brush' },
+        ];
+        wheels.forEach(w => {
+            let active = false,
+                lastY = 0;
+            w.element.addEventListener('touchstart', e => { e.preventDefault();
+                active = true;
+                lastY = e.touches[0].clientY; }, { passive: false });
+            w.element.addEventListener('touchmove', e => { e.preventDefault(); if (active) { const dy = lastY - e
+                        .touches[0].clientY;
+                    handleWheelInput(w.target, dy);
+                    lastY = e.touches[0].clientY; } }, { passive: false });
+            w.element.addEventListener('touchend', () => { active = false; });
+            w.element.addEventListener('mousedown', e => { active = true;
+                lastY = e.clientY; const move = ev => { if (active) { const dy = lastY - ev.clientY;
+                        handleWheelInput(w.target, dy);
+                        lastY = ev.clientY; } }; const up = () => { active = false;
+                    window.removeEventListener('mousemove', move);
+                    window.removeEventListener('mouseup', up); };
+                window.addEventListener('mousemove', move);
+                window.addEventListener('mouseup', up); });
+        });
+
+        function handleWheelInput(target, delta) {
+            if (target === 'size') {
+                activeOverlaySize = Math.max(10, Math.min(600, activeOverlaySize + delta * 4));
+                if (selectedOverlayIndex !== null && overlays[selectedOverlayIndex]) overlays[selectedOverlayIndex]
+                    .size = activeOverlaySize;
+            } else if (target === 'intensity') {
+                adjustments.brightness = Math.max(-100, Math.min(100, adjustments.brightness + delta));
+                processImagePipeline();
+            } else if (target === 'style') {
+                const styles = ['anime', 'manga', 'comic', 'neon', 'ductus', 'pixel', 'lichtenstein', 'jrpg', 'psp',
+                    'flat', 'xray'
+                ];
+                const idx = Math.floor(Math.abs(delta) / 5) % styles.length;
+                if (Math.abs(delta) > 2) applyStyle(styles[idx]);
+            } else if (target === 'color') {
+                const hue = (parseInt(selectedColor.slice(1), 16) + delta * 2) % 360;
+                selectedColor = `hsl(${hue}, 100%, 60%)`;
+                if (selectedOverlayIndex !== null && overlays[selectedOverlayIndex]) overlays[selectedOverlayIndex]
+                    .color = selectedColor;
+                compositeLayers();
+            } else if (target === 'brush') {
+                brushSize = Math.max(2, Math.min(100, brushSize + delta));
+                if (brushMode) showToast(`🖌️ Brush: ${brushSize}px`);
+            }
+        }
+
+        // ========== STYLE PRESETS ==========
+        function applyStyle(style) {
+            if (!canvas.width) return;
+            filterLayers = [];
+            adjustments = { brightness: 0, contrast: 0, saturation: 100 };
+            if (style === 'anime') { adjustments = { brightness: 8, contrast: 35, saturation: 145 };
+                filterLayers.push({ type: 'anime-ductus', strength: 70, blendMode: 'overlay' }); } else if (style ===
+                'manga') { adjustments = { brightness: 5, contrast: 55, saturation: 90 };
+                filterLayers.push({ type: 'ductus-pro', strength: 85, blendMode: 'multiply' }); } else if (style ===
+                'comic') { adjustments = { brightness: 0, contrast: 50, saturation: 135 };
+                filterLayers.push({ type: 'halftone-dots', strength: 65, blendMode: 'overlay' }); } else if (style ===
+                'neon') { adjustments = { brightness: 15, contrast: 70, saturation: 180 };
+                filterLayers.push({ type: 'neon-glow', strength: 75, blendMode: 'screen' }); } else if (style ===
+                'ductus') { adjustments = { brightness: 10, contrast: 60, saturation: 80 };
+                filterLayers.push({ type: 'ductus-pro', strength: 90, blendMode: 'soft-light' }); } else if (style ===
+                'pixel') { adjustments = { brightness: 0, contrast: 40, saturation: 100 };
+                filterLayers.push({ type: 'pixel-art', strength: 100, blendMode: 'normal' }); } else if (style ===
+                'street') { adjustments = { brightness: -5, contrast: 70, saturation: 160 };
+                filterLayers.push({ type: 'glitch-rgb', strength: 65, blendMode: 'screen' }); } else if (style ===
+                'jrpg') { adjustments = { brightness: 12, contrast: 30, saturation: 140 };
+                filterLayers.push({ type: 'cel-shade', strength: 60, blendMode: 'overlay' }); } else if (style ===
+                'lichtenstein') { adjustments = { brightness: 5, contrast: 65, saturation: 200 };
+                filterLayers.push({ type: 'lichtenstein', strength: 90, blendMode: 'overlay' }); } else if (style ===
+                'psp') { adjustments = { brightness: 5, contrast: 25, saturation: 130 };
+                filterLayers.push({ type: 'psp-render', strength: 55, blendMode: 'soft-light' }); } else if (style ===
+                'manga-dot') { adjustments = { brightness: 3, contrast: 50, saturation: 80 };
+                filterLayers.push({ type: 'manga-dot', strength: 75, blendMode: 'multiply' }); } else if (style ===
+                'flat') { adjustments = { brightness: 5, contrast: 40, saturation: 70 };
+                filterLayers.push({ type: 'posterize', strength: 4, blendMode: 'normal' }); } else if (style ===
+                'xray') { adjustments = { brightness: 0, contrast: 80, saturation: 0 };
+                filterLayers.push({ type: 'xray', strength: 100, blendMode: 'screen' }); }
+            processImagePipeline();
+            showToast(`✨ ${style}`);
+        }
+
+        function applyPixelSize(blockSize) {
+            if (!canvas.width) return;
+            filterLayers = [{ type: 'pixel-art', strength: 100, blendMode: 'normal', pixelSize: blockSize }];
+            adjustments = { brightness: 0, contrast: 40, saturation: 100 };
+            processImagePipeline();
+            showToast(`👾 Pixel ${blockSize}px`);
+        }
+
+        function applyAnonymize() {
+            if (!canvas.width) return;
+            const w = Math.min(160, canvas.width / 4);
+            const h = Math.min(160, canvas.height / 4);
+            const x = canvas.width / 2 - w / 2;
+            const y = canvas.height / 2 - h / 2;
+            const imgData = ctx.getImageData(x, y, w, h);
+            const d = imgData.data;
+            const block = 8;
+            for (let by = 0; by < h; by += block) {
+                for (let bx = 0; bx < w; bx += block) {
+                    let r = 0,
+                        g = 0,
+                        b = 0,
+                        a = 0,
+                        count = 0;
+                    for (let yy = 0; yy < block && by + yy < h; yy++) {
+                        for (let xx = 0; xx < block && bx + xx < w; xx++) {
+                            const idx = ((by + yy) * w + (bx + xx)) * 4;
+                            r += d[idx];
+                            g += d[idx + 1];
+                            b += d[idx + 2];
+                            a += d[idx + 3];
+                            count++;
+                        }
+                    }
+                    r /= count;
+                    g /= count;
+                    b /= count;
+                    a /= count;
+                    for (let yy = 0; yy < block && by + yy < h; yy++) {
+                        for (let xx = 0; xx < block && bx + xx < w; xx++) {
+                            const idx = ((by + yy) * w + (bx + xx)) * 4;
+                            d[idx] = r;
+                            d[idx + 1] = g;
+                            d[idx + 2] = b;
+                            d[idx + 3] = a;
+                        }
+                    }
+                }
+            }
+            ctx.putImageData(imgData, x, y);
+            saveState();
+            showToast('🎭 Anonymized');
+        }
+
+        // ========== GRID & RESOLUTION ==========
+        const gridPresets = {
+            'none': { label: '❌', cols: 1, rows: 1 },
+            '2x2': { label: '▦2x2', cols: 2, rows: 2 },
+            '3x3': { label: '▦3x3', cols: 3, rows: 3 },
+            '2x1': { label: '▯2x1', cols: 2, rows: 1 },
+            '1x2': { label: '▮1x2', cols: 1, rows: 2 },
+            '4x4': { label: '▦4x4', cols: 4, rows: 4 },
+            '3x2': { label: '▦3x2', cols: 3, rows: 2 },
+            '2x3': { label: '▦2x3', cols: 2, rows: 3 }
+        };
+
+        function toggleGridPreset() {
+            const modal = document.getElementById('grid-modal');
+            const container = document.getElementById('grid-presets');
+            container.innerHTML = Object.entries(gridPresets).map(([key, val]) =>
+                `<button onclick="applyGridPreset('${key}')" class="glass-btn py-2 text-xs font-bold ${currentGridPreset===key?'active':''}">${val.label}<span class="text-nano">${val.cols}×${val.rows}</span></button>`
+            ).join('');
+            modal.classList.remove('hidden');
+        }
+
+        function closeGridModal() { document.getElementById('grid-modal').classList.add('hidden'); }
+
+        function applyGridPreset(key) { currentGridPreset = key;
+            closeGridModal();
+            compositeLayers();
+            showToast(`📐 ${key}`); }
+
+        function openResolutionMenu() { document.getElementById('resolution-modal').classList.remove('hidden'); }
+
+        function closeResolutionModal() { document.getElementById('resolution-modal').classList.add('hidden'); }
+
+        function setResolution(px) { currentResolution = px;
+            closeResolutionModal();
+            showToast(`📐 Res: ${px}px`); }
+
+        // ========== PANEL & TIMELINE ==========
+        function pinFrame() {
+            if (!canvas.width) return;
+            const dataUrl = canvas.toDataURL('image/png');
+            panels.push({ id: 'panel_' + Date.now(), dataUrl: dataUrl, thumb: dataUrl });
+            renderPanelStrip();
+            showToast('📌 Frame pinned');
+        }
+
+        function renderPanelStrip() {
+            const strip = document.getElementById('timeline-strip');
+            strip.innerHTML = panels.map((p, i) =>
+                `<img src="${p.thumb}" class="timeline-frame ${i===currentPanelIndex?'active':''}" onclick="loadPanel(${i})"><span class="frame-num">${i+1}</span></img>`
+            ).join('');
+        }
+
+        function loadPanel(index) {
+            if (index >= panels.length) return;
+            currentPanelIndex = index;
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                if (layers.length) {
+                    layers[0].canvas.width = img.width;
+                    layers[0].canvas.height = img.height;
+                    layers[0].ctx.drawImage(img, 0, 0);
+                }
+                compositeLayers();
+                saveState();
+            };
+            img.src = panels[index].dataUrl;
+            renderPanelStrip();
+        }
+
+        function captureFrame() {
+            if (!canvas.width) return;
+            const dataUrl = canvas.toDataURL('image/png');
+            animationFrames.push({ dataUrl: dataUrl, thumb: dataUrl });
+            renderAnimationFrames();
+            showToast(`📸 Frame ${animationFrames.length}`);
+        }
+
+        function renderAnimationFrames() {
+            const strip = document.getElementById('timeline-strip');
+            strip.innerHTML = animationFrames.map((f, i) =>
+                `<img src="${f.thumb}" class="timeline-frame" onclick="loadAnimationFrame(${i})"><span class="frame-num">${i+1}</span></img>`
+            ).join('');
+        }
+
+        function loadAnimationFrame(index) {
+            if (index >= animationFrames.length) return;
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                if (layers.length) {
+                    layers[0].canvas.width = img.width;
+                    layers[0].canvas.height = img.height;
+                    layers[0].ctx.drawImage(img, 0, 0);
+                }
+                compositeLayers();
+            };
+            img.src = animationFrames[index].dataUrl;
+        }
+
+        function playAnimation() {
+            if (!animationFrames.length) { showToast('No frames', 'error'); return; }
+            isPlayingAnimation = true;
+            animationFrameIndex = 0;
+            if (animationInterval) clearInterval(animationInterval);
+            animationInterval = setInterval(() => {
+                loadAnimationFrame(animationFrameIndex);
+                animationFrameIndex = (animationFrameIndex + 1) % animationFrames.length;
+            }, 200);
+            showToast('▶️ Playing');
+        }
+
+        function stopAnimation() {
+            isPlayingAnimation = false;
+            if (animationInterval) clearInterval(animationInterval);
+            animationInterval = null;
+            showToast('⏹️ Stopped');
+        }
+
+        // ========== READER MODE ==========
+        function enterReaderMode() {
+            if (!panels.length) { showToast('No panels to read', 'error'); return; }
+            readerIndex = 0;
+            readerModeActive = true;
+            document.getElementById('reader-overlay').classList.remove('hidden');
+            updateReader();
+        }
+
+        function exitReaderMode() {
+            readerModeActive = false;
+            document.getElementById('reader-overlay').classList.add('hidden');
+        }
+
+        function readerPrev() {
+            if (readerIndex > 0) { readerIndex--;
+                updateReader(); }
+        }
+
+        function readerNext() {
+            if (readerIndex < panels.length - 1) { readerIndex++;
+                updateReader(); }
+        }
+
+        function updateReader() {
+            const img = document.getElementById('reader-panel-img');
+            img.src = panels[readerIndex].dataUrl;
+            const progress = (readerIndex / (panels.length - 1)) * 100;
+            document.getElementById('reader-progress-bar').style.width = progress + '%';
+            const cat = document.getElementById('schrodinger-cat');
+            cat.style.left = progress + '%';
+            cat.style.transform = `translateX(-50%) scale(${readerIndex === panels.length-1 ? 0.8 : 1})`;
+        }
+
+        // ========== FILE HANDLING (extended media) ==========
+        function handleFileSelect(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = ev => {
+                    const type = file.type.startsWith('image') ? 'image' :
+                        file.type.startsWith('video') ? 'video' :
+                        file.type.startsWith('audio') ? 'audio' :
+                        file.name.endsWith('.glb') ? 'glb' :
+                        file.name.endsWith('.html') ? 'html' : 'file';
+                    const item = { id: 'f_' + Math.random().toString(36).substr(2, 8), name: file
+                            .name, dataUrl: ev.target.result, type: type, thumb: type === 'image' ?
+                            ev.target.result : null };
+                    library.push(item);
+                    if (library.length === 1 && item.type === 'image') loadImageToCanvas(item.dataUrl);
+                    if (item.type === 'video') {
+                        // simple video panel in reader? we'll just store.
+                        showToast('🎬 Video added');
+                    } else if (item.type === 'audio') {
+                        showToast('🔊 Audio added');
+                    } else if (item.type === 'glb') {
+                        showToast('🧊 GLB added');
+                    } else if (item.type === 'html') {
+                        showToast('🌐 HTML added');
+                    }
+                    spawnNodeParticle();
+                    showToast(`📂 ${file.name}`);
+                };
+                reader.readAsDataURL(file);
+            });
+            e.target.value = '';
+        }
+
+        function loadImageToCanvas(dataUrl) {
+            document.getElementById('canvas-placeholder').classList.add('hidden');
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                const baseLayer = { canvas: document.createElement('canvas'), originalImg: img, ctx: null };
+                baseLayer.canvas.width = img.width;
+                baseLayer.canvas.height = img.height;
+                baseLayer.ctx = baseLayer.canvas.getContext('2d', { willReadFrequently: true });
+                baseLayer.ctx.drawImage(img, 0, 0);
+                layers = [baseLayer];
+                overlays = [];
+                filterLayers = [];
+                adjustments = { brightness: 0, contrast: 0, saturation: 100 };
+                historyStack = [];
+                historyPointer = -1;
+                selectedOverlayIndex = null;
+                activeOverlaySize = 75;
+                activeOverlayRotation = 0;
+                applyStyle('jrpg'); // default
+                saveState();
+            };
+            img.src = dataUrl;
+        }
+
+        function spawnNodeParticle() {
+            for (let i = 0; i < 5; i++) {
+                nodeParticles.push({
+                    x: Math.random() * nodeCanvas.width,
+                    y: nodeCanvas.height + Math.random() * 20,
+                    vx: (Math.random() - 0.5) * 0.8,
+                    vy: -Math.random() * 2 - 0.5,
+                    life: 255,
+                    color: `hsl(${Math.random()*360},100%,60%)`
+                });
+            }
+        }
+
+        function animateNodes() {
+            nodeCanvas.width = window.innerWidth;
+            nodeCanvas.height = window.innerHeight;
+            nodeCtx.clearRect(0, 0, nodeCanvas.width, nodeCanvas.height);
+            if (library.length > 1) {
+                const startY = nodeCanvas.height - 40;
+                const spacing = nodeCanvas.width / library.length;
+                for (let i = 0; i < library.length; i++) {
+                    const x = spacing * i + spacing / 2;
+                    if (i > 0) {
+                        const prevX = spacing * (i - 1) + spacing / 2;
+                        nodeCtx.beginPath();
+                        nodeCtx.moveTo(prevX, startY);
+                        nodeCtx.lineTo(x, startY);
+                        nodeCtx.strokeStyle = 'rgba(0,240,255,0.3)';
+                        nodeCtx.lineWidth = 1.5;
+                        nodeCtx.stroke();
+                    }
+                    nodeCtx.beginPath();
+                    nodeCtx.arc(x, startY, 6, 0, Math.PI * 2);
+                    nodeCtx.fillStyle = '#00f0ff';
+                    nodeCtx.fill();
+                    nodeCtx.shadowColor = '#00f0ff';
+                    nodeCtx.shadowBlur = 10;
+                    nodeCtx.fill();
+                    nodeCtx.shadowBlur = 0;
+                }
+            }
+            nodeParticles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 2;
+                if (p.life <= 0) { nodeParticles.splice(idx, 1); return; }
+                nodeCtx.beginPath();
+                nodeCtx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+                nodeCtx.fillStyle = p.color;
+                nodeCtx.globalAlpha = p.life / 255;
+                nodeCtx.fill();
+                nodeCtx.globalAlpha = 1;
+            });
+            requestAnimationFrame(animateNodes);
+        }
+        animateNodes();
+
+        // ========== EXPORT WEB EXPERIENCE ==========
+        function exportWebExperience() {
+            if (!panels.length) { showToast('No panels to export', 'error'); return; }
+            const html = `<!DOCTYPE html><html><head><title>Cyber Comic Experience</title><style>body{background:#03050b;color:#fff;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;padding:20px;} .panel{max-width:80vw;margin:10px;border:2px solid #00f0ff;border-radius:12px;}</style></head><body><h1>⚡ Cyber Comic</h1><div id="panels">${panels.map(p=>`<img class="panel" src="${p.dataUrl}">`).join('')}</div><script>document.querySelectorAll('.panel').forEach(img=>img.addEventListener('click',()=>{img.style.borderColor='#ff007f';}))<\/script></body></html>`;
+            const blob = new Blob([html], { type: 'text/html' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'cyber_comic_experience.html';
+            a.click();
+            showToast('🌐 Web experience exported');
+        }
+
+        // ========== IMAGE PIPELINE (with new filters) ==========
+        function processImagePipeline() {
+            if (!layers.length) return;
+            const base = layers[0];
+            const w = base.canvas.width,
+                h = base.canvas.height;
+            base.ctx.clearRect(0, 0, w, h);
+            base.ctx.drawImage(base.originalImg, 0, 0);
+            let imgData = base.ctx.getImageData(0, 0, w, h);
+            let d = imgData.data;
+            const bright = adjustments.brightness;
+            const contrast = adjustments.contrast;
+            const sat = adjustments.saturation / 100;
+            const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+            for (let i = 0; i < d.length; i += 4) {
+                let r = d[i],
+                    g = d[i + 1],
+                    b = d[i + 2];
+                r = factor * (r + bright - 128) + 128;
+                g = factor * (g + bright - 128) + 128;
+                b = factor * (b + bright - 128) + 128;
+                let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+                d[i] = Math.min(255, Math.max(0, gray + (r - gray) * sat));
+                d[i + 1] = Math.min(255, Math.max(0, gray + (g - gray) * sat));
+                d[i + 2] = Math.min(255, Math.max(0, gray + (b - gray) * sat));
+            }
+            base.ctx.putImageData(imgData, 0, 0);
+
+            filterLayers.forEach(fl => {
+                const fC = document.createElement('canvas');
+                fC.width = w;
+                fC.height = h;
+                const fCtx = fC.getContext('2d');
+                fCtx.drawImage(base.canvas, 0, 0);
+
+                if (fl.type === 'anime-ductus' || fl.type === 'ductus-pro') {
+                    const fd = fCtx.getImageData(0, 0, w, h);
+                    const px = fd.data;
+                    const steps = fl.type === 'ductus-pro' ? 5 : 3;
+                    for (let i = 0; i < px.length; i += 4) {
+                        px[i] = Math.floor(px[i] / (256 / steps)) * (256 / steps);
+                        px[i + 1] = Math.floor(px[i + 1] / (256 / steps)) * (256 / steps);
+                        px[i + 2] = Math.floor(px[i + 2] / (256 / steps)) * (256 / steps);
+                    }
+                    fCtx.putImageData(fd, 0, 0);
+                } else if (fl.type === 'pixel-art') {
+                    const pSize = fl.pixelSize || 6;
+                    fCtx.imageSmoothingEnabled = false;
+                    fCtx.drawImage(base.canvas, 0, 0, w / pSize, h / pSize);
+                    fCtx.drawImage(fC, 0, 0, w / pSize, h / pSize, 0, 0, w, h);
+                } else if (fl.type === 'halftone-dots') {
+                    fCtx.fillStyle = 'rgba(0,0,0,0.35)';
+                    for (let y = 0; y < h; y += 5) {
+                        for (let x = 0; x < w; x += 5) {
+                            fCtx.beginPath();
+                            fCtx.arc(x, y, 1.5, 0, Math.PI * 2);
+                            fCtx.fill();
+                        }
+                    }
+                } else if (fl.type === 'manga-dot') {
+                    fCtx.fillStyle = 'rgba(0,0,0,0.25)';
+                    for (let y = 0; y < h; y += 3) {
+                        for (let x = 0; x < w; x += 3) {
+                            fCtx.beginPath();
+                            fCtx.arc(x, y, 0.8, 0, Math.PI * 2);
+                            fCtx.fill();
+                        }
+                    }
+                } else if (fl.type === 'neon-glow') {
+                    const nd = fCtx.getImageData(0, 0, w, h);
+                    const px = nd.data;
+                    for (let i = 0; i < px.length; i += 4) {
+                        px[i] = 255 - px[i];
+                        px[i + 1] = 255 - px[i + 1];
+                        px[i + 2] = 255 - px[i + 2];
+                    }
+                    fCtx.putImageData(nd, 0, 0);
+                    fCtx.shadowColor = '#00f0ff';
+                    fCtx.shadowBlur = 12;
+                    fCtx.drawImage(fC, 0, 0);
+                } else if (fl.type === 'glitch-rgb') {
+                    const slice = fCtx.getImageData(0, 0, w, h);
+                    const sd = slice.data;
+                    for (let y = 0; y < h; y += 2) {
+                        for (let x = 0; x < w; x++) {
+                            const idx = (y * w + x) * 4;
+                            const shift = Math.floor(Math.random() * 6) * 4;
+                            if (idx + shift + 2 < sd.length) {
+                                sd[idx] = sd[idx + shift];
+                                sd[idx + 1] = sd[idx + shift + 1];
+                                sd[idx + 2] = sd[idx + shift + 2];
+                            }
+                        }
+                    }
+                    fCtx.putImageData(slice, 0, 0);
+                } else if (fl.type === 'lichtenstein') {
+                    const ld = fCtx.getImageData(0, 0, w, h);
+                    const px = ld.data;
+                    for (let i = 0; i < px.length; i += 4) {
+                        const r = px[i],
+                            g = px[i + 1],
+                            b = px[i + 2];
+                        if (r > 150 && g > 150 && b > 150) { px[i] = 255;
+                            px[i + 1] = 255;
+                            px[i + 2] = 0; } else if (r > 150 && g < 100) { px[i] = 255;
+                            px[i + 1] = 0;
+                            px[i + 2] = 0; } else if (b > 150) { px[i] = 0;
+                            px[i + 1] = 0;
+                            px[i + 2] = 255; } else { px[i] = 0;
+                            px[i + 1] = 0;
+                            px[i + 2] = 0; }
+                        const dotPos = (Math.floor(i / 4 / w) + Math.floor(i / 4 % w)) % 8;
+                        if (dotPos < 4) { px[i] = Math.min(255, px[i] + 50);
+                            px[i + 1] = Math.min(255, px[i + 1] + 50);
+                            px[i + 2] = Math.min(255, px[i + 2] + 50); }
+                    }
+                    fCtx.putImageData(ld, 0, 0);
+                } else if (fl.type === 'psp-render') {
+                    fCtx.filter = 'blur(2px) saturate(1.3)';
+                    fCtx.drawImage(fC, 0, 0);
+                    fCtx.filter = 'none';
+                } else if (fl.type === 'cel-shade') {
+                    const cd = fCtx.getImageData(0, 0, w, h);
+                    const px = cd.data;
+                    for (let i = 0; i < px.length; i += 4) {
+                        const lum = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+                        if (lum > 180) { px[i] = 255;
+                            px[i + 1] = 255;
+                            px[i + 2] = 200; } else if (lum > 120) { px[i] = 180;
+                            px[i + 1] = 120;
+                            px[i + 2] = 80; } else if (lum > 60) { px[i] = 80;
+                            px[i + 1] = 50;
+                            px[i + 2] = 30; } else { px[i] = 20;
+                            px[i + 1] = 10;
+                            px[i + 2] = 5; }
+                    }
+                    fCtx.putImageData(cd, 0, 0);
+                } else if (fl.type === 'posterize') {
+                    const levels = fl.strength || 4;
+                    const pd = fCtx.getImageData(0, 0, w, h);
+                    const px = pd.data;
+                    const step = 256 / levels;
+                    for (let i = 0; i < px.length; i += 4) {
+                        px[i] = Math.floor(px[i] / step) * step;
+                        px[i + 1] = Math.floor(px[i + 1] / step) * step;
+                        px[i + 2] = Math.floor(px[i + 2] / step) * step;
+                    }
+                    fCtx.putImageData(pd, 0, 0);
+                } else if (fl.type === 'xray') {
+                    const xd = fCtx.getImageData(0, 0, w, h);
+                    const px = xd.data;
+                    for (let i = 0; i < px.length; i += 4) {
+                        const luminance = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+                        if (luminance < 40) {
+                            px[i + 3] = 0;
+                        } else {
+                            px[i] = 255 - px[i];
+                            px[i + 1] = 255 - px[i + 1];
+                            px[i + 2] = 255 - px[i + 2];
+                            px[i + 3] = 255;
+                        }
+                    }
+                    fCtx.putImageData(xd, 0, 0);
+                }
+
+                base.ctx.save();
+                base.ctx.globalAlpha = fl.strength / 100;
+                base.ctx.globalCompositeOperation = fl.blendMode || 'overlay';
+                base.ctx.drawImage(fC, 0, 0);
+                base.ctx.restore();
+            });
+            compositeLayers();
+        }
+
+        function compositeLayers() {
+            if (!canvas.width || !layers.length) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(layers[0].canvas, 0, 0);
+            overlays.forEach(item => {
+                ctx.save();
+                ctx.translate(item.x, item.y);
+                if (item.rotation) ctx.rotate(item.rotation);
+                ctx.font = `bold ${item.size}px 'Space Grotesk', sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = item.color || '#ffffff';
+                ctx.shadowColor = item.color || '#ffffff';
+                ctx.shadowBlur = 12;
+                ctx.fillText(item.content, 0, 0);
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            });
+            if (currentGridPreset !== 'none' && gridPresets[currentGridPreset]) {
+                const preset = gridPresets[currentGridPreset];
+                ctx.save();
+                ctx.strokeStyle = 'rgba(0,240,255,0.3)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
+                for (let i = 1; i < preset.cols; i++) { const x = (canvas.width / preset.cols) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke(); }
+                for (let i = 1; i < preset.rows; i++) { const y = (canvas.height / preset.rows) * i;
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                    ctx.stroke(); }
+                ctx.setLineDash([]);
+                ctx.restore();
+            }
+        }
+
+        // ========== CROP (simplified but functional) ==========
+        function toggleCropMode() {
+            isCropActive = !isCropActive;
+            document.getElementById('crop-btn').classList.toggle('active', isCropActive);
+            if (isCropActive) {
+                cropBox = { x: 0, y: 0, w: canvas.width, h: canvas.height };
+                renderCropOverlay();
+            } else {
+                cropOverlayContainer.classList.add('hidden');
+                cropOverlayContainer.innerHTML = '';
+            }
+        }
+
+        function renderCropOverlay() {
+            if (!isCropActive) return;
+            cropOverlayContainer.classList.remove('hidden');
+            cropOverlayContainer.innerHTML = '';
+            const overlay = document.createElement('div');
+            overlay.className = 'crop-overlay';
+            overlay.style.left = `${cropBox.x}px`;
+            overlay.style.top = `${cropBox.y}px`;
+            overlay.style.width = `${cropBox.w}px`;
+            overlay.style.height = `${cropBox.h}px`;
+            cropOverlayContainer.appendChild(overlay);
+            // Add handles
+            const handlePositions = ['tl', 'tr', 'bl', 'br'];
+            handlePositions.forEach(pos => {
+                const handle = document.createElement('div');
+                handle.className = 'crop-handle';
+                handle.dataset.pos = pos;
+                handle.style.left = pos.includes('l') ? '0' : '100%';
+                handle.style.top = pos.includes('t') ? '0' : '100%';
+                handle.style.transform = 'translate(-50%, -50%)';
+                handle.addEventListener('touchstart', startCropDrag);
+                handle.addEventListener('mousedown', startCropDrag);
+                overlay.appendChild(handle);
+            });
+            overlay.addEventListener('touchstart', startCropMove);
+            overlay.addEventListener('mousedown', startCropMove);
+        }
+
+        let cropDragMode = null;
+        let cropDragStart = { x: 0, y: 0 };
+        let cropStartBox = { ...cropBox };
+
+        function startCropDrag(e) {
+            e.preventDefault();
+            cropDragMode = 'resize';
+            cropDragStart = getCanvasPoint(e);
+            cropStartBox = { ...cropBox };
+            document.addEventListener('touchmove', onCropDrag);
+            document.addEventListener('touchend', endCropDrag);
+            document.addEventListener('mousemove', onCropDrag);
+            document.addEventListener('mouseup', endCropDrag);
+        }
+
+        function startCropMove(e) {
+            e.preventDefault();
+            cropDragMode = 'move';
+            cropDragStart = getCanvasPoint(e);
+            cropStartBox = { ...cropBox };
+            document.addEventListener('touchmove', onCropDrag);
+            document.addEventListener('touchend', endCropDrag);
+            document.addEventListener('mousemove', onCropDrag);
+            document.addEventListener('mouseup', endCropDrag);
+        }
+
+        function getCanvasPoint(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height)
+            };
+        }
+
+        function onCropDrag(e) {
+            e.preventDefault();
+            const pt = getCanvasPoint(e);
+            const dx = pt.x - cropDragStart.x;
+            const dy = pt.y - cropDragStart.y;
+            if (cropDragMode === 'move') {
+                cropBox.x = Math.max(0, Math.min(canvas.width - cropBox.w, cropStartBox.x + dx));
+                cropBox.y = Math.max(0, Math.min(canvas.height - cropBox.h, cropStartBox.y + dy));
+            } else if (cropDragMode === 'resize') {
+                const pos = cropStartBox.pos;
+                if (pos.includes('l')) { cropBox.x = Math.max(0, cropStartBox.x + dx);
+                    cropBox.w = cropStartBox.w - (cropBox.x - cropStartBox.x); }
+                if (pos.includes('r')) cropBox.w = Math.max(20, cropStartBox.w + dx);
+                if (pos.includes('t')) { cropBox.y = Math.max(0, cropStartBox.y + dy);
+                    cropBox.h = cropStartBox.h - (cropBox.y - cropStartBox.y); }
+                if (pos.includes('b')) cropBox.h = Math.max(20, cropStartBox.h + dy);
+            }
+            renderCropOverlay();
+        }
+
+        function endCropDrag() {
+            cropDragMode = null;
+            document.removeEventListener('touchmove', onCropDrag);
+            document.removeEventListener('touchend', endCropDrag);
+            document.removeEventListener('mousemove', onCropDrag);
+            document.removeEventListener('mouseup', endCropDrag);
+        }
+
+        function applyCrop() {
+            if (!isCropActive || !canvas.width) return;
+            const tmpCanvas = document.createElement('canvas');
+            tmpCanvas.width = cropBox.w;
+            tmpCanvas.height = cropBox.h;
+            tmpCanvas.getContext('2d').drawImage(canvas, cropBox.x, cropBox.y, cropBox.w, cropBox.h, 0, 0, cropBox.w,
+                cropBox.h);
+            canvas.width = cropBox.w;
+            canvas.height = cropBox.h;
+            ctx.drawImage(tmpCanvas, 0, 0);
+            if (layers.length) {
+                const base = layers[0];
+                const tmpBase = document.createElement('canvas');
+                tmpBase.width = cropBox.w;
+                tmpBase.height = cropBox.h;
+                tmpBase.getContext('2d').drawImage(base.canvas, cropBox.x, cropBox.y, cropBox.w, cropBox.h, 0, 0,
+                    cropBox.w, cropBox.h);
+                base.canvas.width = cropBox.w;
+                base.canvas.height = cropBox.h;
+                base.ctx.clearRect(0, 0, base.canvas.width, base.canvas.height);
+                base.ctx.drawImage(tmpBase, 0, 0);
+                base.originalImg = new Image();
+                base.originalImg.src = tmpBase.toDataURL();
+            }
+            overlays.forEach(ov => { ov.x -= cropBox.x;
+                ov.y -= cropBox.y; });
+            toggleCropMode();
+            processImagePipeline();
+            saveState();
+            showToast('✂️ Cropped');
+        }
+
+        // ========== HISTORY ==========
+        function saveState() { if (!canvas.width) return; if (historyPointer < historyStack.length - 1)
+                historyStack = historyStack.slice(0, historyPointer + 1);
+            historyStack.push(canvas.toDataURL()); if (historyStack.length > 30) historyStack.shift();
+            historyPointer = historyStack.length - 1; }
+
+        function undo() { if (historyPointer > 0) { historyPointer--;
+                loadHistoryState(historyStack[historyPointer]);
+                showToast('⏪ Undo'); } else showToast('⏪ At oldest', 'error'); }
+
+        function redo() { if (historyPointer < historyStack.length - 1) { historyPointer++;
+                loadHistoryState(historyStack[historyPointer]);
+                showToast('⏩ Redo'); } else showToast('⏩ At newest', 'error'); }
+
+        function loadHistoryState(dataUrl) { const img = new Image();
+            img.onload = () => { ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0); if (layers.length && layers[0].ctx) { layers[0].ctx.clearRect(0, 0, layers[
+                        0].canvas.width, layers[0].canvas.height);
+                    layers[0].ctx.drawImage(img, 0, 0); } };
+            img.src = dataUrl; }
+
+        // ========== OVERLAYS ==========
+        function addText() { const input = prompt('Enter text', '⚡'); if (input) { overlays.push({ content: input, x: canvas
+                        .width / 2, y: canvas.height / 2, size: activeOverlaySize, rotation: 0, color: selectedColor });
+                selectedOverlayIndex = overlays.length - 1;
+                compositeLayers();
+                saveState();
+                showToast('💬 Added'); } }
+
+        function addSticker() { const stickers = ['😎', '🕶️', '🎭', '🧿', '💢', '✨', '🦋', '🌈', '🔥', '💎', '🤖',
+            '🦾', '👾', '🎮', '⚔️']; const s = stickers[Math.floor(Math.random() * stickers.length)];
+            overlays.push({ content: s, x: canvas.width / 2, y: canvas.height / 2, size: activeOverlaySize * 1.5,
+                rotation: 0, color: '#ffffff' });
+            selectedOverlayIndex = overlays.length - 1;
+            compositeLayers();
+            saveState();
+            showToast('🩹 Sticker'); }
+
+        function toggleEraser() { eraserMode = !eraserMode;
+            brushMode = false;
+            document.getElementById('eraser-btn').classList.toggle('active', eraserMode);
+            document.getElementById('brush-btn').classList.remove('active');
+            canvas.style.cursor = eraserMode ? 'cell' : 'default'; }
+
+        function toggleMaskMode() { maskMode = !maskMode;
+            document.getElementById('mask-btn').classList.toggle('active', maskMode);
+            showToast(`🎭 Mask ${maskMode?'ON':'OFF'}`); }
+
+        function toggleBrushMode() { brushMode = !brushMode;
+            eraserMode = false;
+            document.getElementById('brush-btn').classList.toggle('active', brushMode);
+            document.getElementById('eraser-btn').classList.remove('active');
+            canvas.style.cursor = brushMode ? 'crosshair' : 'default'; }
+
+        // Touch events
+        container.addEventListener('touchstart', e => {
+            if (e.touches.length === 2) { initialPinchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e
+                    .touches[0].clientY - e.touches[1].clientY);
+                initialZoom = currentZoom; return; }
+            if (e.touches.length === 1 && e.target === canvas) {
+                const rect = canvas.getBoundingClientRect();
+                const pt = { x: (e.touches[0].clientX - rect.left) * (canvas.width / rect.width), y: (e.touches[0]
+                        .clientY - rect.top) * (canvas.height / rect.height) };
+                if (brushMode) { ctx.beginPath();
+                    ctx.arc(pt.x, pt.y, brushSize / 2, 0, Math.PI * 2);
+                    ctx.fillStyle = selectedColor;
+                    ctx.fill();
+                    saveState(); return; }
+                if (eraserMode) { eraseAt(pt.x, pt.y); return; }
+                if (maskMode) { maskAt(pt.x, pt.y); return; }
+                for (let i = overlays.length - 1; i >= 0; i--) { if (Math.hypot(pt.x - overlays[i].x, pt.y - overlays[i]
+                        .y) < Math.max(40, overlays[i].size)) { selectedOverlayIndex = i;
+                        isDraggingItem = true;
+                        dragStartX = pt.x - overlays[i].x;
+                        dragStartY = pt.y - overlays[i].y; return; } }
+                isPanning = true;
+                lastPanX = e.touches[0].clientX;
+                lastPanY = e.touches[0].clientY;
+            }
+        }, { passive: false });
+
+        container.addEventListener('touchmove', e => {
+            if (e.touches.length === 2 && initialPinchDist) { e.preventDefault();
+                const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[
+                    1].clientY);
+                currentZoom = Math.min(6, Math.max(0.1, initialZoom * (dist / initialPinchDist)));
+                updateTransform(); return; }
+            if (e.touches.length === 1 && isDraggingItem) { e.preventDefault();
+                const rect = canvas.getBoundingClientRect();
+                const pt = { x: (e.touches[0].clientX - rect.left) * (canvas.width / rect.width), y: (e.touches[0]
+                        .clientY - rect.top) * (canvas.height / rect.height) }; if (selectedOverlayIndex !== null &&
+                    overlays[selectedOverlayIndex]) { overlays[selectedOverlayIndex].x = pt.x - dragStartX;
+                    overlays[selectedOverlayIndex].y = pt.y - dragStartY; }
+                compositeLayers(); } else if (e.touches.length === 1 && isPanning) { e.preventDefault();
+                panX += (e.touches[0].clientX - lastPanX);
+                panY += (e.touches[0].clientY - lastPanY);
+                lastPanX = e.touches[0].clientX;
+                lastPanY = e.touches[0].clientY;
+                updateTransform(); }
+        }, { passive: false });
+
+        container.addEventListener('touchend', () => { initialPinchDist = null; if (isDraggingItem) saveState();
+            isDraggingItem = false;
+            isPanning = false; });
+
+        function eraseAt(x, y) { ctx.save();
+            ctx.globalCompositeOperation = 'destination-out';
+            ctx.beginPath();
+            ctx.arc(x, y, 20, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+            saveState(); }
+
+        function maskAt(x, y) { const imgData = ctx.getImageData(x - 10, y - 10, 20, 20);
+            const d = imgData.data; for (let i = 0; i < d.length; i += 4) d[i + 3] = 0;
+            ctx.putImageData(imgData, x - 10, y - 10);
+            saveState(); }
+
+        function updateTransform() { zoomViewport.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`; }
+
+        function resetZoom() { currentZoom = 1;
+            panX = 0;
+            panY = 0;
+            updateTransform(); }
+
+        // ========== VAULT & SPRITE ==========
+        function openVault() { renderVaultList();
+            document.getElementById('vault-modal').classList.remove('hidden'); }
+
+        function closeVault() { document.getElementById('vault-modal').classList.add('hidden'); }
+
+        function saveToVault() { if (canvas.width) { vaultItems.push({ id: 'vault_' + Date.now(), dataUrl: canvas.toDataURL(
+                    'image/png'), thumb: canvas.toDataURL('image/png') });
+                showToast('🔐 Saved'); } }
+
+        function renderVaultList() { const list = document.getElementById('vault-list'); if (!vaultItems.length) { list
+                    .innerHTML = '<div class="col-span-full text-center text-slate-500 py-4">Empty</div>'; return; }
+            list.innerHTML = vaultItems.map((v, i) =>
+                `<div class="vault-item" onclick="loadVaultItem('${v.id}')"><img src="${v.thumb}"><span class="text-nano text-slate-400">${i+1}</span></div>`
+                ).join(''); }
+
+        function loadVaultItem(id) { const item = vaultItems.find(v => v.id === id); if (item) { closeVault();
+                const img = new Image();
+                img.onload = () => { canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0); if (layers.length) { layers[0].canvas.width = img.width;
+                        layers[0].canvas.height = img.height;
+                        layers[0].ctx.drawImage(img, 0, 0); }
+                    compositeLayers();
+                    saveState(); };
+                img.src = item.dataUrl; } }
+
+        function downloadAllVault() { vaultItems.forEach((v, i) => { const a = document.createElement('a');
+                a.href = v.dataUrl;
+                a.download = `vault_${i+1}.png`;
+                a.click(); }); }
+
+        function downloadSpriteSheet() { if (!vaultItems.length) return;
+            const cols = Math.ceil(Math.sqrt(vaultItems.length));
+            const rows = Math.ceil(vaultItems.length / cols);
+            const thumbSize = 128;
+            const sheet = document.createElement('canvas');
+            sheet.width = cols * thumbSize;
+            sheet.height = rows * thumbSize;
+            const sctx = sheet.getContext('2d');
+            vaultItems.forEach((v, i) => { const col = i % cols;
+                const row = Math.floor(i / cols);
+                const img = new Image();
+                img.onload = () => { sctx.drawImage(img, col * thumbSize, row * thumbSize, thumbSize, thumbSize); if (i ===
+                        vaultItems.length - 1) { const a = document.createElement('a');
+                        a.href = sheet.toDataURL('image/png');
+                        a.download = 'sprite_sheet.png';
+                        a.click();
+                        showToast('💾 Sprite sheet'); } };
+                img.src = v.thumb; }); }
+
+        function exportSpriteSheet() { downloadSpriteSheet(); }
+
+        // ========== EXPORT ==========
+        function openExportModal() { if (canvas.width) document.getElementById('export-modal').classList.remove('hidden'); }
+
+        function closeModals() { document.getElementById('export-modal').classList.add('hidden');
+            document.getElementById('vault-modal').classList.add('hidden');
+            document.getElementById('grid-modal').classList.add('hidden');
+            document.getElementById('resolution-modal').classList.add('hidden'); }
+
+        function exportFile(fmt) { if (!canvas.width) return; try { const a = document.createElement('a');
+                a.href = canvas.toDataURL(fmt === 'jpg' ? 'image/jpeg' : fmt === 'webp' ? 'image/webp' : 'image/png',
+                    0.95);
+                a.download = `panel_${Date.now()}.${fmt}`;
+                a.click();
+                showToast(`💾 ${fmt}`); } catch (e) { showToast('Export failed', 'error'); } }
+
+        // ========== MOUSE GUIDE (randomizes position) ==========
+        function randomizeMouseGuide() {
+            if (readerModeActive) return; // don't move during reader
+            const x = Math.random() * 80 + 10; // percentage
+            const y = Math.random() * 60 + 20;
+            mouseGuide.style.left = x + '%';
+            mouseGuide.style.top = y + '%';
+        }
+        setInterval(randomizeMouseGuide, 6000);
+
+        // ========== INIT ==========
+        setMode('jrpg');
+        applyStyle('jrpg');
+        console.log('⚡ NEON COMIC VAULT v16 — Reader & Media ready');
+    </script>
+</body>
+</html>
