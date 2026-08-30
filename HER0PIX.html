@@ -1,441 +1,441 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>⚡ NEON COMIC VAULT v22 — Sticker & Theater</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🕹️ NEON ISLAND FARM & GAME EDITOR</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-        :root {
-            --glass-bg: rgba(10,15,30,0.45); --glass-border: rgba(0,240,255,0.2);
-            --glass-shadow: 0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.03);
-            --cyber-glow: 0 0 25px rgba(0,240,255,0.5); --rainbow: conic-gradient(#ff0000, #ff8800, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
-            --glass-radius: 12px;
-        }
-        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Space Grotesk','Inter',sans-serif; background: #03050b;
-            overscroll-behavior-y: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
-            overflow: hidden; height: 100dvh; width: 100vw; touch-action: none; color: #e2e8f0;
+            margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
+            background: radial-gradient(circle at 50% 30%, #0a0f1e, #03050b);
+            font-family: 'Courier New', monospace;
+            touch-action: manipulation;
         }
-        ::-webkit-scrollbar { width:0px; height:0px; display:none; }
-        * { scrollbar-width: none; }
-        .animated-bg {
-            background-color:#03050b;
-            background-image: radial-gradient(circle at 50% 50%, rgba(157,0,255,0.10) 0%, transparent 70%), radial-gradient(circle at 15% 25%, rgba(0,240,255,0.08) 0%, transparent 50%), radial-gradient(circle at 85% 75%, rgba(255,0,127,0.06) 0%, transparent 50%), linear-gradient(to right, rgba(0,240,255,0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,85,0,0.03) 1px, transparent 1px);
-            background-size:100% 100%,100% 100%,100% 100%,32px 32px,32px 32px;
-            animation: gridShift 12s linear infinite;
+        .gameboy {
+            position: relative;
+            width: 800px; height: 900px;
+            background: rgba(15,20,35,0.35);
+            backdrop-filter: blur(15px) saturate(180%);
+            border: 2px solid rgba(0,240,255,0.4);
+            border-radius: 40px;
+            box-shadow: 0 0 80px rgba(0,240,255,0.2), inset 0 0 40px rgba(255,255,255,0.05);
+            display:flex; flex-direction:column; align-items:center;
+            padding: 20px 15px;
+            overflow:hidden;
         }
-        .glass {
-            background: var(--glass-bg); backdrop-filter: blur(10px) saturate(120%); -webkit-backdrop-filter: blur(10px) saturate(120%);
-            border:1px solid var(--glass-border); box-shadow: var(--glass-shadow); border-radius: var(--glass-radius);
+        .gameboy::before {
+            content:''; position:absolute; inset:0; pointer-events:none;
+            background:
+                linear-gradient(to right, rgba(0,255,255,0.07) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,0,255,0.07) 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index:0;
         }
-        .glass-btn {
-            background: transparent; border:1px solid rgba(255,255,255,0.15); box-shadow:0 2px 8px rgba(0,0,0,0.4);
-            border-radius:10px; transition:all 0.07s ease; cursor:pointer; touch-action:manipulation;
-            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display:flex; align-items:center; justify-content:center;
-            flex-direction:column; gap:2px; padding:6px 8px; font-size:13px; font-weight:700; letter-spacing:0.5px;
-            color:#e2e8f0; white-space:nowrap; min-width:44px; min-height:44px;
+        .screen-area {
+            display:flex; gap:15px; margin-bottom:15px; z-index:1;
         }
-        .glass-btn:active,.glass-btn.active { transform:scale(0.94); background:linear-gradient(135deg, rgba(157,0,255,0.5), rgba(0,240,255,0.4)); border-color:#00f0ff; box-shadow:var(--cyber-glow); }
-        .glass-btn .btn-num { font-size:9px; color:#00f0ff; font-weight:800; }
-
-        /* HUD side panels */
-        .hud-side { background:transparent; border:none; backdrop-filter:none; box-shadow:none; display:flex; flex-direction:column; gap:5px; pointer-events:auto; z-index:50; padding:4px; }
-        .hud-side .glass-btn { background:rgba(10,15,30,0.5); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,0.12); border-radius:8px; min-width:48px; min-height:48px; font-size:14px; }
-
-        /* Sticker previews */
-        .sticker-preview {
-            position:absolute; border:2px solid rgba(255,255,255,0.8); border-radius:12px;
-            box-shadow:0 0 10px rgba(0,240,255,0.5), 0 4px 10px rgba(0,0,0,0.5);
-            cursor:pointer; touch-action:none; animation:levitate 3s ease-in-out infinite;
-            background:rgba(255,255,255,0.05); backdrop-filter:blur(2px); padding:4px;
+        canvas {
+            image-rendering: pixelated;
+            background: #0a0a0f;
+            border: 2px solid rgba(0,240,255,0.7);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,240,255,0.25), inset 0 0 10px rgba(0,0,0,0.7);
         }
-        .sticker-preview img { max-width:100%; max-height:100%; border-radius:8px; }
-        .sticker-preview.circular { border-radius:50%; }
-        .sticker-preview.speech-bubble { border-radius:20px 20px 20px 5px; background:white; color:black; padding:8px 12px; }
-
-        /* Reader overlay (theater mode) */
-        .theater-overlay {
-            position:fixed; inset:0; z-index:150; display:flex; flex-direction:column; align-items:center; justify-content:center;
-            pointer-events:none; background:transparent;
+        .main-screen {
+            width: 500px; height: 500px;
         }
-        .theater-panel { pointer-events:auto; max-width:90vw; max-height:70vh; border:2px solid #00f0ff; border-radius:20px; box-shadow:0 0 30px rgba(0,240,255,0.6); }
-        .bunny-progress { position:relative; width:80%; height:30px; background:rgba(255,255,255,0.1); border-radius:15px; margin:10px 0; }
-        .bunny { position:absolute; top:-8px; left:0; font-size:28px; animation:bunnyHop 0.6s ease-in-out infinite; transform:translateX(-50%); }
-        .carrot { position:absolute; right:-10px; top:-6px; font-size:24px; }
-        .stars { position:absolute; right:30px; top:-5px; font-size:18px; }
-        .rabbit-hole { position:absolute; left:-10px; bottom:-5px; font-size:18px; }
-        .red-thread { position:absolute; bottom:10px; left:0; right:0; height:2px; background:linear-gradient(to right,#ff007f,#00f0ff); opacity:0.5; }
-
-        /* Ensure canvas area not blocked */
-        #canvas-container { z-index:0; }
+        .side-screens {
+            display:flex; flex-direction:column; gap:10px;
+        }
+        .hud-screen {
+            width: 200px; height: 180px;
+        }
+        .mini-screen {
+            width: 200px; height: 300px;
+        }
+        .controls {
+            display:flex; gap:30px; align-items:center; z-index:1;
+        }
+        .dpad {
+            position: relative; width: 130px; height: 130px;
+        }
+        .dpad button {
+            position:absolute; width: 40px; height: 40px;
+            background: rgba(0,240,255,0.1);
+            border: 1px solid rgba(0,240,255,0.5);
+            border-radius: 8px; color:#0ff; font-size:20px;
+            cursor:pointer; backdrop-filter: blur(4px);
+        }
+        .dpad .up{ top:0; left:45px; }
+        .dpad .down{ bottom:0; left:45px; }
+        .dpad .left{ top:45px; left:0; }
+        .dpad .right{ top:45px; right:0; }
+        .dpad .center{ top:45px; left:45px; background:#0ff2; }
+        .action-buttons {
+            display:flex; gap:10px; flex-wrap:wrap; max-width:200px;
+        }
+        .action-buttons button {
+            width: 50px; height: 50px; border-radius: 50%;
+            background: rgba(255,0,127,0.25);
+            border: 2px solid #ff007f;
+            color:white; font-weight:bold; cursor:pointer;
+            box-shadow:0 0 12px rgba(255,0,127,0.6);
+        }
+        .hint {
+            color:#7f8c8d; font-size:12px; margin-top:15px; text-align:center; z-index:1;
+        }
+        .editor-overlay {
+            position:absolute; bottom:10px; left:10px; right:10px;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(10px);
+            border-radius: 15px; padding:10px; display:none; z-index:2;
+            color:white;
+        }
+        .editor-overlay.active { display:block; }
+        .editor-tools {
+            display:flex; gap:10px; flex-wrap:wrap; margin-bottom:10px;
+        }
+        .editor-tools button {
+            background: rgba(0,240,255,0.2); border:1px solid #0ff;
+            border-radius:6px; padding:6px 12px; color:#0ff; cursor:pointer;
+        }
+        .sprite-preview {
+            width:100%; height:150px; background:#111; border:1px solid #0ff;
+            image-rendering: pixelated; margin-top:10px;
+        }
+        .dialogue-box {
+            position:absolute; left:20px; right:20px; bottom:80px;
+            background: rgba(0,0,0,0.85); border:2px solid #ff007f;
+            border-radius:10px; padding:15px; color:white; font-size:16px;
+            display:none; z-index:3;
+        }
+        .dialogue-box.active { display:block; }
+        .hp-bar {
+            position:absolute; top:20px; left:20px; width:200px;
+            height:20px; background:#333; border-radius:5px; overflow:hidden;
+            border:1px solid #0ff; z-index:4;
+        }
+        .hp-fill {
+            height:100%; background: linear-gradient(90deg, #f00, #ff0);
+            transition: width 0.3s;
+        }
+        .emoji-set {
+            position:absolute; top:20px; right:20px; display:flex; gap:5px;
+            z-index:5; background:rgba(0,0,0,0.4); padding:5px; border-radius:10px;
+        }
+        .emoji-set span { font-size:24px; cursor:pointer; }
     </style>
 </head>
-<body class="text-slate-100 h-[100dvh] w-screen flex flex-col overflow-hidden animated-bg">
-    <!-- Canvas area -->
-    <div id="canvas-container" class="absolute inset-x-0 top-0 bottom-20 z-0 touch-none flex items-center justify-center overflow-hidden">
-        <div id="zoom-viewport" class="relative w-full h-full flex items-center justify-center origin-center transition-transform duration-200 cursor-grab active:cursor-grabbing">
-            <canvas id="studio-canvas" class="max-w-full max-h-full object-contain shadow-2xl rounded-lg border border-cyberblue/30"></canvas>
-        </div>
-        <div id="canvas-placeholder" class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 bg-darkbg/60 backdrop-blur-xl z-30 pointer-events-auto p-4 text-center">
-            <div class="glass p-6 flex flex-col items-center gap-3 rounded-3xl animate-float max-w-sm">
-                <span class="text-4xl">⚡🌆</span>
-                <span class="text-sm font-bold">Drop Media • Load Assets</span>
-                <button onclick="document.getElementById('file-input-placeholder').click()" class="glass-btn px-4 py-2 text-sm font-bold text-neongreen">📂 BROWSE</button>
-                <input type="file" id="file-input-placeholder" multiple accept="*/*" class="hidden" onchange="handleFileSelect(event)">
-            </div>
+<body>
+<div class="gameboy" id="gameboy">
+    <div class="screen-area">
+        <canvas id="mainCanvas" class="main-screen" width="500" height="500"></canvas>
+        <div class="side-screens">
+            <canvas id="hudCanvas" class="hud-screen" width="200" height="180"></canvas>
+            <canvas id="miniCanvas" class="mini-screen" width="200" height="300"></canvas>
         </div>
     </div>
 
-    <!-- LEFT HUD (modes & filters) -->
-    <aside class="absolute left-2 top-2 bottom-20 z-50 hud-side" id="left-hud">
-        <button onclick="setMode('jrpg')" id="mode-jrpg" class="glass-btn active">⚔️<span class="btn-num">1</span></button>
-        <button onclick="setMode('comic')" id="mode-comic" class="glass-btn">📖<span class="btn-num">2</span></button>
-        <button onclick="setMode('manga')" id="mode-manga" class="glass-btn">🌸<span class="btn-num">3</span></button>
-        <button onclick="setMode('anime')" id="mode-anime" class="glass-btn">⚡<span class="btn-num">4</span></button>
-        <button onclick="setMode('neon')" id="mode-neon" class="glass-btn">🌈<span class="btn-num">5</span></button>
-        <button onclick="setMode('pixel')" id="mode-pixel" class="glass-btn">👾<span class="btn-num">6</span></button>
-        <button onclick="setMode('lichtenstein')" id="mode-lichtenstein" class="glass-btn">🎯<span class="btn-num">7</span></button>
-        <button onclick="setMode('psp')" id="mode-psp" class="glass-btn">🎮<span class="btn-num">8</span></button>
-        <button onclick="applyStyle('flat')" class="glass-btn">🔳<span class="btn-num">9</span></button>
-        <button onclick="applyStyle('xray')" class="glass-btn">👻<span class="btn-num">10</span></button>
-    </aside>
-
-    <!-- RIGHT HUD (actions & tools) -->
-    <aside class="absolute right-2 top-2 bottom-20 z-50 hud-side items-end" id="right-hud">
-        <button onclick="undo()" class="glass-btn">⏪<span class="btn-num">1</span></button>
-        <button onclick="redo()" class="glass-btn">⏩<span class="btn-num">2</span></button>
-        <button onclick="openVault()" class="glass-btn">🔐<span class="btn-num">3</span></button>
-        <button onclick="pinFrame()" class="glass-btn">📌<span class="btn-num">4</span></button>
-        <button onclick="captureFrame()" class="glass-btn">📸<span class="btn-num">5</span></button>
-        <button onclick="playAnimation()" class="glass-btn">▶️<span class="btn-num">6</span></button>
-        <button onclick="stopAnimation()" class="glass-btn">⏹️<span class="btn-num">7</span></button>
-        <button onclick="toggleStickerMode()" id="sticker-mode-btn" class="glass-btn">🖼️<span class="btn-num">8</span></button>
-        <button onclick="addSpeechBubble()" class="glass-btn">💬<span class="btn-num">9</span></button>
-        <button onclick="addCircularSticker()" class="glass-btn">⭕<span class="btn-num">10</span></button>
-        <button onclick="enterTheaterMode()" class="glass-btn">📖<span class="btn-num">11</span></button>
-        <button onclick="openResolutionMenu()" class="glass-btn">📐<span class="btn-num">12</span></button>
-    </aside>
-
-    <!-- TOP LIBRARY (mini previews) -->
-    <div id="top-library" class="absolute top-2 left-16 right-16 z-40 flex gap-2 overflow-x-auto glass p-1 pointer-events-auto"></div>
-
-    <!-- THEATER OVERLAY (floating, no background) -->
-    <div id="theater-overlay" class="theater-overlay hidden" style="pointer-events:none;">
-        <div style="pointer-events:auto; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
-            <div class="bunny-progress" id="bunny-progress">
-                <div class="red-thread"></div>
-                <span class="rabbit-hole">🕳️</span>
-                <span class="bunny" id="bunny" style="left:0%;">🐰</span>
-                <span class="carrot">🥕</span>
-                <span class="stars">✨</span>
-            </div>
-            <img id="theater-panel-img" class="theater-panel" src="">
-            <div style="display:flex; gap:20px; margin-top:10px;">
-                <button onclick="theaterPrev()" class="glass-btn px-6 py-3 text-xl">⏪</button>
-                <button onclick="theaterNext()" class="glass-btn px-6 py-3 text-xl">⏩</button>
-                <button onclick="exitTheaterMode()" class="glass-btn px-6 py-3 text-xl">✕</button>
-            </div>
+    <div class="controls">
+        <div class="dpad">
+            <button class="up" id="btnUp">▲</button>
+            <button class="down" id="btnDown">▼</button>
+            <button class="left" id="btnLeft">◀</button>
+            <button class="right" id="btnRight">▶</button>
+            <button class="center" id="btnCenter">✦</button>
+        </div>
+        <div class="action-buttons">
+            <button id="btnA">A</button>
+            <button id="btnB">B</button>
+            <button id="btnX">X</button>
+            <button id="btnY">Y</button>
+            <button id="btnL">L</button>
+            <button id="btnR">R</button>
+            <button id="btnStart">⏵</button>
+            <button id="btnSelect">⏺</button>
         </div>
     </div>
 
-    <script>
-        // ========== STATE ==========
-        let library = [];
-        let panels = [];
-        let animationFrames = [];
-        let layers = [];
-        let filterLayers = [];
-        let overlays = [];
-        let adjustments = { brightness:0, contrast:0, saturation:100 };
-        let currentMode = 'jrpg';
-        let activeWheelTarget = 'size';
-        let selectedOverlayIndex = null;
-        let activeOverlaySize = 75;
-        let selectedColor = '#ffffff';
-        let brushSize = 10;
-        let brushMode = false;
-        let eraserMode = false;
-        let maskMode = false;
-        let currentGridPreset = 'none';
-        let currentResolution = 512;
-        let historyStack = [];
-        let historyPointer = -1;
-        let currentZoom = 1, panX = 0, panY = 0;
-        let isDraggingItem = false, dragStartX = 0, dragStartY = 0;
-        let initialPinchDist = null, initialZoom = 1, isPanning = false, lastPanX = 0, lastPanY = 0;
-        let isPlayingAnimation = false, animationInterval = null;
-        let stickerMode = false;
-        let theaterIndex = 0;
+    <div class="hint">🐴 Move: D-Pad • A=Interact • B=Attack • X=Day/Night • Y=Toggle Editor • L/R=Zoom • Start=Menu • Select=Dialogue</div>
 
-        const canvas = document.getElementById('studio-canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        const zoomViewport = document.getElementById('zoom-viewport');
-        const container = document.getElementById('canvas-container');
+    <!-- HP bar -->
+    <div class="hp-bar"><div class="hp-fill" id="hpFill" style="width:100%"></div></div>
 
-        function showToast(msg, type='success') {
-            const c = document.getElementById('toast-container');
-            const t = document.createElement('div');
-            t.className = `px-4 py-2 rounded-xl text-sm font-bold shadow-2xl flex items-center gap-2 transition transform translate-y-2 opacity-0 pointer-events-auto ${type==='success'?'bg-cyberpurple/95 text-white border border-cyberblue/40 backdrop-blur-md':'bg-red-600/95 text-white backdrop-blur-md'}`;
-            t.innerHTML = `<span>${type==='success'?'⚡':'⚠️'}</span> ${msg}`;
-            c.appendChild(t);
-            requestAnimationFrame(()=>t.classList.remove('translate-y-2','opacity-0'));
-            setTimeout(()=>{t.classList.add('translate-y-2','opacity-0'); setTimeout(()=>t.remove(),300);},2000);
-        }
+    <!-- Emoji emotional set -->
+    <div class="emoji-set" id="emojiSet">
+        <span data-emotion="love">❤️</span>
+        <span data-emotion="spade">♠️</span>
+        <span data-emotion="club">♣️</span>
+        <span data-emotion="diamond">♦️</span>
+        <span data-emotion="wave">🌊</span>
+        <span data-emotion="whale">🐋</span>
+        <span data-emotion="letter">💌</span>
+        <span data-emotion="sparkle">✨</span>
+    </div>
 
-        // ========== FILE HANDLING ==========
-        function handleFileSelect(e) {
-            const files = Array.from(e.target.files);
-            files.forEach(file => {
-                const reader = new FileReader();
-                reader.onload = ev => {
-                    const type = file.type.startsWith('image') ? 'image' :
-                        file.type.startsWith('video') ? 'video' :
-                        file.type.startsWith('audio') ? 'audio' :
-                        file.name.endsWith('.glb') ? 'glb' :
-                        file.name.endsWith('.html') ? 'html' :
-                        file.name.endsWith('.pdf') ? 'pdf' : 'file';
-                    const item = { id:'f_'+Math.random().toString(36).substr(2,8), name:file.name, dataUrl:ev.target.result, type:type, thumb: type==='image' ? ev.target.result : null };
-                    library.push(item);
-                    updateTopLibrary();
-                    if(library.length===1 && type==='image') loadImageToCanvas(item.dataUrl);
-                    if(type==='audio') showToast('🔊 Audio added');
-                    if(type==='video') showToast('🎬 Video added');
-                    if(type==='glb') showToast('🧊 GLB added');
-                };
-                reader.readAsDataURL(file);
-            });
-            e.target.value = '';
-        }
+    <!-- Sprite Editor Overlay -->
+    <div class="editor-overlay" id="editorOverlay">
+        <div class="editor-tools">
+            <button onclick="setTool('brush')">🖌️ Brush</button>
+            <button onclick="setTool('eraser')">🧹 Eraser</button>
+            <button onclick="setTool('fill')">🪣 Fill</button>
+            <button onclick="setTool('picker')">💧 Pick</button>
+            <button onclick="toggleHitboxMode()">⬜ Hitbox</button>
+            <button onclick="clearSprite()">🗑️ Clear</button>
+            <button onclick="saveSprite()">💾 Save</button>
+            <button onclick="closeEditor()">✖️ Close</button>
+        </div>
+        <canvas id="spriteCanvas" class="sprite-preview" width="200" height="200"></canvas>
+        <div style="margin-top:5px;">
+            <span style="color:#0ff">Sprite Editor: Draw pixels below</span>
+        </div>
+    </div>
 
-        function updateTopLibrary() {
-            const container = document.getElementById('top-library');
-            container.innerHTML = library.map(item => {
-                if(item.type==='image') return `<div class="lib-item" onclick="handleLibraryItem('${item.id}')"><img src="${item.dataUrl}" style="width:32px;height:32px;object-fit:cover;"></div>`;
-                else if(item.type==='video') return `<div class="lib-item" onclick="handleLibraryItem('${item.id}')"><span>🎬</span></div>`;
-                else if(item.type==='audio') return `<div class="lib-item" onclick="handleLibraryItem('${item.id}')"><span>🎵</span></div>`;
-                else if(item.type==='glb') return `<div class="lib-item" onclick="handleLibraryItem('${item.id}')"><span>🧊</span></div>`;
-                else if(item.type==='html') return `<div class="lib-item" onclick="handleLibraryItem('${item.id}')"><span>🌐</span></div>`;
-                else if(item.type==='pdf') return `<div class="lib-item" onclick="handleLibraryItem('${item.id}')"><span>📄</span></div>`;
-                else return `<div class="lib-item" onclick="handleLibraryItem('${item.id}')"><span>📄</span></div>`;
-            }).join('');
-        }
+    <!-- Dialogue box -->
+    <div class="dialogue-box" id="dialogueBox">
+        <span id="dialogueText">Hello! Welcome to the island.</span>
+        <button onclick="closeDialogue()" style="float:right; background:none; border:none; color:#ff007f; cursor:pointer;">Close</button>
+    </div>
+</div>
 
-        function handleLibraryItem(id) {
-            const item = library.find(x => x.id === id);
-            if (!item) return;
-            if (stickerMode) {
-                createStickerFromLibrary(id);
-            } else {
-                if (item.type === 'image') loadImageToCanvas(item.dataUrl);
-                else if (item.type === 'audio') playAudio(item.dataUrl);
-                else if (item.type === 'video') showToast('🎬 Video opened');
-                else if (item.type === 'glb') showToast('🧊 GLB preview coming');
-                else showToast(`📄 ${item.name}`);
+<script>
+    // ========== GAME STATE ==========
+    let player = { x: 6, y: 6, hp: 42, maxHp: 42, emotion: 'love' };
+    let horse = { x: 12, y: 10, health: 5, maxHealth: 5 };
+    let dayTime = 0;
+    let wireframeMode = false;
+    let zoomLevel = 1.0;
+    let cameraX = 0, cameraY = 0;
+    let hitboxMode = false;
+    let dialogueActive = false;
+    let editorActive = false;
+    let spriteTool = 'brush';
+    let spriteData = Array.from({length: 20}, () => Array(20).fill('#000000'));
+    let timeline = [];
+    let gameStarted = false;
+
+    // ========== CANVASES ==========
+    const mainCtx = document.getElementById('mainCanvas').getContext('2d');
+    const hudCtx = document.getElementById('hudCanvas').getContext('2d');
+    const miniCtx = document.getElementById('miniCanvas').getContext('2d');
+    const spriteCanvas = document.getElementById('spriteCanvas');
+    const spriteCtx = spriteCanvas.getContext('2d');
+
+    const TILE = 25; // base tile size (scaled by zoom)
+
+    function updateHpBar() {
+        const fill = document.getElementById('hpFill');
+        fill.style.width = (player.hp / player.maxHp) * 100 + '%';
+    }
+
+    function drawIsland(ctx, w, h, isMain) {
+        ctx.clearRect(0,0,w,h);
+        // grass
+        ctx.fillStyle = '#2d5a1e';
+        ctx.fillRect(0,0,w,h);
+        // sand beach (right bottom)
+        ctx.fillStyle = '#d4b06a';
+        ctx.beginPath();
+        ctx.moveTo(w*0.6,h);
+        ctx.lineTo(w,h*0.7);
+        ctx.lineTo(w,h);
+        ctx.fill();
+        // water
+        ctx.fillStyle = '#1a5276';
+        ctx.fillRect(0,h*0.8,w,h*0.2);
+        // fire area (center)
+        ctx.fillStyle = '#ff4500';
+        ctx.beginPath();
+        ctx.arc(w/2, h/2, 30, 0, Math.PI*2);
+        ctx.fill();
+        // tree
+        ctx.fillStyle = '#4a2e0e';
+        ctx.fillRect(20,20,10,30);
+        ctx.fillStyle = '#1e7b1e';
+        ctx.beginPath();
+        ctx.arc(25,15,20,0,Math.PI*2);
+        ctx.fill();
+
+        // horse
+        ctx.fillStyle = '#8B4513';
+        ctx.fillRect(horse.x*TILE, horse.y*TILE, 25, 15);
+        ctx.fillRect(horse.x*TILE+5, horse.y*TILE-10, 8, 15);
+        ctx.fillRect(horse.x*TILE-5, horse.y*TILE+5, 15, 8);
+        // player
+        ctx.fillStyle = '#ff00ff';
+        ctx.fillRect(player.x*TILE, player.y*TILE, 10, 15);
+        ctx.fillStyle = '#ffaa00';
+        ctx.fillRect(player.x*TILE+2, player.y*TILE-5, 6, 5);
+
+        // spider
+        ctx.fillStyle = '#333';
+        ctx.fillRect(50, 50, 8, 8);
+        // jellyfish
+        ctx.fillStyle = 'rgba(255,0,255,0.6)';
+        ctx.beginPath();
+        ctx.arc(180, 220, 15, 0, Math.PI*2);
+        ctx.fill();
+
+        // day/night overlay
+        if (isMain) {
+            if (dayTime < 6 || dayTime > 18) {
+                ctx.fillStyle = 'rgba(10,10,40,0.4)';
+                ctx.fillRect(0,0,w,h);
+            } else if (dayTime > 6 && dayTime < 8) {
+                ctx.fillStyle = 'rgba(255,150,50,0.2)';
+                ctx.fillRect(0,0,w,h);
             }
         }
-
-        function loadImageToCanvas(dataUrl) {
-            document.getElementById('canvas-placeholder').classList.add('hidden');
-            const img = new Image();
-            img.onload = () => {
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img,0,0);
-                const base = { canvas: document.createElement('canvas'), originalImg: img, ctx: null };
-                base.canvas.width = img.width; base.canvas.height = img.height;
-                base.ctx = base.canvas.getContext('2d', { willReadFrequently: true });
-                base.ctx.drawImage(img,0,0);
-                layers = [base];
-                overlays = []; filterLayers = [];
-                adjustments = { brightness:0, contrast:0, saturation:100 };
-                historyStack = []; historyPointer = -1;
-                applyStyle('jrpg');
-                saveState();
-            };
-            img.src = dataUrl;
+        if (wireframeMode && isMain) {
+            ctx.strokeStyle = '#0ff';
+            ctx.lineWidth = 1;
+            for (let x=0; x<w; x+=TILE) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+            for (let y=0; y<h; y+=TILE) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
         }
-
-        function playAudio(dataUrl) {
-            const audio = new Audio(dataUrl);
-            audio.play().catch(err => showToast('Audio failed','error'));
+        // hitbox visualization
+        if (hitboxMode && isMain) {
+            ctx.strokeStyle = '#f0f';
+            ctx.strokeRect(player.x*TILE, player.y*TILE, 10, 15);
+            ctx.strokeStyle = '#ff0';
+            ctx.strokeRect(horse.x*TILE, horse.y*TILE, 25, 15);
         }
+    }
 
-        // ========== STICKER MODE ==========
-        function toggleStickerMode() {
-            stickerMode = !stickerMode;
-            document.getElementById('sticker-mode-btn').classList.toggle('active', stickerMode);
-            showToast(stickerMode ? '🖼️ Sticker mode ON' : '🖼️ Sticker mode OFF');
-        }
+    function drawHUD() {
+        hudCtx.clearRect(0,0,200,180);
+        hudCtx.fillStyle = '#000';
+        hudCtx.fillRect(0,0,200,180);
+        hudCtx.fillStyle = 'white';
+        hudCtx.font = '14px monospace';
+        hudCtx.fillText('HP '+player.hp+'/'+player.maxHp, 10, 25);
+        hudCtx.fillText('Horse '+horse.health+'/'+horse.maxHealth, 10, 45);
+        let timeIcon = dayTime < 6 ? '🌙' : dayTime < 18 ? '☀️' : '🌙';
+        hudCtx.fillText(timeIcon+' '+Math.floor(dayTime)+':00', 10, 70);
+        hudCtx.fillText('Zoom: '+zoomLevel.toFixed(1), 10, 95);
+        hudCtx.fillText('Emotion: '+player.emotion, 10, 120);
+        hudCtx.fillText('Stage: Island', 10, 140);
+    }
 
-        function createStickerFromLibrary(id) {
-            const item = library.find(x => x.id === id);
-            if (!item) return;
-            const sticker = document.createElement('div');
-            sticker.className = 'sticker-preview';
-            if (item.type === 'image') {
-                sticker.innerHTML = `<img src="${item.dataUrl}">`;
-            } else {
-                sticker.innerHTML = `<span style="font-size:30px;">${item.type==='audio'?'🎵':item.type==='video'?'🎬':'📄'}</span>`;
-            }
-            sticker.style.left = '50%';
-            sticker.style.top = '50%';
-            sticker.style.width = '16%'; // approximately 1/6
-            document.getElementById('canvas-container').appendChild(sticker);
-            makeDraggable(sticker);
-            playPopSound();
-        }
+    function drawMiniMap() {
+        miniCtx.clearRect(0,0,200,300);
+        miniCtx.fillStyle = '#111';
+        miniCtx.fillRect(0,0,200,300);
+        miniCtx.strokeStyle = '#0ff';
+        miniCtx.strokeRect(5,5,190,290);
+        // simple island shape
+        miniCtx.fillStyle = '#2d5a1e';
+        miniCtx.beginPath();
+        miniCtx.moveTo(40,280);
+        miniCtx.lineTo(160,280);
+        miniCtx.lineTo(100,60);
+        miniCtx.fill();
+        // player dot
+        miniCtx.fillStyle = '#ff0';
+        miniCtx.fillRect(player.x*3+40, player.y*3+60, 6,6);
+    }
 
-        function makeDraggable(el) {
-            let startX, startY, origX, origY;
-            el.addEventListener('touchstart', e => {
-                const touch = e.touches[0];
-                startX = touch.clientX; startY = touch.clientY;
-                origX = el.offsetLeft; origY = el.offsetTop;
-                el.style.animation = 'none';
-                e.preventDefault();
-            }, {passive:false});
-            el.addEventListener('touchmove', e => {
-                const touch = e.touches[0];
-                const dx = touch.clientX - startX;
-                const dy = touch.clientY - startY;
-                el.style.left = origX + dx + 'px';
-                el.style.top = origY + dy + 'px';
-                e.preventDefault();
-            }, {passive:false});
-            el.addEventListener('touchend', () => {
-                el.style.animation = 'levitate 3s ease-in-out infinite';
-            });
-        }
-
-        function playPopSound() {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-        }
-
-        function addSpeechBubble() {
-            const text = prompt('Bubble text', '✨ Hello!');
-            if (text) {
-                const bubble = document.createElement('div');
-                bubble.className = 'sticker-preview speech-bubble';
-                bubble.innerText = text;
-                bubble.style.left = '60%'; bubble.style.top = '50%';
-                document.getElementById('canvas-container').appendChild(bubble);
-                makeDraggable(bubble);
+    function drawSpriteEditor() {
+        if (!editorActive) return;
+        spriteCtx.clearRect(0,0,200,200);
+        for (let y=0; y<20; y++) {
+            for (let x=0; x<20; x++) {
+                spriteCtx.fillStyle = spriteData[y][x];
+                spriteCtx.fillRect(x*10, y*10, 10, 10);
             }
         }
+    }
 
-        function addCircularSticker() {
-            const url = prompt('Image URL', '');
-            if (url) {
-                const sticker = document.createElement('div');
-                sticker.className = 'sticker-preview circular';
-                sticker.innerHTML = `<img src="${url}">`;
-                sticker.style.left = '40%'; sticker.style.top = '50%';
-                document.getElementById('canvas-container').appendChild(sticker);
-                makeDraggable(sticker);
-            }
+    function updateGame() {
+        // day cycle
+        dayTime = (dayTime + 0.05) % 24;
+
+        // hazard interactions
+        let dx = Math.abs(player.x - 10);
+        let dy = Math.abs(player.y - 10);
+        let distToFire = Math.sqrt(dx*dx + dy*dy);
+        if (distToFire < 5) { // near fire
+            player.hp = Math.max(0, player.hp - 1);
+        }
+        // water healing
+        if (player.y > 15) { // in water area
+            player.hp = Math.min(player.maxHp, player.hp + 0.1);
+        }
+        // grass healing
+        if (player.x < 5 && player.y < 5) {
+            player.hp = Math.min(player.maxHp, player.hp + 0.05);
         }
 
-        // ========== THEATER MODE ==========
-        function enterTheaterMode() {
-            if (!panels.length) { showToast('No panels', 'error'); return; }
-            theaterIndex = 0;
-            document.getElementById('theater-overlay').classList.remove('hidden');
-            updateTheater();
-        }
+        drawIsland(mainCtx, 500, 500, true);
+        drawHUD();
+        drawMiniMap();
+        drawSpriteEditor();
+        updateHpBar();
+        requestAnimationFrame(updateGame);
+    }
 
-        function exitTheaterMode() {
-            document.getElementById('theater-overlay').classList.add('hidden');
-        }
+    // ========== CONTROLS ==========
+    document.getElementById('btnUp').addEventListener('click', () => { player.y = Math.max(0, player.y-1); captureTimeline(); });
+    document.getElementById('btnDown').addEventListener('click', () => { player.y = Math.min(19, player.y+1); captureTimeline(); });
+    document.getElementById('btnLeft').addEventListener('click', () => { player.x = Math.max(0, player.x-1); captureTimeline(); });
+    document.getElementById('btnRight').addEventListener('click', () => { player.x = Math.min(19, player.x+1); captureTimeline(); });
+    document.getElementById('btnCenter').addEventListener('click', () => { toggleEmotion(); });
+    document.getElementById('btnA').addEventListener('click', () => { horse.health = Math.min(horse.maxHealth, horse.health+1); });
+    document.getElementById('btnB').addEventListener('click', () => { horse.health = Math.max(0, horse.health-1); });
+    document.getElementById('btnX').addEventListener('click', () => { dayTime = (dayTime+6) % 24; });
+    document.getElementById('btnY').addEventListener('click', () => { wireframeMode = !wireframeMode; });
+    document.getElementById('btnL').addEventListener('click', () => { zoomLevel = Math.max(0.5, zoomLevel-0.1); });
+    document.getElementById('btnR').addEventListener('click', () => { zoomLevel = Math.min(2.0, zoomLevel+0.1); });
+    document.getElementById('btnStart').addEventListener('click', () => { gameStarted = !gameStarted; });
+    document.getElementById('btnSelect').addEventListener('click', () => { toggleDialogue('This is a peaceful island. Care for animals!'); });
 
-        function theaterPrev() { if (theaterIndex > 0) { theaterIndex--; updateTheater(); } }
-        function theaterNext() { if (theaterIndex < panels.length - 1) { theaterIndex++; updateTheater(); } }
-
-        function updateTheater() {
-            const img = document.getElementById('theater-panel-img');
-            img.src = panels[theaterIndex].dataUrl;
-            const progress = (theaterIndex / (panels.length - 1)) * 100;
-            document.getElementById('bunny').style.left = progress + '%';
-        }
-
-        // ========== FRAME & PANEL ==========
-        function pinFrame() { if(!canvas.width)return; const dataUrl=canvas.toDataURL('image/png'); panels.push({id:'panel_'+Date.now(),dataUrl:dataUrl,thumb:dataUrl}); renderTimeline(); showToast('📌 Frame pinned'); }
-        function captureFrame() { if(!canvas.width)return; const dataUrl=canvas.toDataURL('image/png'); animationFrames.push({dataUrl:dataUrl,thumb:dataUrl}); renderTimeline(); showToast(`📸 Frame ${animationFrames.length}`); }
-
-        function renderTimeline() {
-            const strip = document.getElementById('timeline-strip');
-            if (!strip) return;
-            strip.innerHTML = panels.map((p,i)=>`<img src="${p.thumb}" class="timeline-frame" onclick="loadPanel(${i})">`).join('') +
-                animationFrames.map((f,i)=>`<img src="${f.thumb}" class="timeline-frame" onclick="loadAnimationFrame(${i})">`).join('');
-        }
-
-        function loadPanel(index) { if(index>=panels.length)return; const img=new Image(); img.onload=()=>{canvas.width=img.width;canvas.height=img.height;ctx.drawImage(img,0,0); if(layers.length){layers[0].canvas.width=img.width;layers[0].canvas.height=img.height;layers[0].ctx.drawImage(img,0,0);} compositeLayers(); saveState();}; img.src=panels[index].dataUrl; }
-        function loadAnimationFrame(index) { const img=new Image(); img.onload=()=>{canvas.width=img.width;canvas.height=img.height;ctx.drawImage(img,0,0);}; img.src=animationFrames[index].dataUrl; }
-        function playAnimation() { if(!animationFrames.length)return; if(animationInterval)clearInterval(animationInterval); let idx=0; animationInterval=setInterval(()=>{loadAnimationFrame(idx); idx=(idx+1)%animationFrames.length;},200); }
-        function stopAnimation() { if(animationInterval)clearInterval(animationInterval); animationInterval=null; }
-
-        // ========== SIMPLE STYLE & PIPELINE ==========
-        function applyStyle(style) {
-            if(!canvas.width)return;
-            filterLayers=[]; adjustments={brightness:0,contrast:0,saturation:100};
-            if(style==='jrpg') { adjustments={brightness:12,contrast:30,saturation:140}; filterLayers.push({type:'cel-shade',strength:60,blendMode:'overlay'}); }
-            else if(style==='comic') { adjustments={brightness:0,contrast:50,saturation:135}; filterLayers.push({type:'halftone-dots',strength:65,blendMode:'overlay'}); }
-            else if(style==='manga') { adjustments={brightness:5,contrast:55,saturation:90}; filterLayers.push({type:'ductus-pro',strength:85,blendMode:'multiply'}); }
-            else if(style==='anime') { adjustments={brightness:8,contrast:35,saturation:145}; filterLayers.push({type:'anime-ductus',strength:70,blendMode:'overlay'}); }
-            else if(style==='neon') { adjustments={brightness:15,contrast:70,saturation:180}; filterLayers.push({type:'neon-glow',strength:75,blendMode:'screen'}); }
-            else if(style==='pixel') { adjustments={brightness:0,contrast:40,saturation:100}; filterLayers.push({type:'pixel-art',strength:100,blendMode:'normal'}); }
-            else if(style==='lichtenstein') { adjustments={brightness:5,contrast:65,saturation:200}; filterLayers.push({type:'lichtenstein',strength:90,blendMode:'overlay'}); }
-            else if(style==='psp') { adjustments={brightness:5,contrast:25,saturation:130}; filterLayers.push({type:'psp-render',strength:55,blendMode:'soft-light'}); }
-            else if(style==='flat') { adjustments={brightness:5,contrast:40,saturation:70}; filterLayers.push({type:'posterize',strength:4,blendMode:'normal'}); }
-            else if(style==='xray') { adjustments={brightness:0,contrast:80,saturation:0}; filterLayers.push({type:'xray',strength:100,blendMode:'screen'}); }
-            processImagePipeline();
-        }
-
-        function processImagePipeline() {
-            if(!layers.length)return;
-            const base=layers[0];
-            base.ctx.clearRect(0,0,base.canvas.width,base.canvas.height);
-            base.ctx.drawImage(base.originalImg,0,0);
-            // apply basic adjustments
-            compositeLayers();
-        }
-
-        function compositeLayers() {
-            if(!canvas.width||!layers.length)return;
-            ctx.clearRect(0,0,canvas.width,canvas.height);
-            ctx.drawImage(layers[0].canvas,0,0);
-            overlays.forEach(item=>{
-                ctx.save();ctx.translate(item.x,item.y);if(item.rotation)ctx.rotate(item.rotation);
-                ctx.font=`bold ${item.size}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
-                ctx.fillStyle=item.color||'#fff';ctx.shadowColor=item.color;ctx.shadowBlur=12;
-                ctx.fillText(item.content,0,0);ctx.shadowBlur=0;ctx.restore();
-            });
-        }
-
-        // ========== HISTORY ==========
-        function saveState() { if(!canvas.width)return; if(historyPointer<historyStack.length-1)historyStack=historyStack.slice(0,historyPointer+1); historyStack.push(canvas.toDataURL()); if(historyStack.length>30)historyStack.shift(); historyPointer=historyStack.length-1; }
-        function undo(){ if(historyPointer>0){historyPointer--; loadHistoryState(historyStack[historyPointer]);} else showToast('⏪ At oldest','error'); }
-        function redo(){ if(historyPointer<historyStack.length-1){historyPointer++; loadHistoryState(historyStack[historyPointer]);} else showToast('⏩ At newest','error'); }
-        function loadHistoryState(dataUrl){ const img=new Image(); img.onload=()=>{ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0); if(layers.length&&layers[0].ctx){layers[0].ctx.clearRect(0,0,layers[0].canvas.width,layers[0].canvas.height);layers[0].ctx.drawImage(img,0,0);}}; img.src=dataUrl; }
-
-        // ========== INIT ==========
-        document.addEventListener('DOMContentLoaded', () => {
-            updateTopLibrary();
-            setMode('jrpg');
-            applyStyle('jrpg');
+    // Emoji set
+    document.querySelectorAll('#emojiSet span').forEach(el => {
+        el.addEventListener('click', () => {
+            player.emotion = el.dataset.emotion;
+            showDialogue('Emotion changed to '+player.emotion);
         });
-    </script>
+    });
+
+    // Sprite editor toggling
+    document.getElementById('btnY').addEventListener('click', () => {
+        editorActive = !editorActive;
+        document.getElementById('editorOverlay').classList.toggle('active', editorActive);
+    });
+
+    function toggleHitboxMode() { hitboxMode = !hitboxMode; }
+    function clearSprite() { spriteData = Array.from({length:20}, () => Array(20).fill('#000')); }
+    function saveSprite() { showDialogue('Sprite saved to asset library (placeholder)'); }
+    function closeEditor() { editorActive = false; document.getElementById('editorOverlay').classList.remove('active'); }
+
+    // Timeline capture
+    function captureTimeline() {
+        timeline.push({ x: player.x, y: player.y, hp: player.hp, time: dayTime, emotion: player.emotion });
+        if (timeline.length > 100) timeline.shift();
+    }
+
+    function replayTimeline() {
+        // simple replay: set player pos to last captured
+        if (timeline.length > 0) {
+            const last = timeline[timeline.length-1];
+            player.x = last.x; player.y = last.y; player.hp = last.hp;
+        }
+    }
+
+    // Dialogue
+    function showDialogue(text) {
+        document.getElementById('dialogueText').innerText = text;
+        document.getElementById('dialogueBox').classList.add('active');
+        dialogueActive = true;
+    }
+    function closeDialogue() {
+        document.getElementById('dialogueBox').classList.remove('active');
+        dialogueActive = false;
+    }
+    function toggleDialogue(text) {
+        if (dialogueActive) closeDialogue(); else showDialogue(text);
+    }
+
+    // Start
+    updateGame();
+</script>
 </body>
 </html>
