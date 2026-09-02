@@ -1,9 +1,12 @@
+Here's the enhanced VRoid Studio with upright model correction, better bone detection for arms/legs, elbow/knee bending, clickable bone spheres in the 3D view, grouped hair/cloth physics, a timeline mode toggle, and improved texture preservation.
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VRoid Studio — Fixed Edition</title>
+    <title>VRoid Studio — Advanced Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
@@ -30,6 +33,7 @@
         .btn-ghost { background: rgba(30,41,59,0.7); color: #eef2f7; border: 1px solid #2a3a4e; cursor: pointer; transition: all 0.2s; }
         .btn-ghost:hover { background: rgba(59,74,94,0.8); border-color: #3b4a5e; }
         .fade-in { animation: fadeIn 0.3s ease-out; } @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .bone-marker { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #34d399; border: 2px solid #fff; cursor: pointer; pointer-events: auto; }
     </style>
 </head>
 <body>
@@ -40,7 +44,7 @@
         <div class="max-w-lg w-full bg-slate-900/90 border border-slate-700 p-6 sm:p-10 rounded-3xl shadow-2xl text-center space-y-5">
             <div class="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto text-3xl shadow-lg"><i class="fa-solid fa-cube"></i></div>
             <h1 class="text-2xl sm:text-3xl font-bold text-white">VRoid Studio</h1>
-            <p class="text-xs sm:text-sm text-slate-400">Upload your <span class="text-pink-400 font-semibold">GLB</span> avatar. Auto-rig for VRoid, edit materials, pose bones, animate.</p>
+            <p class="text-xs sm:text-sm text-slate-400">Upload your <span class="text-pink-400 font-semibold">GLB</span> avatar. Auto-rig, edit, animate, export.</p>
             <label class="inline-flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold px-6 py-3.5 rounded-2xl shadow-xl cursor-pointer text-sm"><i class="fa-solid fa-cloud-arrow-up"></i><span>Upload Avatar (.glb / .gltf)</span><input type="file" id="file-upload-hero" accept=".glb,.gltf" class="hidden"></label>
             <p class="text-[10px] text-slate-500">VRM not supported — convert to GLB first</p>
         </div>
@@ -58,13 +62,18 @@
         </div>
     </div>
 
+    <!-- Mode Toggle and Emotes -->
     <div class="fixed left-3 z-20 flex items-center gap-2 pointer-events-auto" style="bottom: 200px;">
+        <div class="glass rounded-2xl p-2 flex items-center gap-1.5 shadow-xl">
+            <button onclick="setMode('pose')" id="mode-pose-btn" class="px-3 py-2 rounded-xl text-xs font-bold bg-pink-600/30 border border-pink-500/50 text-pink-300">Pose Mode</button>
+            <button onclick="setMode('anim')" id="mode-anim-btn" class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-800/70 border border-slate-600 text-slate-300">Animation Mode</button>
+        </div>
         <div class="glass rounded-2xl p-2 flex items-center gap-1.5 shadow-xl">
             <button onclick="playEmote('idle')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90">🧘</button>
             <button onclick="playEmote('wave')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90">👋</button>
             <button onclick="playEmote('dance')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90">💃</button>
-            <button onclick="playEmote('jump')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90">🦘</button>
             <button onclick="playEmote('run')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90">🏃</button>
+            <button onclick="playEmote('jump')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90">🦘</button>
             <button onclick="playEmote('spin')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90">🌀</button>
         </div>
     </div>
@@ -94,8 +103,13 @@
                         <button onclick="toggleAllParts(false)" class="text-[9px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg text-rose-300">Hide All</button>
                     </div>
                 </div>
-                <div id="parts-list" class="space-y-1 max-h-24 overflow-y-auto"><div class="text-slate-500 italic text-[11px]">Upload a model to see its parts</div></div>
+                <div id="parts-list" class="grid grid-cols-2 gap-1 max-h-24 overflow-y-auto"></div>
+                <div class="flex gap-2 mt-1">
+                    <button onclick="togglePhysicsGroup('hair')" class="flex-1 bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-[10px] text-purple-300">Hair Physics</button>
+                    <button onclick="togglePhysicsGroup('cloth')" class="flex-1 bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-[10px] text-sky-300">Cloth Physics</button>
+                </div>
             </div>
+
             <!-- BONES TAB -->
             <div id="tab-bones" class="space-y-2 hidden fade-in">
                 <div class="flex items-center justify-between">
@@ -107,20 +121,34 @@
                     <div class="grid grid-cols-2 gap-1">
                         <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">Spine</span><select id="map-spine" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
                         <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">Head</span><select id="map-head" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
-                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">Left Arm</span><select id="map-leftArm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
-                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">Right Arm</span><select id="map-rightArm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
-                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">Left Leg</span><select id="map-leftLeg" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
-                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">Right Leg</span><select id="map-rightLeg" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">L Arm</span><select id="map-leftArm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">R Arm</span><select id="map-rightArm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">L Leg</span><select id="map-leftLeg" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">R Leg</span><select id="map-rightLeg" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">L Forearm</span><select id="map-leftForearm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">R Forearm</span><select id="map-rightForearm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">L Shin</span><select id="map-leftShin" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">R Shin</span><select id="map-rightShin" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
                     </div>
                 </div>
-                <div id="bones-list" class="space-y-1 font-mono text-[10px] max-h-16 overflow-y-auto"><div class="text-slate-500 italic">No bones detected</div></div>
+                <div id="bones-list" class="grid grid-cols-2 gap-1 max-h-16 overflow-y-auto"></div>
             </div>
+
             <!-- POSE TAB -->
             <div id="tab-pose" class="space-y-2 hidden fade-in">
                 <div class="flex items-center gap-2">
                     <span class="text-[10px] text-slate-400 whitespace-nowrap">Joint:</span>
                     <select id="pose-bone-select" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-2 py-1.5 text-white text-xs outline-none">
-                        <option value="spine">Spine / Torso</option><option value="head">Head / Neck</option><option value="leftArm">Left Arm</option><option value="rightArm">Right Arm</option><option value="leftLeg">Left Leg</option><option value="rightLeg">Right Leg</option>
+                        <option value="spine">Spine / Torso</option>
+                        <option value="head">Head / Neck</option>
+                        <option value="leftArm">Left Arm</option>
+                        <option value="rightArm">Right Arm</option>
+                        <option value="leftForearm">Left Forearm</option>
+                        <option value="rightForearm">Right Forearm</option>
+                        <option value="leftLeg">Left Leg</option>
+                        <option value="rightLeg">Right Leg</option>
+                        <option value="leftShin">Left Shin</option>
+                        <option value="rightShin">Right Shin</option>
                     </select>
                     <button onclick="resetPose()" class="text-[9px] bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded-lg text-amber-300">↺</button>
                 </div>
@@ -130,6 +158,7 @@
                     <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700"><div class="flex justify-between text-[9px] text-slate-400"><span>Roll</span><span id="pose-z-val" class="text-sky-400 font-bold">0°</span></div><input type="range" id="pose-z" min="-3.14" max="3.14" step="0.02" value="0" class="w-full accent-sky-500"></div>
                 </div>
             </div>
+
             <!-- MATERIALS TAB -->
             <div id="tab-materials" class="space-y-2 hidden fade-in">
                 <div class="flex items-center gap-2">
@@ -142,6 +171,10 @@
                     <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700"><div class="flex justify-between text-[9px] text-slate-400"><span>Metal</span><span id="mat-metal-val" class="text-purple-400 font-bold">0.1</span></div><input type="range" id="mat-metalness" min="0" max="1" step="0.01" value="0.1" class="w-full accent-purple-500"></div>
                     <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700"><div class="flex justify-between text-[9px] text-slate-400"><span>Opacity</span><span id="mat-opacity-val" class="text-sky-400 font-bold">1.0</span></div><input type="range" id="mat-opacity" min="0" max="1" step="0.01" value="1.0" class="w-full accent-sky-500"></div>
                 </div>
+                <div class="flex items-center gap-2 mt-1">
+                    <span class="text-[10px] text-slate-400">Tint with Color?</span>
+                    <input type="checkbox" id="mat-use-tint" checked class="accent-pink-500">
+                </div>
                 <div class="grid grid-cols-3 gap-1.5">
                     <button onclick="applyEffect('cyberglitch')" class="bg-pink-600/25 hover:bg-pink-600/40 border border-pink-500/40 p-2 rounded-xl text-pink-300 font-bold text-[10px]"><i class="fa-solid fa-bolt mr-0.5"></i>Glitch</button>
                     <button onclick="applyEffect('ghost')" class="bg-purple-600/25 hover:bg-purple-600/40 border border-purple-500/40 p-2 rounded-xl text-purple-300 font-bold text-[10px]"><i class="fa-solid fa-ghost mr-0.5"></i>Ghost</button>
@@ -149,6 +182,7 @@
                 </div>
                 <button onclick="applyEffect('normal')" class="w-full bg-slate-700/50 hover:bg-slate-700 border border-slate-600 p-2 rounded-xl text-slate-300 font-bold text-[10px]"><i class="fa-solid fa-rotate-left mr-0.5"></i>Reset Material</button>
             </div>
+
             <!-- ANIM TAB -->
             <div id="tab-anim" class="space-y-2 hidden fade-in">
                 <div class="flex items-center justify-between"><span class="text-slate-300 font-bold text-[11px]"><i class="fa-solid fa-circle-dot text-rose-500 mr-1.5"></i>Keyframe Recorder</span><span id="keyframe-count" class="text-pink-400 font-mono text-[10px]">0 Frames</span></div>
@@ -157,13 +191,7 @@
                     <button id="btn-play-anim" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-1.5 rounded-xl text-[10px]"><i class="fa-solid fa-play text-[8px] mr-1"></i>Play</button>
                     <button id="btn-export-anim" class="bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl font-bold text-slate-300 text-[10px]">Export</button>
                 </div>
-                <div id="keyframe-list" class="bg-slate-800/40 p-2 rounded-xl border border-slate-700 max-h-14 overflow-y-auto font-mono text-[9px] text-slate-400">No keyframes yet — record poses to build an animation</div>
-                <div class="grid grid-cols-4 gap-1">
-                    <button onclick="loadPresetAnim('idle')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-300 text-[10px]">🧘</button>
-                    <button onclick="loadPresetAnim('wave')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-300 text-[10px]">👋</button>
-                    <button onclick="loadPresetAnim('dance')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-300 text-[10px]">💃</button>
-                    <button onclick="loadPresetAnim('run')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-300 text-[10px]">🏃</button>
-                </div>
+                <div id="keyframe-list" class="bg-slate-800/40 p-2 rounded-xl border border-slate-700 max-h-14 overflow-y-auto font-mono text-[9px] text-slate-400">No keyframes yet</div>
             </div>
         </div>
     </div>
@@ -178,13 +206,13 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
-        // --- State ---
+        // State
         let scene, camera, renderer, controls;
         let character = null;
         let skeletonHelper = null;
         let showSkeleton = false;
         let allBones = [];
-        let boneMap = { spine: null, head: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null };
+        let boneMap = { spine:null, head:null, leftArm:null, rightArm:null, leftForearm:null, rightForearm:null, leftLeg:null, rightLeg:null, leftShin:null, rightShin:null };
         let allParts = [];
         let hiddenParts = new Set();
         let selectedPartUuid = 'all';
@@ -193,16 +221,18 @@
         let animPlaybackTime = 0;
         let recordedFrames = [];
         let animationClock = new THREE.Clock();
-        let springBones = [];
+        let springGroups = { hair: [], cloth: [] }; // {mesh, baseRot}
+        let physicsEnabled = { hair: true, cloth: true };
+        let mode = 'pose'; // 'pose' or 'anim'
         let effectInterval = null;
-        let originalMaterials = new Map(); // uuid -> array of material settings
+        let originalMaterials = new Map();
+        let boneMarkers = []; // {sphere, bone}
 
         function init() {
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x0b0f1a);
-            scene.fog = new THREE.Fog(0x0b0f1a, 6, 18);
-            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 0.1, 100);
             camera.position.set(3, 3.2, 5);
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -215,12 +245,12 @@
             container.appendChild(renderer.domElement);
 
             controls = new OrbitControls(camera, renderer.domElement);
-            controls.target.set(0, 1.2, 0);
+            controls.target.set(0,1.2,0);
             controls.enableDamping = true;
             controls.dampingFactor = 0.08;
             controls.minDistance = 1.8;
             controls.maxDistance = 10;
-            controls.maxPolarAngle = Math.PI * 0.7;
+            controls.maxPolarAngle = Math.PI*0.7;
             controls.update();
 
             setupLights();
@@ -231,68 +261,83 @@
         }
 
         function setupLights() {
-            const ambient = new THREE.AmbientLight(0xffffff, 0.8); scene.add(ambient);
-            const key = new THREE.DirectionalLight(0xfff0e6, 1.8); key.position.set(6, 10, 6);
-            key.castShadow = true; key.shadow.mapSize.width = 2048; key.shadow.mapSize.height = 2048;
-            key.shadow.camera.near = 0.5; key.shadow.camera.far = 30; key.shadow.camera.left = -6; key.shadow.camera.right = 6; key.shadow.camera.top = 8; key.shadow.camera.bottom = -2;
-            key.shadow.bias = -0.0002; key.shadow.normalBias = 0.02; scene.add(key);
-            const rim = new THREE.DirectionalLight(0xffc8d8, 0.7); rim.position.set(-3, 6, -4); scene.add(rim);
-            const fill = new THREE.DirectionalLight(0xc8d8ff, 0.5); fill.position.set(-4, 2, 3); scene.add(fill);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+            const key = new THREE.DirectionalLight(0xfff0e6, 1.8);
+            key.position.set(6,10,6);
+            key.castShadow = true;
+            key.shadow.mapSize.width = 2048; key.shadow.mapSize.height = 2048;
+            key.shadow.camera.near = 0.5; key.shadow.camera.far = 30;
+            key.shadow.camera.left = -6; key.shadow.camera.right = 6; key.shadow.camera.top = 8; key.shadow.camera.bottom = -2;
+            key.shadow.bias = -0.0002; key.shadow.normalBias = 0.02;
+            scene.add(key);
+            const rim = new THREE.DirectionalLight(0xffc8d8, 0.7); rim.position.set(-3,6,-4); scene.add(rim);
+            const fill = new THREE.DirectionalLight(0xc8d8ff, 0.5); fill.position.set(-4,2,3); scene.add(fill);
         }
 
         function setupEnvironment() {
-            const grid = new THREE.GridHelper(12, 30, 0x3b4a5e, 0x1a2332); grid.position.y = -0.01; scene.add(grid);
-            const floorGeo = new THREE.PlaneGeometry(16, 16); const floorMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.85 }); const floor = new THREE.Mesh(floorGeo, floorMat); floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
+            const grid = new THREE.GridHelper(12,30,0x3b4a5e,0x1a2332); grid.position.y = -0.01; scene.add(grid);
+            const floorGeo = new THREE.PlaneGeometry(16,16); const floorMat = new THREE.MeshStandardMaterial({color:0x111827, roughness:0.85}); const floor = new THREE.Mesh(floorGeo, floorMat); floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
         }
 
         function loadModel(file) {
             const url = URL.createObjectURL(file);
             const loader = new GLTFLoader();
             loader.load(url, (gltf) => {
-                if (character) { scene.remove(character); if (skeletonHelper) { scene.remove(skeletonHelper); skeletonHelper = null; } stopGlitchEffect(); }
+                if (character) {
+                    scene.remove(character);
+                    if (skeletonHelper) { scene.remove(skeletonHelper); skeletonHelper = null; }
+                    stopGlitchEffect();
+                    clearBoneMarkers();
+                }
                 character = gltf.scene;
                 character.position.set(0,0,0);
+                character.rotation.set(0,0,0);
                 character.scale.set(1,1,1);
 
-                allBones = []; boneMap = { spine: null, head: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null };
-                allParts = []; hiddenParts = new Set(); selectedPartUuid = 'all'; springBones = []; recordedFrames = [];
+                allBones = [];
+                boneMap = { spine:null, head:null, leftArm:null, rightArm:null, leftForearm:null, rightForearm:null, leftLeg:null, rightLeg:null, leftShin:null, rightShin:null };
+                allParts = [];
+                hiddenParts = new Set();
+                selectedPartUuid = 'all';
+                springGroups = { hair: [], cloth: [] };
+                recordedFrames = [];
                 originalMaterials.clear();
 
-                // Traverse and detect bones/parts
                 character.traverse((child) => {
-                    // Bones
                     if (child.isBone || child.type === 'Bone' || child.name.toLowerCase().includes('bone') || child.name.startsWith('J_Bip_')) {
                         allBones.push(child);
                         const bName = child.name.toLowerCase();
-                        // VRoid specific names
-                        if (!boneMap.spine && (bName.includes('spine') || bName.includes('chest') || bName.includes('hips') || bName.includes('torso') || bName.includes('upperbody') || bName === 'j_bip_c_spine' || bName === 'j_bip_c_chest' || bName === 'j_bip_c_hips')) boneMap.spine = child;
-                        if (!boneMap.head && (bName.includes('head') || bName.includes('neck') || bName === 'j_bip_c_head')) boneMap.head = child;
-                        if (!boneMap.leftArm && (bName.includes('leftarm') || bName.includes('upperarm_l') || bName.includes('arm.l') || bName.includes('l_arm') || bName === 'j_bip_l_upperarm')) boneMap.leftArm = child;
-                        if (!boneMap.rightArm && (bName.includes('rightarm') || bName.includes('upperarm_r') || bName.includes('arm.r') || bName.includes('r_arm') || bName === 'j_bip_r_upperarm')) boneMap.rightArm = child;
-                        if (!boneMap.leftLeg && (bName.includes('leftleg') || bName.includes('upleg_l') || bName.includes('leg.l') || bName.includes('l_leg') || bName === 'j_bip_l_upperleg')) boneMap.leftLeg = child;
-                        if (!boneMap.rightLeg && (bName.includes('rightleg') || bName.includes('upleg_r') || bName.includes('leg.r') || bName.includes('r_leg') || bName === 'j_bip_r_upperleg')) boneMap.rightLeg = child;
+                        // Improved VRoid bone detection
+                        if (!boneMap.spine && (bName.includes('spine')||bName.includes('chest')||bName.includes('hips')||bName.includes('torso'))) boneMap.spine = child;
+                        if (!boneMap.head && (bName.includes('head')||bName.includes('neck'))) boneMap.head = child;
+                        if (!boneMap.leftArm && (bName.includes('leftarm')||bName.includes('upperarm_l')||bName.includes('arm.l')||bName.includes('l_upperarm')||bName.includes('j_bip_l_upperarm'))) boneMap.leftArm = child;
+                        if (!boneMap.rightArm && (bName.includes('rightarm')||bName.includes('upperarm_r')||bName.includes('arm.r')||bName.includes('r_upperarm')||bName.includes('j_bip_r_upperarm'))) boneMap.rightArm = child;
+                        if (!boneMap.leftForearm && (bName.includes('leftforearm')||bName.includes('lowerarm_l')||bName.includes('forearm_l')||bName.includes('l_lowerarm')||bName.includes('j_bip_l_lowerarm'))) boneMap.leftForearm = child;
+                        if (!boneMap.rightForearm && (bName.includes('rightforearm')||bName.includes('lowerarm_r')||bName.includes('forearm_r')||bName.includes('r_lowerarm')||bName.includes('j_bip_r_lowerarm'))) boneMap.rightForearm = child;
+                        if (!boneMap.leftLeg && (bName.includes('leftleg')||bName.includes('upleg_l')||bName.includes('leg.l')||bName.includes('l_upperleg')||bName.includes('j_bip_l_upperleg'))) boneMap.leftLeg = child;
+                        if (!boneMap.rightLeg && (bName.includes('rightleg')||bName.includes('upleg_r')||bName.includes('leg.r')||bName.includes('r_upperleg')||bName.includes('j_bip_r_upperleg'))) boneMap.rightLeg = child;
+                        if (!boneMap.leftShin && (bName.includes('leftshin')||bName.includes('lowerleg_l')||bName.includes('shin_l')||bName.includes('l_lowerleg')||bName.includes('j_bip_l_lowerleg'))) boneMap.leftShin = child;
+                        if (!boneMap.rightShin && (bName.includes('rightshin')||bName.includes('lowerleg_r')||bName.includes('shin_r')||bName.includes('r_lowerleg')||bName.includes('j_bip_r_lowerleg'))) boneMap.rightShin = child;
                     }
                     if (child.isMesh) {
                         child.castShadow = true; child.receiveShadow = true;
                         allParts.push(child);
-                        // Save original material settings
                         if (child.material) {
                             const mats = Array.isArray(child.material) ? child.material : [child.material];
-                            originalMaterials.set(child.uuid, mats.map(m => ({ color: m.color.clone(), roughness: m.roughness, metalness: m.metalness, opacity: m.opacity, transparent: m.transparent, map: m.map })));
+                            originalMaterials.set(child.uuid, mats.map(m => ({color: m.color.clone(), roughness: m.roughness, metalness: m.metalness, opacity: m.opacity, transparent: m.transparent, map: m.map})));
                         }
                         const mName = (child.name || '').toLowerCase();
-                        if (mName.includes('hair') || mName.includes('skirt') || mName.includes('cloth') || mName.includes('tail')) {
-                            springBones.push({ mesh: child, baseRot: child.rotation.clone() });
-                        }
+                        if (mName.includes('hair') || mName.includes('beard')) springGroups.hair.push({mesh: child, baseRot: child.rotation.clone()});
+                        else if (mName.includes('skirt') || mName.includes('cloth') || mName.includes('dress')) springGroups.cloth.push({mesh: child, baseRot: child.rotation.clone()});
                     }
                 });
 
-                // Auto-scale and ground the model
+                // Auto-orient and scale
                 groundAndScaleCharacter();
 
                 scene.add(character);
 
-                // Auto-rig fallback if needed
+                // Fallback bone assignments if missing
                 if (allBones.length > 0) {
                     if (!boneMap.spine) boneMap.spine = allBones[0];
                     if (!boneMap.head && allBones.length > 1) boneMap.head = allBones[1];
@@ -304,7 +349,9 @@
                     generateFallbackSkeleton();
                 }
 
-                // Update UI
+                // Create bone markers for clickable bones
+                createBoneMarkers();
+
                 document.getElementById('upload-overlay').style.opacity = '0';
                 setTimeout(() => document.getElementById('upload-overlay').style.display = 'none', 500);
                 document.getElementById('status-indicator').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
@@ -318,20 +365,40 @@
 
         function groundAndScaleCharacter() {
             if (!character) return;
+            // Reset any rotation
+            character.rotation.set(0,0,0);
+            character.updateMatrixWorld(true);
             const box = new THREE.Box3().setFromObject(character);
             const size = box.getSize(new THREE.Vector3());
             const height = size.y;
-            if (height > 0) {
-                const targetHeight = 2.0;
-                const scaleFactor = targetHeight / height;
-                character.scale.setScalar(scaleFactor);
-                // Recompute box after scaling
+            const width = size.x;
+            const depth = size.z;
+            // If height is less than width or depth, rotate to upright (likely lying)
+            if (height < Math.max(width, depth) * 0.7) {
+                // Try rotating -90° around X
+                character.rotation.x = -Math.PI/2;
+                character.updateMatrixWorld(true);
                 const newBox = new THREE.Box3().setFromObject(character);
                 const newSize = newBox.getSize(new THREE.Vector3());
-                const newCenter = newBox.getCenter(new THREE.Vector3());
-                // Position so that feet are at y=0
-                character.position.y = -newBox.min.y;
-                // Optionally center XZ
+                if (newSize.y > height) {
+                    // Accept rotation
+                } else {
+                    character.rotation.x = 0;
+                    character.rotation.z = -Math.PI/2;
+                    character.updateMatrixWorld(true);
+                }
+            }
+            // Recompute after possible rotation
+            const finalBox = new THREE.Box3().setFromObject(character);
+            const finalSize = finalBox.getSize(new THREE.Vector3());
+            const finalHeight = finalSize.y;
+            if (finalHeight > 0) {
+                const targetHeight = 2.0;
+                const scaleFactor = targetHeight / finalHeight;
+                character.scale.setScalar(scaleFactor);
+                character.updateMatrixWorld(true);
+                const afterScaleBox = new THREE.Box3().setFromObject(character);
+                character.position.y = -afterScaleBox.min.y;
                 character.position.x = 0;
                 character.position.z = 0;
             }
@@ -339,54 +406,132 @@
 
         function generateFallbackSkeleton() {
             if (allBones.length > 0) return;
-            const hips = new THREE.Bone(); hips.name = 'AutoRig_Hips'; hips.position.set(0,0.6,0);
-            const spine = new THREE.Bone(); spine.name = 'AutoRig_Spine'; spine.position.set(0,0.3,0); hips.add(spine);
-            const chest = new THREE.Bone(); chest.name = 'AutoRig_Chest'; chest.position.set(0,0.3,0); spine.add(chest);
-            const neck = new THREE.Bone(); neck.name = 'AutoRig_Neck'; neck.position.set(0,0.2,0); chest.add(neck);
-            const head = new THREE.Bone(); head.name = 'AutoRig_Head'; head.position.set(0,0.15,0); neck.add(head);
-            const lArm = new THREE.Bone(); lArm.name = 'AutoRig_LeftArm'; lArm.position.set(-0.35,0.5,0); chest.add(lArm);
-            const rArm = new THREE.Bone(); rArm.name = 'AutoRig_RightArm'; rArm.position.set(0.35,0.5,0); chest.add(rArm);
-            const lLeg = new THREE.Bone(); lLeg.name = 'AutoRig_LeftLeg'; lLeg.position.set(-0.15,0,0); hips.add(lLeg);
-            const rLeg = new THREE.Bone(); rLeg.name = 'AutoRig_RightLeg'; rLeg.position.set(0.15,0,0); hips.add(rLeg);
+            const hips = new THREE.Bone(); hips.name='AutoRig_Hips'; hips.position.set(0,0.6,0);
+            const spine = new THREE.Bone(); spine.name='AutoRig_Spine'; spine.position.set(0,0.3,0); hips.add(spine);
+            const chest = new THREE.Bone(); chest.name='AutoRig_Chest'; chest.position.set(0,0.3,0); spine.add(chest);
+            const neck = new THREE.Bone(); neck.name='AutoRig_Neck'; neck.position.set(0,0.2,0); chest.add(neck);
+            const head = new THREE.Bone(); head.name='AutoRig_Head'; head.position.set(0,0.15,0); neck.add(head);
+            const lArm = new THREE.Bone(); lArm.name='AutoRig_LeftArm'; lArm.position.set(-0.35,0.5,0); chest.add(lArm);
+            const rArm = new THREE.Bone(); rArm.name='AutoRig_RightArm'; rArm.position.set(0.35,0.5,0); chest.add(rArm);
+            const lForearm = new THREE.Bone(); lForearm.name='AutoRig_LeftForearm'; lForearm.position.set(-0.1,-0.3,0); lArm.add(lForearm);
+            const rForearm = new THREE.Bone(); rForearm.name='AutoRig_RightForearm'; rForearm.position.set(0.1,-0.3,0); rArm.add(rForearm);
+            const lLeg = new THREE.Bone(); lLeg.name='AutoRig_LeftLeg'; lLeg.position.set(-0.15,0,0); hips.add(lLeg);
+            const rLeg = new THREE.Bone(); rLeg.name='AutoRig_RightLeg'; rLeg.position.set(0.15,0,0); hips.add(rLeg);
+            const lShin = new THREE.Bone(); lShin.name='AutoRig_LeftShin'; lShin.position.set(0,-0.3,0); lLeg.add(lShin);
+            const rShin = new THREE.Bone(); rShin.name='AutoRig_RightShin'; rShin.position.set(0,-0.3,0); rLeg.add(rShin);
             character.add(hips);
-            allBones = [hips, spine, chest, neck, head, lArm, rArm, lLeg, rLeg];
-            boneMap.spine = spine; boneMap.head = head; boneMap.leftArm = lArm; boneMap.rightArm = rArm; boneMap.leftLeg = lLeg; boneMap.rightLeg = rLeg;
+            allBones = [hips, spine, chest, neck, head, lArm, rArm, lForearm, rForearm, lLeg, rLeg, lShin, rShin];
+            boneMap.spine=spine; boneMap.head=head; boneMap.leftArm=lArm; boneMap.rightArm=rArm; boneMap.leftForearm=lForearm; boneMap.rightForearm=rForearm; boneMap.leftLeg=lLeg; boneMap.rightLeg=rLeg; boneMap.leftShin=lShin; boneMap.rightShin=rShin;
+        }
+
+        function createBoneMarkers() {
+            clearBoneMarkers();
+            if (!character) return;
+            const sphereGeo = new THREE.SphereGeometry(0.04, 8, 8);
+            const sphereMat = new THREE.MeshStandardMaterial({color: 0x34d399, emissive: 0x34d399, emissiveIntensity: 0.5});
+            allBones.forEach(bone => {
+                const sphere = new THREE.Mesh(sphereGeo, sphereMat.clone());
+                sphere.userData.isBoneMarker = true;
+                sphere.userData.bone = bone;
+                // We'll update positions in animate loop
+                scene.add(sphere);
+                boneMarkers.push({sphere, bone});
+            });
+        }
+
+        function clearBoneMarkers() {
+            boneMarkers.forEach(({sphere}) => scene.remove(sphere));
+            boneMarkers = [];
+        }
+
+        function updateBoneMarkers() {
+            if (!character) return;
+            character.updateMatrixWorld(true);
+            boneMarkers.forEach(({sphere, bone}) => {
+                bone.getWorldPosition(sphere.position);
+            });
+        }
+
+        // Click detection for bone markers
+        renderer.domElement.addEventListener('pointerdown', (event) => {
+            if (!character || boneMarkers.length === 0) return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            const mouse = new THREE.Vector2(
+                ((event.clientX - rect.left) / rect.width) * 2 - 1,
+                -((event.clientY - rect.top) / rect.height) * 2 + 1
+            );
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(boneMarkers.map(m => m.sphere), false);
+            if (intersects.length > 0) {
+                const hit = intersects[0].object;
+                if (hit.userData.bone) {
+                    selectBoneFromMarker(hit.userData.bone);
+                }
+            }
+        });
+
+        function selectBoneFromMarker(bone) {
+            // Map bone to pose select
+            const bName = bone.name.toLowerCase();
+            let key = null;
+            if (bName.includes('spine')||bName.includes('chest')||bName.includes('hips')||bName.includes('torso')) key='spine';
+            else if (bName.includes('head')||bName.includes('neck')) key='head';
+            else if (bName.includes('leftforearm')||bName.includes('lowerarm_l')||bName.includes('forearm_l')) key='leftForearm';
+            else if (bName.includes('rightforearm')||bName.includes('lowerarm_r')||bName.includes('forearm_r')) key='rightForearm';
+            else if (bName.includes('leftarm')||bName.includes('upperarm_l')||bName.includes('arm.l')) key='leftArm';
+            else if (bName.includes('rightarm')||bName.includes('upperarm_r')||bName.includes('arm.r')) key='rightArm';
+            else if (bName.includes('leftshin')||bName.includes('lowerleg_l')||bName.includes('shin_l')) key='leftShin';
+            else if (bName.includes('rightshin')||bName.includes('lowerleg_r')||bName.includes('shin_r')) key='rightShin';
+            else if (bName.includes('leftleg')||bName.includes('upleg_l')||bName.includes('leg.l')) key='leftLeg';
+            else if (bName.includes('rightleg')||bName.includes('upleg_r')||bName.includes('leg.r')) key='rightLeg';
+            if (key) {
+                document.getElementById('pose-bone-select').value = key;
+                const boneObj = boneMap[key];
+                if (boneObj) {
+                    document.getElementById('pose-x').value = boneObj.rotation.x;
+                    document.getElementById('pose-y').value = boneObj.rotation.y;
+                    document.getElementById('pose-z').value = boneObj.rotation.z;
+                    updatePoseDisplay();
+                }
+                showToast(`Selected bone: ${bone.name}`);
+            }
         }
 
         function updatePartsList() {
             const container = document.getElementById('parts-list');
-            if (allParts.length === 0) { container.innerHTML = '<div class="text-slate-500 italic">No parts</div>'; return; }
+            if (allParts.length === 0) { container.innerHTML = '<div class="col-span-2 text-slate-500 italic">No parts</div>'; return; }
             container.innerHTML = '';
             allParts.forEach((part, idx) => {
                 const name = part.name || `Part ${idx+1}`;
                 const isHidden = hiddenParts.has(part.uuid);
                 const isActive = selectedPartUuid === part.uuid;
-                const div = document.createElement('div');
-                div.className = `asset-card flex items-center justify-between p-2 rounded-lg border ${isActive ? 'active border-pink-500/60 bg-pink-500/10' : 'border-slate-700 bg-slate-800/40'} ${isHidden ? 'opacity-50' : ''}`;
-                div.innerHTML = `<span class="text-[10px] font-medium text-slate-200 truncate flex-1">${name}</span><button class="text-[10px] ${isHidden ? 'text-slate-500' : 'text-emerald-400'} hover:text-emerald-300" onclick="event.stopPropagation(); togglePartVisibility('${part.uuid}')"><i class="fa-solid ${isHidden ? 'fa-eye-slash' : 'fa-eye'}"></i></button>`;
-                div.onclick = () => selectPart(part);
-                container.appendChild(div);
+                const btn = document.createElement('button');
+                btn.className = `asset-card p-2 rounded-lg border text-[10px] ${isActive ? 'active border-pink-500/60 bg-pink-500/10' : 'border-slate-700 bg-slate-800/40'} ${isHidden ? 'opacity-50' : ''} flex items-center justify-between`;
+                btn.innerHTML = `<span class="truncate">${name}</span>`;
+                btn.onclick = () => selectPart(part);
+                container.appendChild(btn);
             });
         }
 
         function updateBonesList() {
             const container = document.getElementById('bones-list');
-            if (allBones.length === 0) { container.innerHTML = '<div class="text-slate-500 italic">No bones detected</div>'; return; }
+            if (allBones.length === 0) { container.innerHTML = '<div class="col-span-2 text-slate-500 italic">No bones</div>'; return; }
             container.innerHTML = '';
             allBones.forEach((bone, idx) => {
                 const name = bone.name || `Bone ${idx+1}`;
-                const div = document.createElement('div');
-                div.className = 'flex items-center gap-2 p-1.5 rounded-lg bg-slate-800/40 border border-slate-700 hover:border-slate-500 cursor-pointer';
-                div.innerHTML = `<span class="text-emerald-400">🦴</span><span class="text-slate-300 truncate">${name}</span>`;
-                div.onclick = () => mapBoneToPose(bone);
-                container.appendChild(div);
+                const btn = document.createElement('button');
+                btn.className = 'p-1.5 rounded-lg bg-slate-800/40 border border-slate-700 hover:border-slate-500 text-[10px] text-slate-300';
+                btn.textContent = name;
+                btn.onclick = () => mapBoneToPose(bone);
+                container.appendChild(btn);
             });
         }
 
         function populateBoneMappingDropdowns() {
-            const keys = ['spine','head','leftArm','rightArm','leftLeg','rightLeg'];
-            keys.forEach(key => {
-                const select = document.getElementById(`map-${key}`);
+            const slots = ['spine','head','leftArm','rightArm','leftForearm','rightForearm','leftLeg','rightLeg','leftShin','rightShin'];
+            slots.forEach(slot => {
+                const select = document.getElementById(`map-${slot}`);
                 if (!select) return;
                 select.innerHTML = '';
                 const noneOpt = document.createElement('option'); noneOpt.value = ''; noneOpt.textContent = '— none —'; select.appendChild(noneOpt);
@@ -394,13 +539,13 @@
                     const opt = document.createElement('option');
                     opt.value = bone.uuid;
                     opt.textContent = bone.name || `Bone ${idx+1}`;
-                    if (boneMap[key] && boneMap[key].uuid === bone.uuid) opt.selected = true;
+                    if (boneMap[slot] && boneMap[slot].uuid === bone.uuid) opt.selected = true;
                     select.appendChild(opt);
                 });
                 select.addEventListener('change', (e) => {
                     const uuid = e.target.value;
-                    boneMap[key] = uuid ? allBones.find(b => b.uuid === uuid) : null;
-                    showToast(`Mapped ${key} → ${boneMap[key] ? boneMap[key].name : 'none'}`);
+                    boneMap[slot] = uuid ? allBones.find(b => b.uuid === uuid) : null;
+                    showToast(`Mapped ${slot} → ${boneMap[slot] ? boneMap[slot].name : 'none'}`);
                 });
             });
         }
@@ -420,10 +565,14 @@
             let key = null;
             if (bName.includes('spine')||bName.includes('chest')||bName.includes('hips')||bName.includes('torso')) key='spine';
             else if (bName.includes('head')||bName.includes('neck')) key='head';
-            else if (bName.includes('leftarm')||bName.includes('arm.l')||bName.includes('l_arm')) key='leftArm';
-            else if (bName.includes('rightarm')||bName.includes('arm.r')||bName.includes('r_arm')) key='rightArm';
-            else if (bName.includes('leftleg')||bName.includes('leg.l')||bName.includes('l_leg')) key='leftLeg';
-            else if (bName.includes('rightleg')||bName.includes('leg.r')||bName.includes('r_leg')) key='rightLeg';
+            else if (bName.includes('leftforearm')||bName.includes('lowerarm_l')||bName.includes('forearm_l')) key='leftForearm';
+            else if (bName.includes('rightforearm')||bName.includes('lowerarm_r')||bName.includes('forearm_r')) key='rightForearm';
+            else if (bName.includes('leftarm')||bName.includes('upperarm_l')||bName.includes('arm.l')) key='leftArm';
+            else if (bName.includes('rightarm')||bName.includes('upperarm_r')||bName.includes('arm.r')) key='rightArm';
+            else if (bName.includes('leftshin')||bName.includes('lowerleg_l')||bName.includes('shin_l')) key='leftShin';
+            else if (bName.includes('rightshin')||bName.includes('lowerleg_r')||bName.includes('shin_r')) key='rightShin';
+            else if (bName.includes('leftleg')||bName.includes('upleg_l')||bName.includes('leg.l')) key='leftLeg';
+            else if (bName.includes('rightleg')||bName.includes('upleg_r')||bName.includes('leg.r')) key='rightLeg';
             if (key) {
                 document.getElementById('pose-bone-select').value = key;
                 const boneObj = boneMap[key];
@@ -446,6 +595,7 @@
             document.getElementById('pose-z-val').textContent = (rz*180/Math.PI).toFixed(1)+'°';
         }
 
+        // Global functions
         window.switchTab = function(id) {
             ['parts','bones','pose','materials','anim'].forEach(t => {
                 document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== id);
@@ -454,8 +604,7 @@
         };
         window.togglePartVisibility = function(uuid) {
             const part = allParts.find(p=>p.uuid===uuid); if(!part) return;
-            part.visible = !part.visible;
-            if(part.visible) hiddenParts.delete(uuid); else hiddenParts.add(uuid);
+            part.visible = !part.visible; if(part.visible) hiddenParts.delete(uuid); else hiddenParts.add(uuid);
             updatePartsList();
         };
         window.toggleAllParts = function(show) {
@@ -464,22 +613,26 @@
         };
         window.autoRigBones = function() {
             if(!character){ showToast('Load model first'); return; }
-            // re-run detection with VRoid names, ignore hair
-            allBones = []; boneMap = {spine:null,head:null,leftArm:null,rightArm:null,leftLeg:null,rightLeg:null};
+            allBones = []; boneMap = {spine:null,head:null,leftArm:null,rightArm:null,leftForearm:null,rightForearm:null,leftLeg:null,rightLeg:null,leftShin:null,rightShin:null};
             character.traverse((child) => {
                 if(child.isBone || child.type==='Bone' || child.name.toLowerCase().includes('bone') || child.name.startsWith('J_Bip_')) {
                     const b = child.name.toLowerCase();
                     if(b.includes('hair')||b.includes('skirt')||b.includes('cloth')||b.includes('tail')) { allBones.push(child); return; }
                     allBones.push(child);
+                    // Use improved detection
                     if(!boneMap.spine && (b.includes('spine')||b.includes('chest')||b.includes('hips')||b.includes('torso'))) boneMap.spine=child;
                     if(!boneMap.head && (b.includes('head')||b.includes('neck'))) boneMap.head=child;
-                    if(!boneMap.leftArm && (b.includes('leftarm')||b.includes('arm.l')||b.includes('l_arm'))) boneMap.leftArm=child;
-                    if(!boneMap.rightArm && (b.includes('rightarm')||b.includes('arm.r')||b.includes('r_arm'))) boneMap.rightArm=child;
-                    if(!boneMap.leftLeg && (b.includes('leftleg')||b.includes('leg.l')||b.includes('l_leg'))) boneMap.leftLeg=child;
-                    if(!boneMap.rightLeg && (b.includes('rightleg')||b.includes('leg.r')||b.includes('r_leg'))) boneMap.rightLeg=child;
+                    if(!boneMap.leftArm && (b.includes('leftarm')||b.includes('upperarm_l')||b.includes('l_upperarm'))) boneMap.leftArm=child;
+                    if(!boneMap.rightArm && (b.includes('rightarm')||b.includes('upperarm_r')||b.includes('r_upperarm'))) boneMap.rightArm=child;
+                    if(!boneMap.leftForearm && (b.includes('leftforearm')||b.includes('lowerarm_l')||b.includes('l_lowerarm'))) boneMap.leftForearm=child;
+                    if(!boneMap.rightForearm && (b.includes('rightforearm')||b.includes('lowerarm_r')||b.includes('r_lowerarm'))) boneMap.rightForearm=child;
+                    if(!boneMap.leftLeg && (b.includes('leftleg')||b.includes('upleg_l')||b.includes('l_upperleg'))) boneMap.leftLeg=child;
+                    if(!boneMap.rightLeg && (b.includes('rightleg')||b.includes('upleg_r')||b.includes('r_upperleg'))) boneMap.rightLeg=child;
+                    if(!boneMap.leftShin && (b.includes('leftshin')||b.includes('lowerleg_l')||b.includes('l_lowerleg'))) boneMap.leftShin=child;
+                    if(!boneMap.rightShin && (b.includes('rightshin')||b.includes('lowerleg_r')||b.includes('r_lowerleg'))) boneMap.rightShin=child;
                 }
             });
-            updateBonesList(); populateBoneMappingDropdowns();
+            updateBonesList(); populateBoneMappingDropdowns(); createBoneMarkers();
             document.getElementById('stats-display').textContent = `${allBones.length} bones · ${allParts.length} parts`;
             showToast('Bone detection re-run');
         };
@@ -490,13 +643,33 @@
             if(boneMap[key]) { boneMap[key].rotation.set(0,0,0); if(skeletonHelper) skeletonHelper.update(); }
             showToast('Pose reset');
         };
+        window.setMode = function(m) {
+            mode = m;
+            document.getElementById('mode-pose-btn').classList.toggle('bg-pink-600/30', m==='pose');
+            document.getElementById('mode-pose-btn').classList.toggle('border-pink-500/50', m==='pose');
+            document.getElementById('mode-anim-btn').classList.toggle('bg-slate-800/70', m==='anim');
+            document.getElementById('mode-anim-btn').classList.toggle('border-slate-600', m==='anim');
+            if (m==='anim') {
+                customAnimPlaying = false;
+                activeEmote = null;
+                showToast('Animation mode — play recorded timeline');
+            } else {
+                showToast('Pose mode — edit bones');
+            }
+        };
         window.playEmote = function(name) { activeEmote = name; customAnimPlaying=false; stopGlitchEffect(); showToast(`Emote: ${name}`); };
         window.loadPresetAnim = function(name) { playEmote(name); };
+
+        window.togglePhysicsGroup = function(group) {
+            physicsEnabled[group] = !physicsEnabled[group];
+            showToast(`${group} physics ${physicsEnabled[group] ? 'enabled' : 'disabled'}`);
+        };
 
         window.applyEffect = function(effect) {
             const mats = getTargetMaterials();
             if(mats.length===0){ showToast('No materials'); return; }
             stopGlitchEffect();
+            const useTint = document.getElementById('mat-use-tint').checked;
             mats.forEach(mat => {
                 if(effect==='normal') {
                     const orig = originalMaterials.get(mat.uuid) || null;
@@ -517,6 +690,7 @@
                     else if(effect==='ghost') { mat.color.set(0xa78bfa); mat.roughness=0.3; mat.metalness=0.1; mat.opacity=0.55; mat.emissive.set(0xa78bfa); mat.emissiveIntensity=0.5; }
                     else if(effect==='holo') { mat.color.set(0x22d3ee); mat.roughness=0.05; mat.metalness=0.8; mat.opacity=0.65; mat.emissive.set(0x22d3ee); mat.emissiveIntensity=0.7; }
                 }
+                if (!useTint && mat.map) mat.color.set(0xffffff);
                 mat.needsUpdate = true;
             });
             showToast(`Applied ${effect}`);
@@ -591,8 +765,7 @@
             const delta=animationClock.getDelta();
             const time=Date.now()*0.001;
             if(character) {
-                if(activeEmote && !customAnimPlaying) applyEmote(activeEmote, time);
-                if(customAnimPlaying && recordedFrames.length>0) {
+                if(mode==='anim' && customAnimPlaying && recordedFrames.length>0) {
                     animPlaybackTime+=delta;
                     const frameIdx=Math.floor(animPlaybackTime/0.4)%recordedFrames.length;
                     const frame=recordedFrames[frameIdx];
@@ -600,9 +773,18 @@
                         allBones.forEach((bone,idx)=>{ const bp=frame.pose[bone.name||`bone_${idx}`]; if(bp) bone.rotation.set(bp.rx,bp.ry,bp.rz); });
                         if(skeletonHelper) skeletonHelper.update();
                     }
+                } else if(mode==='pose' && activeEmote) {
+                    applyEmote(activeEmote, time);
                 }
-                springBones.forEach((item,idx)=>{ const t=time*1.2+idx; const targetX=item.baseRot.x+Math.sin(t)*0.04; const targetZ=item.baseRot.z+Math.cos(t*0.8)*0.03; item.mesh.rotation.x+=(targetX-item.mesh.rotation.x)*0.06; item.mesh.rotation.z+=(targetZ-item.mesh.rotation.z)*0.06; });
+                // Spring physics
+                if(physicsEnabled.hair) {
+                    springGroups.hair.forEach((item,idx)=>{ const t=time*1.2+idx; const targetX=item.baseRot.x+Math.sin(t)*0.04; const targetZ=item.baseRot.z+Math.cos(t*0.8)*0.03; item.mesh.rotation.x+=(targetX-item.mesh.rotation.x)*0.06; item.mesh.rotation.z+=(targetZ-item.mesh.rotation.z)*0.06; });
+                }
+                if(physicsEnabled.cloth) {
+                    springGroups.cloth.forEach((item,idx)=>{ const t=time*1.1+idx; const targetX=item.baseRot.x+Math.sin(t)*0.06; const targetZ=item.baseRot.z+Math.cos(t*0.9)*0.05; item.mesh.rotation.x+=(targetX-item.mesh.rotation.x)*0.08; item.mesh.rotation.z+=(targetZ-item.mesh.rotation.z)*0.08; });
+                }
                 if(skeletonHelper) skeletonHelper.update();
+                updateBoneMarkers();
             }
             controls.update();
             renderer.render(scene,camera);
@@ -625,19 +807,18 @@
                     if(boneMap.rightLeg) boneMap.rightLeg.rotation.x=Math.sin(time*4.5)*0.5;
                     if(boneMap.spine) boneMap.spine.rotation.x=Math.sin(time*4.5)*0.1;
                     break;
+                case 'run':
+                    if(boneMap.leftArm) boneMap.leftArm.rotation.x=Math.sin(time*10)*0.5;
+                    if(boneMap.rightArm) boneMap.rightArm.rotation.x=-Math.sin(time*10)*0.5;
+                    if(boneMap.leftLeg) boneMap.leftLeg.rotation.x=-Math.sin(time*10)*0.8;
+                    if(boneMap.rightLeg) boneMap.rightLeg.rotation.x=Math.sin(time*10)*0.8;
+                    break;
                 case 'jump':
                     if(character) character.position.y=Math.abs(Math.sin(time*5))*0.35;
                     if(boneMap.leftArm) boneMap.leftArm.rotation.z=0.4+Math.sin(time*5)*0.2;
                     if(boneMap.rightArm) boneMap.rightArm.rotation.z=-0.4-Math.sin(time*5)*0.2;
                     if(boneMap.leftLeg) boneMap.leftLeg.rotation.x=-0.3;
                     if(boneMap.rightLeg) boneMap.rightLeg.rotation.x=-0.3;
-                    break;
-                case 'run':
-                    if(boneMap.leftArm) boneMap.leftArm.rotation.x=Math.sin(time*10)*0.5;
-                    if(boneMap.rightArm) boneMap.rightArm.rotation.x=-Math.sin(time*10)*0.5;
-                    if(boneMap.leftLeg) boneMap.leftLeg.rotation.x=-Math.sin(time*10)*0.8;
-                    if(boneMap.rightLeg) boneMap.rightLeg.rotation.x=Math.sin(time*10)*0.8;
-                    if(character) character.position.y=Math.abs(Math.sin(time*10))*0.05;
                     break;
                 case 'spin':
                     if(character) character.rotation.y+=0.03;
@@ -651,3 +832,4 @@
     </script>
 </body>
 </html>
+```
