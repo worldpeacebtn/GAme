@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>VRoid GLB Animator — Touch Rig Pro</title>
+    <title>VRoid Studio Pro — Merged Advanced Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
@@ -54,7 +54,6 @@
         #drop .box { border: 2px dashed #ec489988; border-radius: 24px; padding: 36px 50px; text-align: center; background: #111827e8; }
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-thumb { background: #ec489966; border-radius: 99px; }
-        /* Swipe control (replaces range sliders) */
         .swipe-control { cursor: ew-resize; background: #1e293b; border: 1px solid #2a3a4e; border-radius: 6px; padding: 6px 10px; font-size: 10px; text-align: center; display: flex; align-items: center; justify-content: space-between; min-height: 32px; touch-action: none; user-select: none; }
         .swipe-control .swipe-value { font-weight: 700; color: #ec4899; font-size: 12px; min-width: 36px; }
         .swipe-control.dragging { border-color: #ec4899; background: #ec489922; }
@@ -64,116 +63,110 @@
 </head>
 <body>
 <div id="viewport"></div>
-
 <div id="drop"><div class="box"><div class="text-4xl mb-3">🧍</div><div class="font-bold">Drop GLB / GLTF here</div><div class="mini mt-2">or use Upload</div></div></div>
 
 <div class="hud fixed top-3 left-3 right-3 z-40 flex items-center justify-between">
-  <div class="glass rounded-2xl px-3 py-2 flex items-center gap-2">
-    <span id="status" class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-    <div><div class="text-[9px] uppercase font-bold text-slate-500">VRoid Animator Pro</div>
-    <div id="modelName" class="text-xs font-bold text-pink-400 max-w-[180px] truncate">No model</div></div>
-  </div>
-  <div class="flex gap-1.5">
-    <button id="skeletonBtn" class="btn rounded-xl px-3 py-2 text-xs"><i class="fa-solid fa-bone text-emerald-400"></i><span class="hide-mobile"> Skeleton</span></button>
-    <button id="dotsBtn" class="btn rounded-xl px-3 py-2 text-xs"><i class="fa-solid fa-circle-dot text-sky-400"></i><span class="hide-mobile"> Dots</span></button>
-    <button id="focusBtn" class="btn rounded-xl px-3 py-2 text-xs"><i class="fa-solid fa-crosshairs"></i><span class="hide-mobile"> Focus</span></button>
-    <label class="btn rounded-xl px-3 py-2 text-xs cursor-pointer"><i class="fa-solid fa-upload text-sky-400"></i><span class="hide-mobile"> Upload</span><input id="upload" type="file" accept=".glb,.gltf" hidden></label>
-    <button id="exportBtn" class="btn rounded-xl px-3 py-2 text-xs text-emerald-300"><i class="fa-solid fa-download"></i><span class="hide-mobile"> GLB</span></button>
-  </div>
+    <div class="glass rounded-2xl px-3 py-2 flex items-center gap-2">
+        <span id="status" class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+        <div><div class="text-[9px] uppercase font-bold text-slate-500">VRoid Studio Pro</div><div id="modelName" class="text-xs font-bold text-pink-400 max-w-[180px] truncate">No model</div></div>
+    </div>
+    <div class="flex gap-1.5">
+        <button id="skeletonBtn" class="btn rounded-xl px-3 py-2 text-xs"><i class="fa-solid fa-bone text-emerald-400"></i><span class="hide-mobile"> Skeleton</span></button>
+        <button id="dotsBtn" class="btn rounded-xl px-3 py-2 text-xs"><i class="fa-solid fa-circle-dot text-sky-400"></i><span class="hide-mobile"> Dots</span></button>
+        <button id="focusBtn" class="btn rounded-xl px-3 py-2 text-xs"><i class="fa-solid fa-crosshairs"></i><span class="hide-mobile"> Focus</span></button>
+        <label class="btn rounded-xl px-3 py-2 text-xs cursor-pointer"><i class="fa-solid fa-upload text-sky-400"></i><span class="hide-mobile"> Upload</span><input id="upload" type="file" accept=".glb,.gltf" hidden></label>
+        <button id="exportBtn" class="btn rounded-xl px-3 py-2 text-xs text-emerald-300"><i class="fa-solid fa-download"></i><span class="hide-mobile"> GLB</span></button>
+    </div>
 </div>
 
 <aside id="asset-dock" class="glass rounded-2xl">
-  <div class="px-3 pt-3 flex items-center justify-between"><div class="font-bold text-xs">Assets / Rig</div><div id="stats" class="mini">0 bones · 0 parts</div></div>
-  <div class="catbar" id="cats"></div>
-  <div id="asset-scroll"></div>
+    <div class="px-3 pt-3 flex items-center justify-between"><div class="font-bold text-xs">Assets / Rig</div><div id="stats" class="mini">0 bones · 0 parts</div></div>
+    <div class="catbar" id="cats"></div>
+    <div id="asset-scroll"></div>
 </aside>
 
 <div id="joystick"><div id="joy-thumb"></div></div>
 <div id="reticle"></div>
 <div id="toast" class="glass rounded-full px-4 py-2 text-xs"></div>
 
-<!-- Camera quick buttons -->
+<!-- Camera Quick Buttons -->
 <div class="hud fixed right-3 z-30 flex flex-col gap-1" style="top: 50%; transform: translateY(-50%);">
-  <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="front"><i class="fa-solid fa-person"></i></button>
-  <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="back"><i class="fa-solid fa-person-arrow-up"></i></button>
-  <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="left"><i class="fa-solid fa-arrow-left"></i></button>
-  <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="right"><i class="fa-solid fa-arrow-right"></i></button>
-  <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="top"><i class="fa-solid fa-arrow-down"></i></button>
-  <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="persp"><i class="fa-solid fa-cube"></i></button>
+    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="front"><i class="fa-solid fa-person"></i></button>
+    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="back"><i class="fa-solid fa-person-arrow-up"></i></button>
+    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="left"><i class="fa-solid fa-arrow-left"></i></button>
+    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="right"><i class="fa-solid fa-arrow-right"></i></button>
+    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="top"><i class="fa-solid fa-arrow-down"></i></button>
+    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="persp"><i class="fa-solid fa-cube"></i></button>
 </div>
 
 <div id="bottom" class="glass rounded-2xl">
-  <div class="tabs" id="tabs">
-    <button class="tab active" data-tab="pose">Pose</button>
-    <button class="tab" data-tab="material">Material</button>
-    <button class="tab" data-tab="anim">Animation</button>
-    <button class="tab" data-tab="game">Game</button>
-    <button class="tab" data-tab="settings">Settings</button>
-  </div>
-  <div class="panel-scroll">
-    <section id="panel-pose">
-      <div class="flex flex-wrap items-center gap-2 mb-2">
-        <select id="boneSelect" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-1 text-xs flex-1"></select>
-        <button id="resetBone" class="btn rounded-lg px-2 py-1 text-amber-300">↺</button>
-        <button id="keyBtn" class="bg-pink-600 hover:bg-pink-500 rounded-lg px-3 py-1 text-xs font-bold">＋ Keyframe</button>
-      </div>
-      <div class="grid grid-cols-3 gap-2" id="poseSwipeContainer"></div>
-      <div class="mini mt-2">Select bone then use swipe controls. Drag on bone dot to pose directly.</div>
-    </section>
-
-    <section id="panel-material" class="hidden">
-      <div class="flex items-center gap-2 mb-2"><select id="matTarget" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-1 text-xs flex-1"><option value="all">All parts</option></select><input id="color" type="color" value="#ffffff" class="w-8 h-8"></div>
-      <div class="grid grid-cols-3 gap-2" id="matSwipeContainer"></div>
-      <div class="flex gap-1 mt-2">
-        <button class="btn rounded-lg px-3 py-1 text-[10px]" data-fx="normal">Normal</button>
-        <button class="btn rounded-lg px-3 py-1 text-[10px] text-pink-300" data-fx="cyber">Cyber</button>
-        <button class="btn rounded-lg px-3 py-1 text-[10px] text-cyan-300" data-fx="holo">Holo</button>
-        <button class="btn rounded-lg px-3 py-1 text-[10px] text-purple-300" data-fx="ghost">Ghost</button>
-      </div>
-    </section>
-
-    <section id="panel-anim" class="hidden">
-      <div class="mb-2">
-        <div class="mini font-bold mb-1">Embedded / Baked Animations</div>
-        <div id="animGrid" class="grid grid-cols-4 gap-1"></div>
-      </div>
-      <div class="flex flex-wrap gap-1 mb-2">
-        <button id="record" class="bg-pink-600 rounded-lg px-3 py-1 text-xs font-bold">● Record</button>
-        <button id="play" class="bg-purple-600 rounded-lg px-3 py-1 text-xs font-bold">▶ Play</button>
-        <button id="stop" class="btn rounded-lg px-3 py-1 text-xs">■ Stop</button>
-        <button id="clearKeys" class="btn rounded-lg px-3 py-1 text-xs">Clear</button>
-        <button id="exportAnim" class="btn rounded-lg px-3 py-1 text-xs text-emerald-300">Export JSON</button>
-        <button id="bakeSeq" class="btn rounded-lg px-3 py-1 text-xs text-orange-300">Bake</button>
-        <span id="keyCount" class="mini self-center ml-auto">0 keys</span>
-      </div>
-      <div id="timeline" class="flex gap-1 overflow-x-auto pb-1"></div>
-    </section>
-
-    <section id="panel-game" class="hidden">
-      <div class="flex flex-wrap gap-1 mb-2">
-        <button id="gameMode" class="bg-emerald-600/25 border border-emerald-500/50 rounded-lg px-3 py-1 text-xs">Enable Game</button>
-        <button class="btn rounded-lg px-2 py-1 text-xs" data-gameanim="idle">🧘 Idle</button>
-        <button class="btn rounded-lg px-2 py-1 text-xs" data-gameanim="run">🏃 Run</button>
-        <button class="btn rounded-lg px-2 py-1 text-xs" data-gameanim="jump">🦘 Jump</button>
-        <button class="btn rounded-lg px-2 py-1 text-xs" data-gameanim="duck">🦆 Duck</button>
-      </div>
-      <div class="mini">Assign baked animations below. In game mode press buttons or use joystick.</div>
-    </section>
-
-    <section id="panel-settings" class="hidden">
-      <div class="grid grid-cols-2 gap-2">
-        <div class="bg-slate-900/60 rounded-lg p-2">
-          <div class="mini mb-1">Gravity</div>
-          <div id="gravitySwipe" class="swipe-control"><span>Gravity</span><span class="swipe-value">0.9</span></div>
-        </div>
-        <div class="bg-slate-900/60 rounded-lg p-2">
-          <div class="mini mb-1">Light</div>
-          <div id="lightSwipe" class="swipe-control"><span>Light</span><span class="swipe-value">1.5</span></div>
-        </div>
-      </div>
-      <div class="mini mt-2">Bone dots visibility via top bar button.</div>
-    </section>
-  </div>
+    <div class="tabs" id="tabs">
+        <button class="tab active" data-tab="pose">Pose</button>
+        <button class="tab" data-tab="material">Material</button>
+        <button class="tab" data-tab="anim">Animation</button>
+        <button class="tab" data-tab="game">Game</button>
+        <button class="tab" data-tab="settings">Settings</button>
+    </div>
+    <div class="panel-scroll">
+        <section id="panel-pose">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+                <select id="boneSelect" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-1 text-xs flex-1"></select>
+                <button id="resetBone" class="btn rounded-lg px-2 py-1 text-amber-300">↺</button>
+                <button id="keyBtn" class="bg-pink-600 hover:bg-pink-500 rounded-lg px-3 py-1 text-xs font-bold">＋ Keyframe</button>
+            </div>
+            <div class="grid grid-cols-3 gap-2" id="poseSwipeContainer"></div>
+            <div class="mini mt-2">Select bone then use swipe controls. Drag on bone dot to pose directly.</div>
+        </section>
+        <section id="panel-material" class="hidden">
+            <div class="flex items-center gap-2 mb-2"><select id="matTarget" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-1 text-xs flex-1"><option value="all">All parts</option></select><input id="color" type="color" value="#ffffff" class="w-8 h-8"></div>
+            <div class="grid grid-cols-3 gap-2" id="matSwipeContainer"></div>
+            <div class="flex gap-1 mt-2">
+                <button class="btn rounded-lg px-3 py-1 text-[10px]" data-fx="normal">Normal</button>
+                <button class="btn rounded-lg px-3 py-1 text-[10px] text-pink-300" data-fx="cyber">Cyber</button>
+                <button class="btn rounded-lg px-3 py-1 text-[10px] text-cyan-300" data-fx="holo">Holo</button>
+                <button class="btn rounded-lg px-3 py-1 text-[10px] text-purple-300" data-fx="ghost">Ghost</button>
+            </div>
+        </section>
+        <section id="panel-anim" class="hidden">
+            <div class="mb-2">
+                <div class="mini font-bold mb-1">Embedded / Baked Animations</div>
+                <div id="animGrid" class="grid grid-cols-4 gap-1"></div>
+            </div>
+            <div class="flex flex-wrap gap-1 mb-2">
+                <button id="record" class="bg-pink-600 rounded-lg px-3 py-1 text-xs font-bold">● Record</button>
+                <button id="play" class="bg-purple-600 rounded-lg px-3 py-1 text-xs font-bold">▶ Play</button>
+                <button id="stop" class="btn rounded-lg px-3 py-1 text-xs">■ Stop</button>
+                <button id="clearKeys" class="btn rounded-lg px-3 py-1 text-xs">Clear</button>
+                <button id="exportAnim" class="btn rounded-lg px-3 py-1 text-xs text-emerald-300">Export JSON</button>
+                <button id="bakeSeq" class="btn rounded-lg px-3 py-1 text-xs text-orange-300">Bake</button>
+                <span id="keyCount" class="mini self-center ml-auto">0 keys</span>
+            </div>
+            <div id="timeline" class="flex gap-1 overflow-x-auto pb-1"></div>
+        </section>
+        <section id="panel-game" class="hidden">
+            <div class="flex flex-wrap gap-1 mb-2">
+                <button id="gameMode" class="bg-emerald-600/25 border border-emerald-500/50 rounded-lg px-3 py-1 text-xs">Enable Game</button>
+                <button class="btn rounded-lg px-2 py-1 text-xs" data-gameanim="idle">🧘 Idle</button>
+                <button class="btn rounded-lg px-2 py-1 text-xs" data-gameanim="run">🏃 Run</button>
+                <button class="btn rounded-lg px-2 py-1 text-xs" data-gameanim="jump">🦘 Jump</button>
+                <button class="btn rounded-lg px-2 py-1 text-xs" data-gameanim="duck">🦆 Duck</button>
+            </div>
+            <div class="mini">Assign baked animations below. In game mode press buttons or use joystick.</div>
+        </section>
+        <section id="panel-settings" class="hidden">
+            <div class="grid grid-cols-2 gap-2">
+                <div class="bg-slate-900/60 rounded-lg p-2">
+                    <div class="mini mb-1">Gravity</div>
+                    <div id="gravitySwipe" class="swipe-control"><span>Gravity</span><span class="swipe-value">0.9</span></div>
+                </div>
+                <div class="bg-slate-900/60 rounded-lg p-2">
+                    <div class="mini mb-1">Light</div>
+                    <div id="lightSwipe" class="swipe-control"><span>Light</span><span class="swipe-value">1.5</span></div>
+                </div>
+            </div>
+            <div class="mini mt-2">Bone dots visibility via top bar button.</div>
+        </section>
+    </div>
 </div>
 
 <script type="importmap">
@@ -211,7 +204,7 @@ function init(){
  controls.enableDamping=true; controls.dampingFactor=.08; controls.minDistance=1.2; controls.maxDistance=12; controls.maxPolarAngle=Math.PI*.92;
  controls.touches={ONE:THREE.TOUCH.ROTATE,TWO:THREE.TOUCH.DOLLY_PAN};
  scene.add(new THREE.HemisphereLight(0xddeeff,0x182033,1.2));
- const key=new THREE.DirectionalLight(0xffffff,1.8); key.position.set(4,7,5); key.castShadow=true; scene.add(key);
+ const keyLight=new THREE.DirectionalLight(0xffffff,1.8); keyLight.position.set(4,7,5); keyLight.castShadow=true; scene.add(keyLight);
  const rim=new THREE.DirectionalLight(0xff9ac8,1.0); rim.position.set(-4,4,-5); scene.add(rim);
  const grid=new THREE.GridHelper(20,40,0x334155,0x172033); scene.add(grid);
  window.addEventListener('resize',resize);
@@ -535,9 +528,8 @@ function playBakedAnimation(index){
  showToast('Playing baked: '+anim.name);
 }
 function assignGameAnim(type){
- // find a baked animation and assign to game action
  if(bakedAnimations.length===0){showToast('Bake an animation first');return;}
- const anim=bakedAnimations[bakedAnimations.length-1]; // use most recent
+ const anim=bakedAnimations[bakedAnimations.length-1];
  game.currentAnim=type;
  showToast(`Assigned ${type} to last baked animation`);
 }
@@ -614,7 +606,7 @@ function updateTimeline(dt){
  let a=keys[0],b=keys[keys.length-1];
  for(let i=0;i<keys.length-1;i++)if(playTime>=keys[i].time&&playTime<=keys[i+1].time){a=keys[i];b=keys[i+1];break}
  const t=(playTime-a.time)/Math.max(.0001,b.time-a.time);
- const eased=t*t*(3-2*t); // smoothstep
+ const eased=t*t*(3-2*t);
  bones.forEach(bone=>{
   const pa=a.pose[bone.uuid],pb=b.pose[bone.uuid];
   if(pa&&pb)bone.rotation.set(THREE.MathUtils.lerp(pa[0],pb[0],eased),THREE.MathUtils.lerp(pa[1],pb[1],eased),THREE.MathUtils.lerp(pa[2],pb[2],eased));
@@ -649,21 +641,18 @@ function createSwipeControl(label,min,max,step,initial,onChange){
 }
 let poseSwipes={},matSwipes={},gravitySwipe,lightSwipe;
 function createSwipeControls(){
- // Pose
  poseSwipes={};
  const poseContainer=$('poseSwipeContainer');
  poseSwipes.rx=createSwipeControl('Pitch',-3.14,3.14,0.01,selectedBone?selectedBone.rotation.x:0,v=>{if(selectedBone)selectedBone.rotation.x=v});
  poseSwipes.ry=createSwipeControl('Yaw',-3.14,3.14,0.01,selectedBone?selectedBone.rotation.y:0,v=>{if(selectedBone)selectedBone.rotation.y=v});
  poseSwipes.rz=createSwipeControl('Roll',-3.14,3.14,0.01,selectedBone?selectedBone.rotation.z:0,v=>{if(selectedBone)selectedBone.rotation.z=v});
  poseContainer.appendChild(poseSwipes.rx.el);poseContainer.appendChild(poseSwipes.ry.el);poseContainer.appendChild(poseSwipes.rz.el);
- // Material
  matSwipes={};
  const matContainer=$('matSwipeContainer');
  matSwipes.rough=createSwipeControl('Rough',0,1,0.01,0.5,v=>getMaterials().forEach(m=>m.roughness=v));
  matSwipes.metal=createSwipeControl('Metal',0,1,0.01,0.1,v=>getMaterials().forEach(m=>m.metalness=v));
  matSwipes.opacity=createSwipeControl('Opacity',0,1,0.01,1,v=>getMaterials().forEach(m=>{m.opacity=v;m.transparent=v<0.999}));
  matContainer.appendChild(matSwipes.rough.el);matContainer.appendChild(matSwipes.metal.el);matContainer.appendChild(matSwipes.opacity.el);
- // Settings
  gravitySwipe=createSwipeControl('Gravity',0.1,3,0.05,gravity,v=>{gravity=v});
  lightSwipe=createSwipeControl('Light',0.2,3,0.05,lightIntensity,v=>{lightIntensity=v;updateLightIntensity()});
  $('gravitySwipe').replaceWith(gravitySwipe.el);
