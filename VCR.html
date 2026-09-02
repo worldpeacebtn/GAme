@@ -3,13 +3,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>VRoid Studio Pro — Working Enhanced</title>
+    <title>VRoid Studio Pro — Fixed & Enhanced</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         :root {
             --bg: #070b13;
-            --panel: rgba(13,18,30,.9);
+            --panel: rgba(13,18,30,.85);
             --line: #29364b;
             --txt: #edf2f7;
             --pink: #ec4899;
@@ -17,9 +17,23 @@
             --green: #34d399;
         }
         * { box-sizing: border-box; }
-        html, body { margin:0; width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--txt); font-family:Inter,system-ui,sans-serif; }
-        button { user-select:none; -webkit-user-select:none; }
-        .glass { background:var(--panel); border:1px solid rgba(72,88,112,.65); backdrop-filter:blur(18px); }
+        html, body {
+            margin: 0;
+            width: 100%;
+            height: 100dvh; /* Fix for iOS Safari */
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--txt);
+            font-family: Inter, system-ui, sans-serif;
+        }
+        button { user-select: none; -webkit-user-select: none; }
+        .glass {
+            background: var(--panel);
+            border: 1px solid rgba(72,88,112,.65);
+            -webkit-backdrop-filter: blur(18px);
+            backdrop-filter: blur(18px);
+            box-shadow: 0 12px 40px rgba(0,0,0,.25);
+        }
         .btn { border:1px solid #2b3950; background:#172133; color:#e8eef7; transition:.16s; cursor:pointer; }
         .btn:hover { background:#213047; }
         .btn:active { transform:scale(.96); }
@@ -34,26 +48,37 @@
         .swipe-value { font-weight:700; color:#ec4899; min-width:30px; }
         #joystick { position:fixed; left:20px; bottom:180px; width:110px; height:110px; border-radius:50%; border:2px solid #ec489955; background:#11182799; display:none; touch-action:none; z-index:50; }
         #joy-thumb { position:absolute; left:30px; top:30px; width:46px; height:46px; border-radius:50%; background:#ec4899aa; border:2px solid #fff4; }
-        #viewport { position:fixed; inset:0; }
+        #viewport {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            transform: translateZ(0); /* Force GPU layer */
+        }
         .camera-btn { font-size:10px; padding:4px 8px; }
-        @media (max-width:760px) { .hide-mobile { display:none!important; } .grid-3 { grid-template-columns:repeat(2,1fr); } .grid-4 { grid-template-columns:repeat(2,1fr); } }
+        @media (max-width:760px) {
+            .hide-mobile { display:none!important; }
+            .grid-3 { grid-template-columns:repeat(2,1fr); }
+            .grid-4 { grid-template-columns:repeat(2,1fr); }
+        }
     </style>
 </head>
 <body>
 <div id="viewport"></div>
 
+<!-- Upload Overlay (will disappear after load) -->
 <div id="upload-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 p-4" style="display:flex">
     <div class="max-w-md bg-slate-900/90 border border-slate-700 p-8 rounded-3xl shadow-2xl text-center space-y-4">
         <div class="w-16 h-16 bg-pink-500/20 border border-pink-500/40 rounded-2xl flex items-center justify-center mx-auto text-2xl">🧍</div>
         <h2 class="text-xl font-bold">VRoid Studio Pro</h2>
-        <p class="text-xs text-slate-400">Upload GLB/GLTF avatar.</p>
+        <p class="text-xs text-slate-400">Upload GLB/GLTF avatar</p>
         <label class="inline-flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold px-6 py-3 rounded-2xl cursor-pointer shadow-xl text-sm">
             <i class="fa-solid fa-cloud-arrow-up"></i> Upload Avatar
-            <input type="file" id="upload" accept=".glb,.gltf" class="hidden">
+            <input type="file" id="upload-hero" accept=".glb,.gltf" class="hidden">
         </label>
     </div>
 </div>
 
+<!-- Top Bar -->
 <div class="fixed top-3 left-3 right-3 z-30 flex items-center justify-between pointer-events-none">
     <div class="glass rounded-2xl px-3 py-2 flex items-center gap-2 pointer-events-auto">
         <span id="status" class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
@@ -68,6 +93,7 @@
     </div>
 </div>
 
+<!-- Mode & Emotes -->
 <div class="fixed left-3 z-30 flex flex-col gap-1 pointer-events-auto" style="bottom:180px;">
     <div class="glass rounded-2xl p-1.5 flex flex-col gap-1">
         <button onclick="setMode('pose')" id="mode-pose-btn" class="px-2 py-1.5 rounded-lg text-xs font-bold bg-pink-600/30 border border-pink-500/50 text-pink-300">Pose</button>
@@ -84,8 +110,10 @@
     </div>
 </div>
 
+<!-- Joystick -->
 <div id="joystick"><div id="joy-thumb"></div></div>
 
+<!-- Camera Views -->
 <div class="fixed right-3 z-30 flex flex-col gap-1" style="top:50%; transform:translateY(-50%);">
     <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="front">👤</button>
     <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="back">🔙</button>
@@ -95,8 +123,10 @@
     <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="persp">🔲</button>
 </div>
 
+<!-- Toast -->
 <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 px-3 py-1.5 rounded-full text-xs opacity-0 pointer-events-none"></div>
 
+<!-- Bottom HUD -->
 <div class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-2xl border-t border-slate-700 flex flex-col" style="height:170px;">
     <div class="flex items-center justify-between px-2 pt-1 pb-1 border-b border-slate-800">
         <div class="flex gap-0.5">
@@ -118,7 +148,7 @@
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
 
 <script>
-    // ==== State ====
+    // ===== STATE =====
     let scene, camera, renderer, controls, character = null;
     let skeletonHelper = null;
     let bones = [], parts = [], boneMap = {}, markers = [];
@@ -142,7 +172,7 @@
     function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
     function showToast(msg){ const t=$('toast'); t.textContent=msg; t.style.opacity=1; clearTimeout(t._t); t._t=setTimeout(()=>t.style.opacity=0,1800); }
 
-    // ==== Swipe Control ====
+    // ===== SWIPE CONTROL =====
     function createSwipeControl(label,min,max,step,initial,onChange){
         const container=document.createElement('div');
         container.className='swipe-control';
@@ -184,7 +214,7 @@
         poseSwipes.rz.setValue(selectedBone.rotation.z);
     }
 
-    // ==== Camera Views ====
+    // ===== CAMERA =====
     function setCamera(view){
         if(!character)return;
         const box=new THREE.Box3().setFromObject(character),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());
@@ -203,7 +233,7 @@
     }
     function focusModel(){setCamera('persp')}
 
-    // ==== Model Loading ====
+    // ===== MODEL LOADING =====
     function loadFile(file){
         const loader = new THREE.GLTFLoader();
         const dracoLoader = new THREE.DRACOLoader();
@@ -254,7 +284,6 @@
         populateMaterials();
         $('stats').textContent=`${bones.length} bones · ${parts.length} parts`;
         updateSwipeValues();
-        renderHUD();
     }
 
     function mapBone(b){
@@ -281,10 +310,7 @@
         markers.forEach(m=>scene.remove(m.s));markers=[];
         if(!showBoneDots)return;
         const geo=new THREE.SphereGeometry(.055,10,10);
-        bones.forEach(b=>{
-            const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0x34d399,depthTest:false,transparent:true,opacity:.9}));
-            m.renderOrder=999;m.userData.bone=b;scene.add(m);markers.push({s:m,b});
-        });
+        bones.forEach(b=>{const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0x34d399,depthTest:false,transparent:true,opacity:.9}));m.renderOrder=999;m.userData.bone=b;scene.add(m);markers.push({s:m,b})});
     }
     function updateMarkers(){if(!character)return;character.updateMatrixWorld(true);markers.forEach(m=>m.b.getWorldPosition(m.s.position));}
 
@@ -402,19 +428,16 @@
     // Tab & Mode
     function switchTab(t){
         document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
-        // Show/hide panels
-        $('panel-parts').style.display=t==='parts'?'block':'none';
-        $('panel-bones').style.display=t==='bones'?'block':'none';
-        $('panel-pose').style.display=t==='pose'?'block':'none';
-        $('panel-materials').style.display=t==='materials'?'block':'none';
-        $('panel-anims').style.display=t==='anims'?'block':'none';
-        $('panel-settings').style.display=t==='settings'?'block':'none';
-        if(t==='game')setMode('game');
-        else if(mode==='game')setMode('pose');
+        ['parts','bones','pose','materials','anims','settings'].forEach(id=>{
+            const panel=$('panel-'+id);
+            if(panel) panel.style.display = id===t ? 'block' : 'none';
+        });
+        if(t==='game') setMode('game');
+        else if(mode==='game') setMode('pose');
     }
     function setMode(m){
         mode=m;
-        $('joystick').style.display=m==='game'?'block':'none';
+        $('joystick').style.display = m==='game' ? 'block' : 'none';
         if(m==='game'){controls.enabled=true;showToast('Game mode')}
         else showToast(m+' mode');
     }
@@ -549,7 +572,7 @@
         renderer.render(scene,camera);
     }
 
-    // Init all UI elements (we create panels inside hud-content)
+    // UI initialisation
     function renderHUD(){
         const container=$('hud-content');
         container.innerHTML=`
@@ -583,7 +606,6 @@
             <div class="flex flex-wrap gap-1"><button id="gameMode">Enable Game</button><button data-gameanim="idle">Idle</button><button data-gameanim="run">Run</button><button data-gameanim="jump">Jump</button><button data-gameanim="duck">Duck</button></div>
         </section>
         `;
-        // Set default tab
         switchTab('parts');
         createSwipeControls();
         bindAdditionalEvents();
@@ -606,15 +628,16 @@
 
     function toggleAllParts(show){ parts.forEach(p=>p.visible=show); renderAssets(); }
 
-    // Initialize
+    // Init everything
     function init(){
         scene=new THREE.Scene(); scene.background=new THREE.Color(0x070b13);
         camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.05,100);
         camera.position.set(2.8,1.9,4.6);
         renderer=new THREE.WebGLRenderer({antialias:true});
-        renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+        renderer.setPixelRatio(Math.min(devicePixelRatio,2)); // iOS safe
         renderer.setSize(innerWidth,innerHeight);
         renderer.shadowMap.enabled=true;
+        renderer.outputColorSpace=THREE.SRGBColorSpace;
         $('viewport').appendChild(renderer.domElement);
         controls=new THREE.OrbitControls(camera,renderer.domElement);
         controls.enableDamping=true; controls.dampingFactor=.08; controls.minDistance=1.2; controls.maxDistance=12; controls.maxPolarAngle=Math.PI*.92;
@@ -623,14 +646,21 @@
         const rim=new THREE.DirectionalLight(0xff9ac8,1.0); rim.position.set(-4,4,-5); scene.add(rim);
         const grid=new THREE.GridHelper(20,40,0x334155,0x172033); scene.add(grid);
         window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
-        // Bind upload and other top buttons
+        // Upload handlers
         $('upload').addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0]);e.target.value='';});
+        $('upload-hero').addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0]);e.target.value='';});
         $('skeletonBtn').addEventListener('click',toggleSkeleton);
         $('dotsBtn').addEventListener('click',toggleBoneDots);
         $('focusBtn').addEventListener('click',()=>setCamera('persp'));
         document.querySelectorAll('.camera-btn').forEach(b=>b.addEventListener('click',()=>setCamera(b.dataset.cam)));
         $('exportBtn').addEventListener('click',exportGLB);
-        // Render HUD
+        // Pointer events
+        renderer.domElement.addEventListener('pointerdown',onPointerDown,{passive:false});
+        renderer.domElement.addEventListener('pointermove',onPointerMove,{passive:false});
+        renderer.domElement.addEventListener('pointerup',onPointerUp,{passive:false});
+        window.addEventListener('keydown',keyDown);
+        window.addEventListener('keyup',keyUp);
+        setupJoystick();
         renderHUD();
         renderCategories();
         updateAnimGrid();
@@ -643,7 +673,6 @@
         exporter.parse(character,(result)=>{const blob=new Blob([result],{type:'application/octet-stream'});downloadBlob(blob,'avatar.glb');});
     }
 
-    // Start everything
     init();
 </script>
 </body>
