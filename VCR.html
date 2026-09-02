@@ -3,9 +3,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>VRoid Studio Pro — Merged Advanced Edition</title>
+    <title>VRoid Studio Pro — Final Merged</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
     <style>
         :root {
             --bg: #070b13;
@@ -169,505 +173,517 @@
     </div>
 </div>
 
-<script type="importmap">
-{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+<script>
+    // We'll use the working model loading from the last code with enhancements
+    // All the functionality merged into one script
 </script>
-<script type="module">
-import * as THREE from 'three';
-import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
-import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
-import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 
-const $=id=>document.getElementById(id);
-let scene,camera,renderer,controls,character=null,skeletonHelper=null;
-let bones=[],parts=[],boneMap={},markers=[],selectedBone=null,selectedPart='all';
-let showSkeleton=false, showBoneDots=true, category='All', mode='pose', clock=new THREE.Clock();
-let keys=[],playing=false,playTime=0,recording=false,keyInterval=.45;
-let originalMaterials=new Map(), activeDrag=null, pointerDown=null;
-let gltfAnimations=[], animationActions=[], mixer=null, currentAnimAction=null, bakedAnimations=[];
-let gravity=0.9, lightIntensity=1.5;
-let game={w:false,s:false,a:false,d:false,jump:false,crouch:false,vy:0,currentAnim:null};
-const ray=new THREE.Raycaster(), mouse=new THREE.Vector2();
+<script>
+    // Main application script (using global THREE from CDN)
+    (function() {
+        // State variables
+        let scene, camera, renderer, controls, character = null;
+        let skeletonHelper = null;
+        let bones = [], parts = [], boneMap = {}, markers = [], selectedBone = null, selectedPart = 'all';
+        let showSkeleton = false, showBoneDots = true, category = 'All', mode = 'pose';
+        let clock = new THREE.Clock();
+        let keys = [], playing = false, playTime = 0, recording = false, keyInterval = .45;
+        let originalMaterials = new Map(), activeDrag = null, pointerDown = null;
+        let gltfAnimations = [], animationActions = [], mixer = null, currentAnimAction = null, bakedAnimations = [];
+        let gravity = 0.9, lightIntensity = 1.5;
+        let game = { w:false, s:false, a:false, d:false, jump:false, crouch:false, vy:0, currentAnim:null };
+        let ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
 
-const categories=[
- ['All','fa-layer-group'],['Head','fa-face-smile'],['Torso','fa-person'],['L Arm','fa-hand'],['R Arm','fa-hand'],['L Leg','fa-person-running'],['R Leg','fa-person-running'],['Hair','fa-wand-magic-sparkles'],['Other','fa-cubes']
-];
+        // Category definitions
+        const categories = [
+            ['All','fa-layer-group'],['Head','fa-face-smile'],['Torso','fa-person'],['L Arm','fa-hand'],['R Arm','fa-hand'],['L Leg','fa-person-running'],['R Leg','fa-person-running'],['Hair','fa-wand-magic-sparkles'],['Other','fa-cubes']
+        ];
 
-function init(){
- scene=new THREE.Scene(); scene.background=new THREE.Color(0x070b13);
- camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.05,100);
- camera.position.set(2.8,1.9,4.6);
- renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:false});
- renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=true;
- renderer.outputColorSpace=THREE.SRGBColorSpace; $('viewport').appendChild(renderer.domElement);
- controls=new OrbitControls(camera,renderer.domElement);
- controls.enableDamping=true; controls.dampingFactor=.08; controls.minDistance=1.2; controls.maxDistance=12; controls.maxPolarAngle=Math.PI*.92;
- controls.touches={ONE:THREE.TOUCH.ROTATE,TWO:THREE.TOUCH.DOLLY_PAN};
- scene.add(new THREE.HemisphereLight(0xddeeff,0x182033,1.2));
- const keyLight=new THREE.DirectionalLight(0xffffff,1.8); keyLight.position.set(4,7,5); keyLight.castShadow=true; scene.add(keyLight);
- const rim=new THREE.DirectionalLight(0xff9ac8,1.0); rim.position.set(-4,4,-5); scene.add(rim);
- const grid=new THREE.GridHelper(20,40,0x334155,0x172033); scene.add(grid);
- window.addEventListener('resize',resize);
- bind();
- createSwipeControls();
- animate();
-}
-function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
+        // Utility functions
+        const $ = id => document.getElementById(id);
+        function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,' '); }
+        function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+        function showToast(msg){ const t=$('toast'); t.textContent=msg; t.style.opacity=1; clearTimeout(t._t); t._t=setTimeout(()=>t.style.opacity=0,1800); }
 
-function bind(){
- $('upload').onchange=e=>{if(e.target.files[0])loadFile(e.target.files[0]);e.target.value=''};
- $('exportBtn').onclick=exportGLB;
- $('skeletonBtn').onclick=toggleSkeleton;
- $('dotsBtn').onclick=toggleBoneDots;
- $('focusBtn').onclick=()=>setCamera('persp');
- document.querySelectorAll('.camera-btn').forEach(b=>b.onclick=()=>setCamera(b.dataset.cam));
- $('boneSelect').onchange=()=>selectBone(boneMap[$('boneSelect').value]||null);
- $('resetBone').onclick=resetSelected;
- $('keyBtn').onclick=recordKey;
- $('record').onclick=()=>{recording=!recording;$('record').textContent=recording?'■ Recording':'● Record';showToast(recording?'Recording keys':'Recording stopped')};
- $('play').onclick=()=>{if(keys.length){playing=true;playTime=0;mode='anim';showToast('Timeline playing')}};
- $('stop').onclick=()=>playing=false;
- $('clearKeys').onclick=clearKeys;
- $('exportAnim').onclick=exportAnimation;
- $('bakeSeq').onclick=bakeSequence;
- $('gameMode').onclick=()=>setMode(mode==='game'?'pose':'game');
- document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
- document.querySelectorAll('[data-fx]').forEach(b=>b.onclick=()=>applyFX(b.dataset.fx));
- document.querySelectorAll('[data-gameanim]').forEach(b=>b.onclick=()=>assignGameAnim(b.dataset.gameanim));
- $('matTarget').onchange=e=>{selectedPart=e.target.value;renderAssets()};
- renderer.domElement.addEventListener('pointerdown',onPointerDown,{passive:false});
- renderer.domElement.addEventListener('pointermove',onPointerMove,{passive:false});
- renderer.domElement.addEventListener('pointerup',onPointerUp,{passive:false});
- renderer.domElement.addEventListener('pointercancel',onPointerUp,{passive:false});
- window.addEventListener('keydown',keyDown);window.addEventListener('keyup',keyUp);
- setupJoystick();
- setupDrop();
- renderCategories();
- updateAnimGrid();
-}
-function setupDrop(){
- const d=$('drop');
- ['dragenter','dragover'].forEach(e=>window.addEventListener(e,x=>{x.preventDefault();d.style.display='flex'}));
- ['dragleave','drop'].forEach(e=>window.addEventListener(e,x=>{x.preventDefault();if(e==='dragleave'&&!x.relatedTarget)d.style.display='none'}));
- window.addEventListener('drop',e=>{d.style.display='none';const f=e.dataTransfer.files[0];if(f&&/\.gltf?$/.test(f.name.toLowerCase()))loadFile(f)});
-}
-function loadFile(file){
- const loader=new GLTFLoader(),url=URL.createObjectURL(file);
- loader.load(url,g=>{
-   URL.revokeObjectURL(url);
-   if(character)disposeCharacter();
-   character=g.scene;
-   character.position.set(0,0,0);character.rotation.set(0,0,0);character.scale.set(1,1,1);
-   scene.add(character);
-   if(mixer) mixer.stopAllAction();
-   mixer=new THREE.AnimationMixer(character);
-   gltfAnimations=g.animations||[];
-   animationActions=gltfAnimations.map(clip=>mixer.clipAction(clip));
-   updateAnimGrid();
-   scanRig();
-   normalizeModel();
-   focusModel();
-   $('modelName').textContent=file.name;
-   $('status').className='w-2.5 h-2.5 rounded-full bg-emerald-500';
-   showToast('Loaded '+file.name);
-   if(gltfAnimations.length) showToast(gltfAnimations.length+' embedded animation(s)');
- },undefined,e=>{console.error(e);showToast('Could not load model')});
-}
-function disposeCharacter(){
- if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper=null}
- markers.forEach(m=>scene.remove(m.s));markers=[];
- if(mixer)mixer.stopAllAction();
- scene.remove(character);
- character.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){const a=Array.isArray(o.material)?o.material:[o.material];a.forEach(m=>m.dispose())}});
-}
-function scanRig(){
- bones=[];parts=[];boneMap={};originalMaterials.clear();
- character.traverse(o=>{
-   if(o.isBone||o.type==='Bone'){bones.push(o);o.userData.baseRotation=o.rotation.clone();mapBone(o)}
-   if(o.isMesh||o.isSkinnedMesh){parts.push(o);o.castShadow=true;o.receiveShadow=true;saveMaterials(o)}
- });
- if(!boneMap.spine&&bones[0])boneMap.spine=bones[0];
- if(!boneMap.head&&bones[1])boneMap.head=bones[1];
- selectedBone=boneMap.spine||bones[0]||null;
- createMarkers();
- renderAssets();
- populateBoneSelect();
- populateMaterials();
- $('stats').textContent=`${bones.length} bones · ${parts.length} parts`;
- updateSwipeValues();
-}
-function mapBone(b){
- const n=norm(b.name);
- const side=n.includes('left')||/(^|[_\\.\\-])l($|[_\\.\\-])/.test(n)?'L':n.includes('right')||/(^|[_\\.\\-])r($|[_\\.\\-])/.test(n)?'R':'';
- const set=(k)=>{if(!boneMap[k])boneMap[k]=b};
- if(/hip|pelvis|spine|chest|torso/.test(n))set('spine');
- else if(/head|neck/.test(n))set('head');
- else if(/forearm|lowerarm|elbow/.test(n))set(side==='L'?'leftForearm':'rightForearm');
- else if(/upperarm|shoulder|arm/.test(n))set(side==='L'?'leftArm':'rightArm');
- else if(/shin|calf|lowerleg|knee/.test(n))set(side==='L'?'leftShin':'rightShin');
- else if(/thigh|upperleg|upleg|leg/.test(n))set(side==='L'?'leftLeg':'rightLeg');
-}
-function norm(s){return(s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ')}
-function normalizeModel(){
- character.updateMatrixWorld(true);
- let box=new THREE.Box3().setFromObject(character),size=box.getSize(new THREE.Vector3());
- if(size.y<.5){showToast('Model orientation may need manual adjustment')}
- const h=Math.max(size.y,.001);const s=2.15/h;character.scale.setScalar(s);character.updateMatrixWorld(true);
- box.setFromObject(character);character.position.y-=box.min.y;
-}
-function createMarkers(){
- markers.forEach(m=>scene.remove(m.s));markers=[];
- if(!showBoneDots) return;
- const geo=new THREE.SphereGeometry(.055,10,10);
- bones.forEach(b=>{const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0x34d399,depthTest:false,transparent:true,opacity:.9}));m.renderOrder=999;m.userData.bone=b;scene.add(m);markers.push({s:m,b})});
-}
-function updateMarkers(){if(!character)return;character.updateMatrixWorld(true);markers.forEach(m=>m.b.getWorldPosition(m.s.position));}
-function renderCategories(){
- $('cats').innerHTML=categories.map(([n,i])=>`<button class="cat ${n===category?'active':''}" data-cat="${n}"><i class="fa-solid ${i}"></i> ${n}</button>`).join('');
- $('cats').querySelectorAll('.cat').forEach(b=>b.onclick=()=>{category=b.dataset.cat;renderCategories();renderAssets()});
-}
-function partCategory(p){
- const n=norm(p.name);
- if(/hair|ponytail|bang|face|eye|mouth|head/.test(n))return n.includes('hair')||n.includes('ponytail')||n.includes('bang')?'Hair':'Head';
- if(/arm|hand|shoulder|sleeve/.test(n))return /left|_l|\.l/.test(n)?'L Arm':'R Arm';
- if(/leg|thigh|foot|shoe|shin|calf/.test(n))return /left|_l|\.l/.test(n)?'L Leg':'R Leg';
- if(/body|chest|torso|shirt|dress|skirt|coat/.test(n))return'Torso';return'Other';
-}
-function boneCategory(b){
- const n=norm(b.name);
- if(/head|neck/.test(n))return'Head';
- if(/arm|hand|shoulder/.test(n))return /left|_l|\.l/.test(n)?'L Arm':'R Arm';
- if(/leg|foot|toe|shin|thigh/.test(n))return /left|_l|\.l/.test(n)?'L Leg':'R Leg';
- if(/hair/.test(n))return'Hair';
- if(/spine|chest|hip|pelvis/.test(n))return'Torso';
- return'Other';
-}
-function renderAssets(){
- const items=[...bones.map(b=>({kind:'bone',obj:b,cat:boneCategory(b)})),...parts.map(p=>({kind:'part',obj:p,cat:partCategory(p)}))];
- const filtered=items.filter(x=>category==='All'||x.cat===category);
- $('asset-scroll').innerHTML=`<div class="asset-grid">${filtered.map((x,i)=>{
-   const sel=x.kind==='bone'&&selectedBone===x.obj?'active':x.kind==='part'&&selectedPart===x.obj.uuid?'active':'';
-   const icon=x.kind==='bone'?'fa-bone':'fa-cube';
-   const hidden=x.kind==='part'&&!x.obj.visible?'hidden-part':'';
-   return `<button class="asset-card ${sel} ${hidden}" data-i="${i}"><i class="asset-icon fa-solid ${icon}"></i><span class="asset-name">${esc(x.obj.name||x.kind)}</span><span class="mini">${x.cat}</span></button>`;
- }).join('')}</div>`;
- $('asset-scroll').querySelectorAll('.asset-card').forEach((el,i)=>{el.onclick=()=>{const x=filtered[i];if(x.kind==='bone'){selectBone(x.obj);switchTab('pose')}else{selectedPart=x.obj.uuid;renderAssets();showToast(x.obj.name||'Part selected')}}});
-}
-function populateBoneSelect(){
- const opts=['spine','head','leftArm','rightArm','leftForearm','rightForearm','leftLeg','rightLeg','leftShin','rightShin'];
- $('boneSelect').innerHTML=opts.map(k=>`<option value="${k}">${label(k)}</option>`).join('');
- if(selectedBone){const k=Object.keys(boneMap).find(k=>boneMap[k]===selectedBone);if(k)$('boneSelect').value=k}
- updateSwipeValues();
-}
-function label(k){return k.replace(/([A-Z])/g,' $1').replace(/^./,x=>x.toUpperCase())}
-function populateMaterials(){
- $('matTarget').innerHTML='<option value="all">All parts</option>'+parts.map(p=>`<option value="${p.uuid}">${esc(p.name||'Part')}</option>`).join('');
-}
-function saveMaterials(mesh){
- const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
- originalMaterials.set(mesh.uuid,mats.map(m=>({color:m.color?.clone(),roughness:m.roughness,metalness:m.metalness,opacity:m.opacity,transparent:m.transparent,emissive:m.emissive?.clone(),emissiveIntensity:m.emissiveIntensity,map:m.map})));
-}
-function getMaterials(){
- const list=selectedPart==='all'?parts:parts.filter(p=>p.uuid===selectedPart);
- return list.flatMap(p=>Array.isArray(p.material)?p.material:(p.material?[p.material]:[]));
-}
-function applyFX(fx){
- getMaterials().forEach(m=>{
-  if(fx==='normal'){
-   const mesh=parts.find(p=>(Array.isArray(p.material)?p.material:[p.material]).includes(m));
-   const o=mesh&&originalMaterials.get(mesh.uuid)?.[0];
-   if(o){m.color?.copy(o.color);m.roughness=o.roughness;m.metalness=o.metalness;m.opacity=o.opacity;m.transparent=o.transparent;m.emissive?.copy(o.emissive||new THREE.Color(0));m.emissiveIntensity=o.emissiveIntensity||0;m.map=o.map}
-  }else{
-   m.transparent=true;
-   if(fx==='cyber'){m.color?.set(0xec4899);m.roughness=.12;m.metalness=.85;m.emissive?.set(0xec4899);m.emissiveIntensity=.25;m.opacity=.9}
-   if(fx==='holo'){m.color?.set(0x22d3ee);m.roughness=.05;m.metalness=.8;m.emissive?.set(0x22d3ee);m.emissiveIntensity=.65;m.opacity=.62}
-   if(fx==='ghost'){m.color?.set(0xa78bfa);m.roughness=.3;m.metalness=.1;m.emissive?.set(0xa78bfa);m.emissiveIntensity=.35;m.opacity=.45}
-  }
-  m.needsUpdate=true
- });
- showToast(fx+' material');
-}
-function selectBone(b){if(!b)return;selectedBone=b;const k=Object.keys(boneMap).find(k=>boneMap[k]===b);if(k)$('boneSelect').value=k;renderAssets();updateSwipeValues();showToast('Selected '+(b.name||'bone'))}
-function resetSelected(){if(!selectedBone)return;selectedBone.rotation.copy(selectedBone.userData.baseRotation||new THREE.Euler());updateSwipeValues()}
-function onPointerDown(e){
- if(mode==='game')return;
- pointerDown={x:e.clientX,y:e.clientY,id:e.pointerId,moved:false};
- const hit=pickBone(e.clientX,e.clientY);
- if(hit){
-   e.preventDefault();
-   renderer.domElement.setPointerCapture(e.pointerId);
-   controls.enabled=false;
-   selectBone(hit);
-   activeDrag={bone:hit,x:e.clientX,y:e.clientY,rx:hit.rotation.x,ry:hit.rotation.y,rz:hit.rotation.z};
-   $('reticle').style.left=e.clientX+'px';
-   $('reticle').style.top=e.clientY+'px';
-   $('reticle').style.display='block';
- }
-}
-function onPointerMove(e){
- if(!pointerDown)return;
- const dx=e.clientX-pointerDown.x,dy=e.clientY-pointerDown.y;
- if(Math.hypot(dx,dy)>5)pointerDown.moved=true;
- if(!activeDrag)return;
- e.preventDefault();
- const scale=(e.shiftKey||e.ctrlKey)?0.014:0.007;
- activeDrag.bone.rotation.y=THREE.MathUtils.clamp(activeDrag.ry+dx*scale,-Math.PI,Math.PI);
- activeDrag.bone.rotation.x=THREE.MathUtils.clamp(activeDrag.rx-dy*scale,-Math.PI,Math.PI);
- updateSwipeValues();
-}
-function onPointerUp(e){
- if(activeDrag){
-  try{renderer.domElement.releasePointerCapture(e.pointerId)}catch{}
-  controls.enabled=true;
-  activeDrag=null;
-  $('reticle').style.display='none';
- }
- pointerDown=null;
-}
-function pickBone(x,y){
- const r=renderer.domElement.getBoundingClientRect();
- mouse.set((x-r.left)/r.width*2-1,-((y-r.top)/r.height)*2+1);
- ray.setFromCamera(mouse,camera);
- const hits=ray.intersectObjects(markers.map(m=>m.s),false);
- return hits[0]?.object?.userData?.bone||null;
-}
-function switchTab(t){
- document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
- ['pose','material','anim','game','settings'].forEach(p=>$('panel-'+p).classList.toggle('hidden',p!==t));
- if(t==='game')setMode('game');
- else if(mode==='game')setMode('pose');
-}
-function setMode(m){
- mode=m;
- $('joystick').style.display=m==='game'?'block':'none';
- if(m==='game'){controls.enabled=true;showToast('Game mode'); game.currentAnim=null;}
- else showToast(m+' mode');
-}
-function toggleSkeleton(){
- showSkeleton=!showSkeleton;
- if(showSkeleton&&character){skeletonHelper=new THREE.SkeletonHelper(character);scene.add(skeletonHelper)}
- else if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper=null}
-}
-function toggleBoneDots(){
- showBoneDots=!showBoneDots;
- if(showBoneDots)createMarkers();
- else markers.forEach(m=>scene.remove(m.s)),markers=[];
-}
-function setCamera(view){
- if(!character)return;
- const box=new THREE.Box3().setFromObject(character),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());
- const dist=Math.max(size.y*1.8,3);
- controls.target.copy(center);
- switch(view){
-  case 'front': camera.position.set(center.x,center.y+dist*.3,center.z+dist); break;
-  case 'back': camera.position.set(center.x,center.y+dist*.3,center.z-dist); break;
-  case 'left': camera.position.set(center.x-dist,center.y+dist*.3,center.z); break;
-  case 'right': camera.position.set(center.x+dist,center.y+dist*.3,center.z); break;
-  case 'top': camera.position.set(center.x,center.y+dist*1.5,center.z+0.01); break;
-  default: camera.position.set(center.x+dist*.65,center.y+dist*.35,center.z+dist);
- }
- controls.update();
- showToast(view+' view');
-}
-function focusModel(){setCamera('persp')}
-function recordKey(){
- if(!character)return;
- keys.push({time:keys.length?keys[keys.length-1].time+keyInterval:0,pose:Object.fromEntries(bones.map(b=>[b.uuid,[b.rotation.x,b.rotation.y,b.rotation.z]]))});
- renderTimeline();
- showToast('Keyframe '+keys.length);
-}
-function renderTimeline(){
- $('keyCount').textContent=keys.length+' keys';
- $('timeline').innerHTML=keys.map((k,i)=>`<button class="btn rounded-lg px-3 py-2 text-[9px] whitespace-nowrap" data-k="${i}">K${i+1}<br><span class="mini">${k.time.toFixed(2)}s</span></button>`).join('');
- $('timeline').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>applyKey(keys[+b.dataset.k]));
-}
-function applyKey(k){
- if(!k)return;
- bones.forEach(b=>{const p=k.pose[b.uuid];if(p)b.rotation.set(p[0],p[1],p[2])});
- updateSwipeValues();
-}
-function clearKeys(){keys=[];playing=false;renderTimeline()}
-function exportAnimation(){
- const blob=new Blob([JSON.stringify({version:1,frameRate:1/keyInterval,keyframes:keys},null,2)],{type:'application/json'});
- downloadBlob(blob,'animation.json');
-}
-function bakeSequence(){
- if(keys.length<2){showToast('Need at least 2 keyframes');return;}
- const name='Baked_'+Date.now();
- bakedAnimations.push({name,frames:JSON.parse(JSON.stringify(keys))});
- updateAnimGrid();
- showToast('Baked: '+name);
-}
-function updateAnimGrid(){
- const container=$('animGrid');
- container.innerHTML='';
- const allAnims=[...gltfAnimations.map((a,i)=>({name:a.name||`Embedded ${i+1}`,index:i,type:'gltf'})),...bakedAnimations.map((a,i)=>({name:a.name,index:i,type:'baked'}))];
- if(allAnims.length===0){container.innerHTML='<span class="mini italic">No animations</span>';return;}
- allAnims.forEach(a=>{
-  const btn=document.createElement('button');
-  btn.className='btn rounded-lg px-2 py-1 text-[10px]';
-  btn.textContent=a.name;
-  btn.onclick=()=>{ if(a.type==='gltf') playEmbeddedAnimation(a.index); else playBakedAnimation(a.index); };
-  container.appendChild(btn);
- });
-}
-function playEmbeddedAnimation(index){
- if(!mixer||index>=animationActions.length)return;
- if(currentAnimAction)currentAnimAction.stop();
- currentAnimAction=animationActions[index];
- currentAnimAction.reset().play();
- mode='anim';
- showToast('Playing '+gltfAnimations[index].name);
-}
-function playBakedAnimation(index){
- const anim=bakedAnimations[index];
- if(!anim)return;
- keys=JSON.parse(JSON.stringify(anim.frames));
- renderTimeline();
- playing=true;playTime=0;mode='anim';
- showToast('Playing baked: '+anim.name);
-}
-function assignGameAnim(type){
- if(bakedAnimations.length===0){showToast('Bake an animation first');return;}
- const anim=bakedAnimations[bakedAnimations.length-1];
- game.currentAnim=type;
- showToast(`Assigned ${type} to last baked animation`);
-}
-async function exportGLB(){
- if(!character)return;
- try{
-  const exporter=new GLTFExporter();
-  const result=await exporter.parseAsync(character,{binary:true,trs:true,onlyVisible:false});
-  downloadBlob(new Blob([result],{type:'model/gltf-binary'}),'avatar-animated.glb');
-  showToast('GLB exported');
- }catch(e){console.error(e);showToast('Export failed')}
-}
-function downloadBlob(blob,name){
- const u=URL.createObjectURL(blob),a=document.createElement('a');
- a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);
-}
-function keyDown(e){
- const k=e.key.toLowerCase();
- if(k==='w'||k==='arrowup')game.w=true;
- if(k==='s'||k==='arrowdown')game.s=true;
- if(k==='a'||k==='arrowleft')game.a=true;
- if(k==='d'||k==='arrowright')game.d=true;
- if(k===' ')game.jump=true;
- if(k==='shift')game.crouch=true;
-}
-function keyUp(e){
- const k=e.key.toLowerCase();
- if(k==='w'||k==='arrowup')game.w=false;
- if(k==='s'||k==='arrowdown')game.s=false;
- if(k==='a'||k==='arrowleft')game.a=false;
- if(k==='d'||k==='arrowright')game.d=false;
- if(k===' ')game.jump=false;
- if(k==='shift')game.crouch=false;
-}
-function setupJoystick(){
- const z=$('joystick'),t=$('joy-thumb');
- let active=false,cx=0,cy=0;
- const move=e=>{
-  if(!active)return;
-  const dx=e.clientX-cx,dy=e.clientY-cy,d=Math.min(Math.hypot(dx,dy),40),a=Math.atan2(dy,dx);
-  t.style.transform=`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`;
-  game.a=dx<-12;game.d=dx>12;game.w=dy<-12;game.s=dy>12;
- };
- z.onpointerdown=e=>{active=true;const r=z.getBoundingClientRect();cx=r.left+r.width/2;cy=r.top+r.height/2;z.setPointerCapture(e.pointerId);move(e)};
- z.onpointermove=move;
- z.onpointerup=z.onpointercancel=()=>{active=false;t.style.transform='translate(0,0)';game.w=game.s=game.a=game.d=false};
-}
-function updateGame(dt){
- if(!character)return;
- const x=(game.d?1:0)-(game.a?1:0),z=(game.w?1:0)-(game.s?1:0),moving=x||z;
- if(moving){
-  const a=Math.atan2(x,z);
-  character.rotation.y=a;
-  character.position.x+=Math.sin(a)*dt*1.8;
-  character.position.z+=Math.cos(a)*dt*1.8;
-  const t=performance.now()*.012,swing=Math.sin(t)*.65;
-  if(boneMap.leftLeg)boneMap.leftLeg.rotation.x=-swing;
-  if(boneMap.rightLeg)boneMap.rightLeg.rotation.x=swing;
-  if(boneMap.leftArm)boneMap.leftArm.rotation.x=swing*.7;
-  if(boneMap.rightArm)boneMap.rightArm.rotation.x=-swing*.7;
- }
- if(game.jump&&character.position.y<=.001)game.vy=.3;
- game.vy-=dt*gravity;
- character.position.y=Math.max(0,character.position.y+game.vy*dt);
- if(character.position.y===0)game.vy=0;
- character.scale.y=game.crouch?.82:1;
- if(game.crouch)character.position.y=.02;
-}
-function updateTimeline(dt){
- if(!playing||keys.length<2)return;
- playTime+=dt;
- const total=keys[keys.length-1].time;
- if(playTime>total)playTime=0;
- let a=keys[0],b=keys[keys.length-1];
- for(let i=0;i<keys.length-1;i++)if(playTime>=keys[i].time&&playTime<=keys[i+1].time){a=keys[i];b=keys[i+1];break}
- const t=(playTime-a.time)/Math.max(.0001,b.time-a.time);
- const eased=t*t*(3-2*t);
- bones.forEach(bone=>{
-  const pa=a.pose[bone.uuid],pb=b.pose[bone.uuid];
-  if(pa&&pb)bone.rotation.set(THREE.MathUtils.lerp(pa[0],pb[0],eased),THREE.MathUtils.lerp(pa[1],pb[1],eased),THREE.MathUtils.lerp(pa[2],pb[2],eased));
- });
-}
-function animate(){
- requestAnimationFrame(animate);
- const dt=Math.min(clock.getDelta(),.033);
- if(mixer)mixer.update(dt);
- if(mode==='game')updateGame(dt);
- if(mode==='anim')updateTimeline(dt);
- updateMarkers();
- if(skeletonHelper)skeletonHelper.update();
- controls.update();
- renderer.render(scene,camera);
-}
-function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function showToast(s){const t=$('toast');t.textContent=s;t.style.opacity=1;clearTimeout(t._t);t._t=setTimeout(()=>t.style.opacity=0,1800)}
+        // Swipe Control
+        function createSwipeControl(label,min,max,step,initial,onChange){
+            const container=document.createElement('div');
+            container.className='swipe-control';
+            container.innerHTML=`<span class="text-slate-400">${label}</span><span class="swipe-value">${initial.toFixed(2)}</span>`;
+            let val=initial,startX=0,startVal=0,dragging=false;
+            function setVal(v){ val=Math.min(max,Math.max(min,v)); container.querySelector('.swipe-value').textContent=val.toFixed(2); }
+            container.addEventListener('pointerdown',e=>{dragging=true;startX=e.clientX;startVal=val;container.setPointerCapture(e.pointerId);container.classList.add('dragging');e.preventDefault();});
+            container.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-startX;let newVal=startVal+(dx/100)*(max-min);if(step)newVal=Math.round(newVal/step)*step;setVal(newVal);onChange(val);});
+            container.addEventListener('pointerup',()=>{dragging=false;container.classList.remove('dragging');});
+            container.addEventListener('pointercancel',()=>{dragging=false;container.classList.remove('dragging');});
+            return {el:container,setValue:(v)=>{setVal(v);onChange(v)},getValue:()=>val};
+        }
 
-// ===== Swipe Control (replaces sliders) =====
-function createSwipeControl(label,min,max,step,initial,onChange){
- const container=document.createElement('div');
- container.className='swipe-control';
- container.innerHTML=`<span class="text-slate-400">${label}</span><span class="swipe-value">${initial.toFixed(2)}</span>`;
- let val=initial,startX=0,startVal=0,dragging=false;
- function setVal(v){val=Math.min(max,Math.max(min,v));container.querySelector('.swipe-value').textContent=val.toFixed(2);}
- container.addEventListener('pointerdown',e=>{dragging=true;startX=e.clientX;startVal=val;container.setPointerCapture(e.pointerId);container.classList.add('dragging');e.preventDefault();});
- container.addEventListener('pointermove',e=>{if(!dragging)return;const dx=e.clientX-startX;let newVal=startVal+(dx/100)*(max-min);if(step)newVal=Math.round(newVal/step)*step;setVal(newVal);onChange(val);});
- container.addEventListener('pointerup',()=>{dragging=false;container.classList.remove('dragging');});
- container.addEventListener('pointercancel',()=>{dragging=false;container.classList.remove('dragging');});
- return {el:container,setValue:(v)=>{setVal(v);onChange(v)},getValue:()=>val};
-}
-let poseSwipes={},matSwipes={},gravitySwipe,lightSwipe;
-function createSwipeControls(){
- poseSwipes={};
- const poseContainer=$('poseSwipeContainer');
- poseSwipes.rx=createSwipeControl('Pitch',-3.14,3.14,0.01,selectedBone?selectedBone.rotation.x:0,v=>{if(selectedBone)selectedBone.rotation.x=v});
- poseSwipes.ry=createSwipeControl('Yaw',-3.14,3.14,0.01,selectedBone?selectedBone.rotation.y:0,v=>{if(selectedBone)selectedBone.rotation.y=v});
- poseSwipes.rz=createSwipeControl('Roll',-3.14,3.14,0.01,selectedBone?selectedBone.rotation.z:0,v=>{if(selectedBone)selectedBone.rotation.z=v});
- poseContainer.appendChild(poseSwipes.rx.el);poseContainer.appendChild(poseSwipes.ry.el);poseContainer.appendChild(poseSwipes.rz.el);
- matSwipes={};
- const matContainer=$('matSwipeContainer');
- matSwipes.rough=createSwipeControl('Rough',0,1,0.01,0.5,v=>getMaterials().forEach(m=>m.roughness=v));
- matSwipes.metal=createSwipeControl('Metal',0,1,0.01,0.1,v=>getMaterials().forEach(m=>m.metalness=v));
- matSwipes.opacity=createSwipeControl('Opacity',0,1,0.01,1,v=>getMaterials().forEach(m=>{m.opacity=v;m.transparent=v<0.999}));
- matContainer.appendChild(matSwipes.rough.el);matContainer.appendChild(matSwipes.metal.el);matContainer.appendChild(matSwipes.opacity.el);
- gravitySwipe=createSwipeControl('Gravity',0.1,3,0.05,gravity,v=>{gravity=v});
- lightSwipe=createSwipeControl('Light',0.2,3,0.05,lightIntensity,v=>{lightIntensity=v;updateLightIntensity()});
- $('gravitySwipe').replaceWith(gravitySwipe.el);
- $('lightSwipe').replaceWith(lightSwipe.el);
-}
-function updateSwipeValues(){
- if(!selectedBone||!poseSwipes.rx)return;
- poseSwipes.rx.setValue(selectedBone.rotation.x);
- poseSwipes.ry.setValue(selectedBone.rotation.y);
- poseSwipes.rz.setValue(selectedBone.rotation.z);
-}
-function updateLightIntensity(){
- scene.traverse(o=>{if(o.isDirectionalLight)o.intensity=lightIntensity});
-}
-init();
+        // Pose/Material/Settings swipe controls variables
+        let poseSwipes={}, matSwipes={}, gravitySwipe, lightSwipe;
+
+        // Camera view helper
+        function setCamera(view){
+            if(!character)return;
+            const box=new THREE.Box3().setFromObject(character),center=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());
+            const dist=Math.max(size.y*1.8,3);
+            controls.target.copy(center);
+            switch(view){
+                case 'front': camera.position.set(center.x,center.y+dist*.3,center.z+dist); break;
+                case 'back': camera.position.set(center.x,center.y+dist*.3,center.z-dist); break;
+                case 'left': camera.position.set(center.x-dist,center.y+dist*.3,center.z); break;
+                case 'right': camera.position.set(center.x+dist,center.y+dist*.3,center.z); break;
+                case 'top': camera.position.set(center.x,center.y+dist*1.5,center.z+0.01); break;
+                default: camera.position.set(center.x+dist*.65,center.y+dist*.35,center.z+dist);
+            }
+            controls.update();
+            showToast(view+' view');
+        }
+
+        // Model Loading
+        function loadFile(file){
+            const loader = new THREE.GLTFLoader();
+            const dracoLoader = new THREE.DRACOLoader();
+            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.4.1/');
+            loader.setDRACOLoader(dracoLoader);
+            const url = URL.createObjectURL(file);
+            loader.load(url, (gltf) => {
+                URL.revokeObjectURL(url);
+                if (character) {
+                    scene.remove(character);
+                    if (skeletonHelper) { scene.remove(skeletonHelper); skeletonHelper = null; }
+                    markers.forEach(m=>scene.remove(m.s)); markers=[];
+                    if(mixer) mixer.stopAllAction();
+                }
+                character = gltf.scene;
+                character.position.set(0,0,0);
+                character.rotation.set(0,0,0);
+                character.scale.set(1,1,1);
+                scene.add(character);
+                if (mixer) mixer.stopAllAction();
+                mixer = new THREE.AnimationMixer(character);
+                gltfAnimations = gltf.animations || [];
+                animationActions = gltfAnimations.map(clip=>mixer.clipAction(clip));
+                updateAnimGrid();
+                scanRig();
+                normalizeModel();
+                focusModel();
+                $('modelName').textContent = file.name;
+                $('status').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+                showToast('Loaded '+file.name);
+                if(gltfAnimations.length) showToast(gltfAnimations.length+' embedded animation(s)');
+            }, undefined, (error) => { console.error(error); showToast('Load failed'); });
+        }
+
+        function disposeCharacter(){
+            if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper=null}
+            markers.forEach(m=>scene.remove(m.s));markers=[];
+            if(mixer)mixer.stopAllAction();
+            scene.remove(character);
+            character.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){const a=Array.isArray(o.material)?o.material:[o.material];a.forEach(m=>m.dispose())}});
+        }
+
+        // Rig scanning, bone mapping, parts categorization
+        function scanRig(){
+            bones=[];parts=[];boneMap={};originalMaterials.clear();
+            character.traverse(o=>{
+                if(o.isBone||o.type==='Bone'){bones.push(o);o.userData.baseRotation=o.rotation.clone();mapBone(o)}
+                if(o.isMesh||o.isSkinnedMesh){parts.push(o);o.castShadow=true;o.receiveShadow=true;saveMaterials(o)}
+            });
+            if(!boneMap.spine&&bones[0])boneMap.spine=bones[0];
+            if(!boneMap.head&&bones[1])boneMap.head=bones[1];
+            selectedBone=boneMap.spine||bones[0]||null;
+            createMarkers();
+            renderAssets();
+            populateBoneSelect();
+            populateMaterials();
+            $('stats').textContent=`${bones.length} bones · ${parts.length} parts`;
+            updateSwipeValues();
+        }
+
+        function mapBone(b){
+            const n=norm(b.name);
+            const side=n.includes('left')||/(^|[_\\.\\-])l($|[_\\.\\-])/.test(n)?'L':n.includes('right')||/(^|[_\\.\\-])r($|[_\\.\\-])/.test(n)?'R':'';
+            const set=(k)=>{if(!boneMap[k])boneMap[k]=b};
+            if(/hip|pelvis|spine|chest|torso/.test(n))set('spine');
+            else if(/head|neck/.test(n))set('head');
+            else if(/forearm|lowerarm|elbow/.test(n))set(side==='L'?'leftForearm':'rightForearm');
+            else if(/upperarm|shoulder|arm/.test(n))set(side==='L'?'leftArm':'rightArm');
+            else if(/shin|calf|lowerleg|knee/.test(n))set(side==='L'?'leftShin':'rightShin');
+            else if(/thigh|upperleg|upleg|leg/.test(n))set(side==='L'?'leftLeg':'rightLeg');
+        }
+
+        function normalizeModel(){
+            character.updateMatrixWorld(true);
+            let box=new THREE.Box3().setFromObject(character),size=box.getSize(new THREE.Vector3());
+            if(size.y<.5){showToast('Model orientation may need manual adjustment')}
+            const h=Math.max(size.y,.001);const s=2.15/h;character.scale.setScalar(s);character.updateMatrixWorld(true);
+            box.setFromObject(character);character.position.y-=box.min.y;
+        }
+
+        function createMarkers(){
+            markers.forEach(m=>scene.remove(m.s));markers=[];
+            if(!showBoneDots)return;
+            const geo=new THREE.SphereGeometry(.055,10,10);
+            bones.forEach(b=>{const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0x34d399,depthTest:false,transparent:true,opacity:.9}));m.renderOrder=999;m.userData.bone=b;scene.add(m);markers.push({s:m,b})});
+        }
+        function updateMarkers(){if(!character)return;character.updateMatrixWorld(true);markers.forEach(m=>m.b.getWorldPosition(m.s.position));}
+
+        // Asset category functions
+        function partCategory(p){
+            const n=norm(p.name);
+            if(/hair|ponytail|bang|face|eye|mouth|head/.test(n))return n.includes('hair')||n.includes('ponytail')||n.includes('bang')?'Hair':'Head';
+            if(/arm|hand|shoulder|sleeve/.test(n))return /left|_l|\.l/.test(n)?'L Arm':'R Arm';
+            if(/leg|thigh|foot|shoe|shin|calf/.test(n))return /left|_l|\.l/.test(n)?'L Leg':'R Leg';
+            if(/body|chest|torso|shirt|dress|skirt|coat/.test(n))return'Torso';return'Other';
+        }
+        function boneCategory(b){
+            const n=norm(b.name);
+            if(/head|neck/.test(n))return'Head';
+            if(/arm|hand|shoulder/.test(n))return /left|_l|\.l/.test(n)?'L Arm':'R Arm';
+            if(/leg|foot|toe|shin|thigh/.test(n))return /left|_l|\.l/.test(n)?'L Leg':'R Leg';
+            if(/hair/.test(n))return'Hair';
+            if(/spine|chest|hip|pelvis/.test(n))return'Torso';
+            return'Other';
+        }
+        function renderCategories(){
+            $('cats').innerHTML=categories.map(([n,i])=>`<button class="cat ${n===category?'active':''}" data-cat="${n}"><i class="fa-solid ${i}"></i> ${n}</button>`).join('');
+            $('cats').querySelectorAll('.cat').forEach(b=>b.onclick=()=>{category=b.dataset.cat;renderCategories();renderAssets()});
+        }
+        function renderAssets(){
+            const items=[...bones.map(b=>({kind:'bone',obj:b,cat:boneCategory(b)})),...parts.map(p=>({kind:'part',obj:p,cat:partCategory(p)}))];
+            const filtered=items.filter(x=>category==='All'||x.cat===category);
+            $('asset-scroll').innerHTML=`<div class="asset-grid">${filtered.map((x,i)=>{
+                const sel=x.kind==='bone'&&selectedBone===x.obj?'active':x.kind==='part'&&selectedPart===x.obj.uuid?'active':'';
+                const icon=x.kind==='bone'?'fa-bone':'fa-cube';
+                const hidden=x.kind==='part'&&!x.obj.visible?'hidden-part':'';
+                return `<button class="asset-card ${sel} ${hidden}" data-i="${i}"><i class="asset-icon fa-solid ${icon}"></i><span class="asset-name">${esc(x.obj.name||x.kind)}</span><span class="mini">${x.cat}</span></button>`;
+            }).join('')}</div>`;
+            $('asset-scroll').querySelectorAll('.asset-card').forEach((el,i)=>{el.onclick=()=>{const x=filtered[i];if(x.kind==='bone'){selectBone(x.obj);switchTab('pose')}else{selectedPart=x.obj.uuid;renderAssets();showToast(x.obj.name||'Part selected')}}});
+        }
+
+        function populateBoneSelect(){
+            const opts=['spine','head','leftArm','rightArm','leftForearm','rightForearm','leftLeg','rightLeg','leftShin','rightShin'];
+            $('boneSelect').innerHTML=opts.map(k=>`<option value="${k}">${k}</option>`).join('');
+            if(selectedBone){const k=Object.keys(boneMap).find(k=>boneMap[k]===selectedBone);if(k)$('boneSelect').value=k}
+            updateSwipeValues();
+        }
+        function populateMaterials(){
+            $('matTarget').innerHTML='<option value="all">All parts</option>'+parts.map(p=>`<option value="${p.uuid}">${esc(p.name||'Part')}</option>`).join('');
+        }
+        function saveMaterials(mesh){
+            const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];
+            originalMaterials.set(mesh.uuid,mats.map(m=>({color:m.color?.clone(),roughness:m.roughness,metalness:m.metalness,opacity:m.opacity,transparent:m.transparent,emissive:m.emissive?.clone(),emissiveIntensity:m.emissiveIntensity,map:m.map})));
+        }
+        function getMaterials(){
+            const list=selectedPart==='all'?parts:parts.filter(p=>p.uuid===selectedPart);
+            return list.flatMap(p=>Array.isArray(p.material)?p.material:(p.material?[p.material]:[]));
+        }
+
+        // Material FX (no tinting)
+        function applyFX(fx){
+            getMaterials().forEach(m=>{
+                if(fx==='normal'){
+                    const mesh=parts.find(p=>(Array.isArray(p.material)?p.material:[p.material]).includes(m));
+                    const o=mesh&&originalMaterials.get(mesh.uuid)?.[0];
+                    if(o){m.roughness=o.roughness;m.metalness=o.metalness;m.opacity=o.opacity;m.transparent=o.transparent;m.emissive?.copy(o.emissive||new THREE.Color(0));m.emissiveIntensity=o.emissiveIntensity||0;m.map=o.map}
+                }else{
+                    m.transparent=true;
+                    if(fx==='cyber'){m.roughness=.12;m.metalness=.85;m.emissive?.set(0xec4899);m.emissiveIntensity=.25;m.opacity=.9}
+                    if(fx==='holo'){m.roughness=.05;m.metalness=.8;m.emissive?.set(0x22d3ee);m.emissiveIntensity=.65;m.opacity=.62}
+                    if(fx==='ghost'){m.roughness=.3;m.metalness=.1;m.emissive?.set(0xa78bfa);m.emissiveIntensity=.35;m.opacity=.45}
+                }
+                m.needsUpdate=true;
+            });
+            showToast(fx+' material');
+        }
+
+        // Bone selection & posing
+        function selectBone(b){if(!b)return;selectedBone=b;const k=Object.keys(boneMap).find(k=>boneMap[k]===b);if(k)$('boneSelect').value=k;renderAssets();updateSwipeValues();showToast('Selected '+(b.name||'bone'))}
+        function resetSelected(){if(!selectedBone)return;selectedBone.rotation.copy(selectedBone.userData.baseRotation||new THREE.Euler());updateSwipeValues()}
+
+        // Pointer interactions
+        function onPointerDown(e){
+            if(mode==='game')return;
+            pointerDown={x:e.clientX,y:e.clientY,id:e.pointerId,moved:false};
+            const hit=pickBone(e.clientX,e.clientY);
+            if(hit){
+                e.preventDefault();
+                renderer.domElement.setPointerCapture(e.pointerId);
+                controls.enabled=false;
+                selectBone(hit);
+                activeDrag={bone:hit,x:e.clientX,y:e.clientY,rx:hit.rotation.x,ry:hit.rotation.y,rz:hit.rotation.z};
+                $('reticle').style.left=e.clientX+'px';
+                $('reticle').style.top=e.clientY+'px';
+                $('reticle').style.display='block';
+            }
+        }
+        function onPointerMove(e){
+            if(!pointerDown)return;
+            const dx=e.clientX-pointerDown.x,dy=e.clientY-pointerDown.y;
+            if(Math.hypot(dx,dy)>5)pointerDown.moved=true;
+            if(!activeDrag)return;
+            e.preventDefault();
+            const scale=(e.shiftKey||e.ctrlKey)?0.014:0.007;
+            activeDrag.bone.rotation.y=THREE.MathUtils.clamp(activeDrag.ry+dx*scale,-Math.PI,Math.PI);
+            activeDrag.bone.rotation.x=THREE.MathUtils.clamp(activeDrag.rx-dy*scale,-Math.PI,Math.PI);
+            updateSwipeValues();
+        }
+        function onPointerUp(e){
+            if(activeDrag){
+                try{renderer.domElement.releasePointerCapture(e.pointerId)}catch{}
+                controls.enabled=true;
+                activeDrag=null;
+                $('reticle').style.display='none';
+            }
+            pointerDown=null;
+        }
+        function pickBone(x,y){
+            const r=renderer.domElement.getBoundingClientRect();
+            mouse.set((x-r.left)/r.width*2-1,-((y-r.top)/r.height)*2+1);
+            ray.setFromCamera(mouse,camera);
+            const hits=ray.intersectObjects(markers.map(m=>m.s),false);
+            return hits[0]?.object?.userData?.bone||null;
+        }
+
+        // Tabs & mode
+        function switchTab(t){
+            document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+            ['pose','material','anim','game','settings'].forEach(p=>$('panel-'+p).classList.toggle('hidden',p!==t));
+            if(t==='game')setMode('game');
+            else if(mode==='game')setMode('pose');
+        }
+        function setMode(m){
+            mode=m;
+            $('joystick').style.display=m==='game'?'block':'none';
+            if(m==='game'){controls.enabled=true;game.currentAnim=null;showToast('Game mode')}
+            else showToast(m+' mode');
+        }
+        function toggleSkeleton(){
+            showSkeleton=!showSkeleton;
+            if(showSkeleton&&character){skeletonHelper=new THREE.SkeletonHelper(character);scene.add(skeletonHelper)}
+            else if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper=null}
+        }
+        function toggleBoneDots(){
+            showBoneDots=!showBoneDots;
+            if(showBoneDots)createMarkers();
+            else markers.forEach(m=>scene.remove(m.s)),markers=[];
+        }
+
+        // Timeline & animations
+        function recordKey(){
+            if(!character)return;
+            keys.push({time:keys.length?keys[keys.length-1].time+keyInterval:0,pose:Object.fromEntries(bones.map(b=>[b.uuid,[b.rotation.x,b.rotation.y,b.rotation.z]]))});
+            renderTimeline();
+            showToast('Keyframe '+keys.length);
+        }
+        function renderTimeline(){
+            $('keyCount').textContent=keys.length+' keys';
+            $('timeline').innerHTML=keys.map((k,i)=>`<button class="btn rounded-lg px-3 py-2 text-[9px] whitespace-nowrap" data-k="${i}">K${i+1}<br><span class="mini">${k.time.toFixed(2)}s</span></button>`).join('');
+            $('timeline').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>applyKey(keys[+b.dataset.k]));
+        }
+        function applyKey(k){if(!k)return;bones.forEach(b=>{const p=k.pose[b.uuid];if(p)b.rotation.set(p[0],p[1],p[2])});updateSwipeValues();}
+        function clearKeys(){keys=[];playing=false;renderTimeline()}
+        function exportAnimation(){const blob=new Blob([JSON.stringify({version:1,frameRate:1/keyInterval,keyframes:keys},null,2)],{type:'application/json'});downloadBlob(blob,'animation.json');}
+        function bakeSequence(){if(keys.length<2){showToast('Need at least 2 keyframes');return;}const name='Baked_'+Date.now();bakedAnimations.push({name,frames:JSON.parse(JSON.stringify(keys))});updateAnimGrid();showToast('Baked: '+name);}
+        function updateAnimGrid(){
+            const container=$('animGrid');
+            container.innerHTML='';
+            const allAnims=[...gltfAnimations.map((a,i)=>({name:a.name||`Embedded ${i+1}`,index:i,type:'gltf'})),...bakedAnimations.map((a,i)=>({name:a.name,index:i,type:'baked'}))];
+            if(allAnims.length===0){container.innerHTML='<span class="mini italic">No animations</span>';return;}
+            allAnims.forEach(a=>{
+                const btn=document.createElement('button');
+                btn.className='btn rounded-lg px-2 py-1 text-[10px]';
+                btn.textContent=a.name;
+                btn.onclick=()=>{if(a.type==='gltf')playEmbeddedAnimation(a.index);else playBakedAnimation(a.index);};
+                container.appendChild(btn);
+            });
+        }
+        function playEmbeddedAnimation(index){
+            if(!mixer||index>=animationActions.length)return;
+            if(currentAnimAction)currentAnimAction.stop();
+            currentAnimAction=animationActions[index];
+            currentAnimAction.reset().play();
+            mode='anim';
+            showToast('Playing '+gltfAnimations[index].name);
+        }
+        function playBakedAnimation(index){
+            const anim=bakedAnimations[index];
+            if(!anim)return;
+            keys=JSON.parse(JSON.stringify(anim.frames));
+            renderTimeline();
+            playing=true;playTime=0;mode='anim';
+            showToast('Playing baked: '+anim.name);
+        }
+        function assignGameAnim(type){
+            if(bakedAnimations.length===0){showToast('Bake an animation first');return;}
+            const anim=bakedAnimations[bakedAnimations.length-1];
+            game.currentAnim=type;
+            showToast(`Assigned ${type} to last baked animation`);
+        }
+        function downloadBlob(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
+
+        // Keyboard & Joystick
+        function keyDown(e){const k=e.key.toLowerCase();if(k==='w'||k==='arrowup')game.w=true;if(k==='s'||k==='arrowdown')game.s=true;if(k==='a'||k==='arrowleft')game.a=true;if(k==='d'||k==='arrowright')game.d=true;if(k===' ')game.jump=true;if(k==='shift')game.crouch=true;}
+        function keyUp(e){const k=e.key.toLowerCase();if(k==='w'||k==='arrowup')game.w=false;if(k==='s'||k==='arrowdown')game.s=false;if(k==='a'||k==='arrowleft')game.a=false;if(k==='d'||k==='arrowright')game.d=false;if(k===' ')game.jump=false;if(k==='shift')game.crouch=false;}
+        function setupJoystick(){
+            const z=$('joystick'),t=$('joy-thumb');
+            let active=false,cx=0,cy=0;
+            const move=e=>{if(!active)return;const dx=e.clientX-cx,dy=e.clientY-cy,d=Math.min(Math.hypot(dx,dy),40),a=Math.atan2(dy,dx);t.style.transform=`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`;game.a=dx<-12;game.d=dx>12;game.w=dy<-12;game.s=dy>12;};
+            z.onpointerdown=e=>{active=true;const r=z.getBoundingClientRect();cx=r.left+r.width/2;cy=r.top+r.height/2;z.setPointerCapture(e.pointerId);move(e)};
+            z.onpointermove=move;
+            z.onpointerup=z.onpointercancel=()=>{active=false;t.style.transform='translate(0,0)';game.w=game.s=game.a=game.d=false};
+        }
+
+        // Game update (fixed walk, gravity, etc.)
+        function updateGame(dt){
+            if(!character)return;
+            const x=(game.d?1:0)-(game.a?1:0),z=(game.w?1:0)-(game.s?1:0),moving=x||z;
+            if(moving){
+                const a=Math.atan2(x,z);
+                character.rotation.y=a;
+                character.position.x+=Math.sin(a)*dt*1.8;
+                character.position.z+=Math.cos(a)*dt*1.8;
+                const t=performance.now()*.012,swing=Math.sin(t)*.65;
+                if(boneMap.leftLeg)boneMap.leftLeg.rotation.x=-swing;
+                if(boneMap.rightLeg)boneMap.rightLeg.rotation.x=swing;
+                if(boneMap.leftArm)boneMap.leftArm.rotation.x=swing*.7;
+                if(boneMap.rightArm)boneMap.rightArm.rotation.x=-swing*.7;
+            } else {
+                // idle pose
+                if(boneMap.leftLeg)boneMap.leftLeg.rotation.x*=0.9;
+                if(boneMap.rightLeg)boneMap.rightLeg.rotation.x*=0.9;
+            }
+            if(game.jump&&character.position.y<=.001)game.vy=.3;
+            game.vy-=dt*gravity;
+            character.position.y=Math.max(0,character.position.y+game.vy*dt);
+            if(character.position.y===0)game.vy=0;
+            character.scale.y=game.crouch?.82:1;
+            if(game.crouch)character.position.y=.02;
+        }
+
+        // Timeline update with easing
+        function updateTimeline(dt){
+            if(!playing||keys.length<2)return;
+            playTime+=dt;
+            const total=keys[keys.length-1].time;
+            if(playTime>total)playTime=0;
+            let a=keys[0],b=keys[keys.length-1];
+            for(let i=0;i<keys.length-1;i++)if(playTime>=keys[i].time&&playTime<=keys[i+1].time){a=keys[i];b=keys[i+1];break}
+            const t=(playTime-a.time)/Math.max(.0001,b.time-a.time);
+            const eased=t*t*(3-2*t);
+            bones.forEach(bone=>{
+                const pa=a.pose[bone.uuid],pb=b.pose[bone.uuid];
+                if(pa&&pb)bone.rotation.set(THREE.MathUtils.lerp(pa[0],pb[0],eased),THREE.MathUtils.lerp(pa[1],pb[1],eased),THREE.MathUtils.lerp(pa[2],pb[2],eased));
+            });
+        }
+
+        // Main animation loop
+        function animate(){
+            requestAnimationFrame(animate);
+            const dt=Math.min(clock.getDelta(),.033);
+            if(mixer)mixer.update(dt);
+            if(mode==='game')updateGame(dt);
+            if(mode==='anim')updateTimeline(dt);
+            updateMarkers();
+            if(skeletonHelper)skeletonHelper.update();
+            controls.update();
+            renderer.render(scene,camera);
+        }
+
+        // Swipe controls setup
+        function createSwipeControls(){
+            poseSwipes={};
+            const poseContainer=$('poseSwipeContainer');
+            poseSwipes.rx=createSwipeControl('Pitch',-3.14,3.14,0.01,0,v=>{if(selectedBone)selectedBone.rotation.x=v});
+            poseSwipes.ry=createSwipeControl('Yaw',-3.14,3.14,0.01,0,v=>{if(selectedBone)selectedBone.rotation.y=v});
+            poseSwipes.rz=createSwipeControl('Roll',-3.14,3.14,0.01,0,v=>{if(selectedBone)selectedBone.rotation.z=v});
+            poseContainer.appendChild(poseSwipes.rx.el);poseContainer.appendChild(poseSwipes.ry.el);poseContainer.appendChild(poseSwipes.rz.el);
+
+            matSwipes={};
+            const matContainer=$('matSwipeContainer');
+            matSwipes.rough=createSwipeControl('Rough',0,1,0.01,0.5,v=>getMaterials().forEach(m=>m.roughness=v));
+            matSwipes.metal=createSwipeControl('Metal',0,1,0.01,0.1,v=>getMaterials().forEach(m=>m.metalness=v));
+            matSwipes.opacity=createSwipeControl('Opacity',0,1,0.01,1,v=>getMaterials().forEach(m=>{m.opacity=v;m.transparent=v<0.999}));
+            matContainer.appendChild(matSwipes.rough.el);matContainer.appendChild(matSwipes.metal.el);matContainer.appendChild(matSwipes.opacity.el);
+
+            gravitySwipe=createSwipeControl('Gravity',0.1,3,0.05,gravity,v=>{gravity=v});
+            lightSwipe=createSwipeControl('Light',0.2,3,0.05,lightIntensity,v=>{lightIntensity=v;updateLightIntensity()});
+            $('gravitySwipe').replaceWith(gravitySwipe.el);
+            $('lightSwipe').replaceWith(lightSwipe.el);
+        }
+        function updateSwipeValues(){
+            if(!selectedBone||!poseSwipes.rx)return;
+            poseSwipes.rx.setValue(selectedBone.rotation.x);
+            poseSwipes.ry.setValue(selectedBone.rotation.y);
+            poseSwipes.rz.setValue(selectedBone.rotation.z);
+        }
+        function updateLightIntensity(){
+            scene.traverse(o=>{if(o.isDirectionalLight)o.intensity=lightIntensity});
+        }
+
+        // Initialize everything
+        function init(){
+            scene=new THREE.Scene();
+            scene.background=new THREE.Color(0x070b13);
+            camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.05,100);
+            camera.position.set(2.8,1.9,4.6);
+            renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:false});
+            renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+            renderer.setSize(innerWidth,innerHeight);
+            renderer.shadowMap.enabled=true;
+            renderer.outputColorSpace=THREE.SRGBColorSpace;
+            $('viewport').appendChild(renderer.domElement);
+            controls=new THREE.OrbitControls(camera,renderer.domElement);
+            controls.enableDamping=true;controls.dampingFactor=.08;controls.minDistance=1.2;controls.maxDistance=12;controls.maxPolarAngle=Math.PI*.92;
+            controls.touches={ONE:THREE.TOUCH.ROTATE,TWO:THREE.TOUCH.DOLLY_PAN};
+            scene.add(new THREE.HemisphereLight(0xddeeff,0x182033,1.2));
+            const keyLight=new THREE.DirectionalLight(0xffffff,1.8);keyLight.position.set(4,7,5);keyLight.castShadow=true;scene.add(keyLight);
+            const rim=new THREE.DirectionalLight(0xff9ac8,1.0);rim.position.set(-4,4,-5);scene.add(rim);
+            const grid=new THREE.GridHelper(20,40,0x334155,0x172033);scene.add(grid);
+            window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
+            // Bind all events
+            $('upload').addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0]);e.target.value='';});
+            $('exportBtn').addEventListener('click',()=>{if(character){const exporter=new THREE.GLTFExporter();exporter.parse(character,(result)=>{const blob=new Blob([result],{type:'application/octet-stream'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='avatar.glb';a.click();});}});
+            $('skeletonBtn').addEventListener('click',toggleSkeleton);
+            $('dotsBtn').addEventListener('click',toggleBoneDots);
+            $('focusBtn').addEventListener('click',()=>setCamera('persp'));
+            document.querySelectorAll('.camera-btn').forEach(b=>b.addEventListener('click',()=>setCamera(b.dataset.cam)));
+            $('boneSelect').addEventListener('change',()=>selectBone(boneMap[$('boneSelect').value]||null));
+            $('resetBone').addEventListener('click',resetSelected);
+            $('keyBtn').addEventListener('click',recordKey);
+            $('record').addEventListener('click',()=>{recording=!recording;$('record').textContent=recording?'■ Recording':'● Record';showToast(recording?'Recording keys':'Recording stopped')});
+            $('play').addEventListener('click',()=>{if(keys.length){playing=true;playTime=0;mode='anim';showToast('Timeline playing')}});
+            $('stop').addEventListener('click',()=>playing=false);
+            $('clearKeys').addEventListener('click',clearKeys);
+            $('exportAnim').addEventListener('click',exportAnimation);
+            $('bakeSeq').addEventListener('click',bakeSequence);
+            $('gameMode').addEventListener('click',()=>setMode(mode==='game'?'pose':'game'));
+            document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+            document.querySelectorAll('[data-fx]').forEach(b=>b.addEventListener('click',()=>applyFX(b.dataset.fx)));
+            document.querySelectorAll('[data-gameanim]').forEach(b=>b.addEventListener('click',()=>assignGameAnim(b.dataset.gameanim)));
+            $('matTarget').addEventListener('change',e=>{selectedPart=e.target.value;renderAssets()});
+            renderer.domElement.addEventListener('pointerdown',onPointerDown,{passive:false});
+            renderer.domElement.addEventListener('pointermove',onPointerMove,{passive:false});
+            renderer.domElement.addEventListener('pointerup',onPointerUp,{passive:false});
+            renderer.domElement.addEventListener('pointercancel',onPointerUp,{passive:false});
+            window.addEventListener('keydown',keyDown);
+            window.addEventListener('keyup',keyUp);
+            setupJoystick();
+            // Drag & drop
+            const drop=$('drop');
+            ['dragenter','dragover'].forEach(e=>window.addEventListener(e,x=>{x.preventDefault();drop.style.display='flex'}));
+            ['dragleave','drop'].forEach(e=>window.addEventListener(e,x=>{x.preventDefault();if(e==='dragleave'&&!x.relatedTarget)drop.style.display='none'}));
+            window.addEventListener('drop',e=>{drop.style.display='none';const f=e.dataTransfer.files[0];if(f&&/\.gltf?$/.test(f.name.toLowerCase()))loadFile(f)});
+            renderCategories();
+            updateAnimGrid();
+            createSwipeControls();
+            animate();
+        }
+
+        // Start
+        init();
+    })();
 </script>
 </body>
 </html>
