@@ -1,0 +1,2194 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Doll Studio Pro – Touch Edition</title>
+    <style>
+        :root {
+            --bg: #1a1a2e;
+            --bg2: #16213e;
+            --accent: #e94560;
+            --accent2: #0f3460;
+            --gold: #f5c518;
+            --text: #f0f0f0;
+            --text-dim: #aaa;
+            --panel: rgba(22, 33, 62, 0.95);
+            --panel-border: rgba(233, 69, 96, 0.5);
+            --btn-size: 52px;
+            --btn-radius: 16px;
+            --hud-padding: 10px;
+            --joy-size: 140px;
+            --joy-knob: 50px;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            font-family: 'Segoe UI', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+            touch-action: none;
+            position: fixed;
+            inset: 0;
+        }
+        #mainCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            touch-action: none;
+            z-index: 1;
+            background: transparent;
+        }
+        #bgCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: block;
+            z-index: 0;
+            pointer-events: none;
+            background: #1a1a2e;
+        }
+        .hud-overlay {
+            position: absolute;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .hud-overlay>* {
+            pointer-events: auto;
+        }
+        #topBar {
+            position: absolute;
+            top: var(--safe-top);
+            left: 0;
+            right: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            pointer-events: none;
+            gap: 8px;
+        }
+        #topBar>* {
+            pointer-events: auto;
+        }
+        .top-btn {
+            background: var(--panel);
+            border: 2px solid var(--panel-border);
+            border-radius: 12px;
+            color: var(--text);
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.2s;
+            min-height: 40px;
+            white-space: nowrap;
+        }
+        .top-btn:active {
+            transform: scale(0.95);
+            background: var(--accent2);
+        }
+        .top-btn.active {
+            background: var(--accent);
+            border-color: var(--gold);
+            color: #fff;
+            box-shadow: 0 0 16px rgba(233, 69, 96, 0.5);
+        }
+        #modeIndicator {
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+            color: var(--gold);
+            text-shadow: 0 0 8px rgba(245, 197, 24, 0.4);
+        }
+        #bottomHud {
+            position: absolute;
+            bottom: calc(var(--safe-bottom) + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            display: flex;
+            gap: 8px;
+            pointer-events: none;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 95vw;
+            padding: 4px;
+        }
+        #bottomHud>* {
+            pointer-events: auto;
+        }
+        .hud-btn {
+            width: var(--btn-size);
+            height: var(--btn-size);
+            border-radius: var(--btn-radius);
+            background: var(--panel);
+            border: 2px solid var(--panel-border);
+            color: var(--text);
+            font-size: 22px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.2s;
+            position: relative;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .hud-btn:active {
+            transform: scale(0.92);
+            background: var(--accent2);
+            border-color: var(--gold);
+        }
+        .hud-btn.active {
+            background: var(--accent);
+            border-color: var(--gold);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.6);
+        }
+        .hud-btn .label {
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 9px;
+            color: var(--text-dim);
+            white-space: nowrap;
+            pointer-events: none;
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+        #joyZone {
+            position: absolute;
+            z-index: 15;
+            pointer-events: none;
+            display: none;
+        }
+        #joyZone.active {
+            display: block;
+            pointer-events: auto;
+        }
+        #joyBase {
+            position: absolute;
+            width: var(--joy-size);
+            height: var(--joy-size);
+            border-radius: 50%;
+            background: rgba(22, 33, 62, 0.75);
+            border: 3px solid rgba(245, 197, 24, 0.6);
+            box-shadow: 0 0 30px rgba(245, 197, 24, 0.25), inset 0 0 20px rgba(0, 0, 0, 0.4);
+            pointer-events: none;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s;
+        }
+        #joyKnob {
+            width: var(--joy-knob);
+            height: var(--joy-knob);
+            border-radius: 50%;
+            background: radial-gradient(circle at 40% 35%, #e94560, #a03050);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 12px rgba(233, 69, 96, 0.4);
+            pointer-events: none;
+            transition: transform 0.05s ease-out;
+        }
+        #wheelIndicator {
+            position: absolute;
+            width: var(--joy-size);
+            height: var(--joy-size);
+            border-radius: 50%;
+            border: 3px dashed rgba(245, 197, 24, 0.7);
+            pointer-events: none;
+            display: none;
+        }
+        #wheelIndicator .tick {
+            position: absolute;
+            width: 3px;
+            height: 14px;
+            background: var(--gold);
+            border-radius: 2px;
+            left: 50%;
+            top: -2px;
+            transform-origin: 50% calc(var(--joy-size) / 2);
+            opacity: 0.7;
+        }
+        #actionZone {
+            position: absolute;
+            z-index: 15;
+            display: none;
+            pointer-events: none;
+        }
+        #actionZone.active {
+            display: flex;
+            pointer-events: auto;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+        }
+        .action-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--panel);
+            border: 2px solid var(--panel-border);
+            color: var(--text);
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+            transition: all 0.15s;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .action-btn:active {
+            transform: scale(0.9);
+            background: var(--accent);
+            border-color: var(--gold);
+            box-shadow: 0 0 18px rgba(233, 69, 96, 0.5);
+        }
+        .panel {
+            position: absolute;
+            z-index: 30;
+            background: var(--panel);
+            border: 2px solid var(--panel-border);
+            border-radius: 20px 20px 0 0;
+            padding: 16px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(110%);
+            pointer-events: auto;
+            max-height: 60vh;
+            overflow-y: auto;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        .panel.open {
+            transform: translateY(0);
+        }
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            gap: 8px;
+        }
+        .panel-header h3 {
+            color: var(--gold);
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+        .close-btn {
+            background: transparent;
+            border: 2px solid var(--panel-border);
+            border-radius: 10px;
+            color: var(--text);
+            width: 36px;
+            height: 36px;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .close-btn:active {
+            background: var(--accent);
+            transform: scale(0.9);
+        }
+        .panel-content {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding-bottom: 20px;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .slider-row label {
+            color: var(--text-dim);
+            font-size: 12px;
+            min-width: 60px;
+            font-weight: 500;
+        }
+        .slider-row input[type="range"] {
+            flex: 1;
+            min-width: 100px;
+            height: 6px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: var(--accent2);
+            border-radius: 3px;
+            outline: none;
+        }
+        .slider-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--accent);
+            border: 3px solid var(--gold);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+        .color-palette {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        .color-swatch {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
+        }
+        .color-swatch:active {
+            transform: scale(0.88);
+            border-color: var(--gold);
+        }
+        .color-swatch.selected {
+            border-color: var(--gold);
+            box-shadow: 0 0 12px rgba(245, 197, 24, 0.6);
+            transform: scale(1.05);
+        }
+        .costume-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 8px;
+        }
+        .costume-item {
+            background: var(--bg2);
+            border: 2px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .costume-item:active {
+            transform: scale(0.92);
+            background: var(--accent2);
+        }
+        .costume-item.active {
+            border-color: var(--gold);
+            background: var(--accent2);
+            box-shadow: 0 0 12px rgba(245, 197, 24, 0.4);
+        }
+        .costume-preview {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--accent2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .costume-item span {
+            font-size: 10px;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+        .file-upload-area {
+            border: 2px dashed var(--panel-border);
+            border-radius: 14px;
+            padding: 18px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--text-dim);
+            font-size: 13px;
+            background: var(--bg2);
+        }
+        .file-upload-area:active {
+            border-color: var(--gold);
+            background: var(--accent2);
+        }
+        .file-upload-area input[type="file"] {
+            display: none;
+        }
+        .upload-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        .upload-option-btn {
+            background: var(--bg2);
+            border: 2px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 8px 12px;
+            color: var(--text);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-weight: 500;
+        }
+        .upload-option-btn:active {
+            background: var(--accent);
+            transform: scale(0.94);
+        }
+        .upload-option-btn.active {
+            border-color: var(--gold);
+            background: var(--accent2);
+            box-shadow: 0 0 10px rgba(245, 197, 24, 0.3);
+        }
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .btn-row button {
+            flex: 1;
+            min-width: 60px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            border: 2px solid var(--panel-border);
+            background: var(--bg2);
+            color: var(--text);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-row button:active {
+            background: var(--accent);
+            border-color: var(--gold);
+            transform: scale(0.95);
+        }
+        #toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: var(--panel);
+            border: 2px solid var(--gold);
+            border-radius: 14px;
+            padding: 16px 24px;
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s;
+            text-align: center;
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+        }
+        #toast.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        @media (max-width: 400px) {
+            :root {
+                --btn-size: 46px;
+                --btn-radius: 13px;
+                --joy-size: 120px;
+                --joy-knob: 42px;
+            }
+            .hud-btn {
+                font-size: 18px;
+            }
+            .panel {
+                padding: 12px;
+                border-radius: 16px 16px 0 0;
+            }
+            .action-btn {
+                width: 48px;
+                height: 48px;
+                font-size: 17px;
+            }
+        }
+        @media (min-width: 600px) {
+            :root {
+                --btn-size: 60px;
+                --btn-radius: 18px;
+                --joy-size: 170px;
+                --joy-knob: 60px;
+            }
+            .hud-btn {
+                font-size: 26px;
+            }
+        }
+        @media (orientation: landscape) and (max-height: 500px) {
+            :root {
+                --btn-size: 42px;
+                --btn-radius: 11px;
+                --joy-size: 100px;
+                --joy-knob: 36px;
+            }
+            #bottomHud {
+                bottom: 4px;
+                gap: 4px;
+            }
+            .hud-btn .label {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Canvas -->
+    <canvas id="bgCanvas"></canvas>
+
+    <!-- Main Canvas -->
+    <canvas id="mainCanvas"></canvas>
+
+    <!-- Top Bar -->
+    <div id="topBar">
+        <button class="top-btn" id="btnModeToggle" aria-label="Toggle mode">
+            <span id="modeIndicator">🎨 EDIT</span>
+        </button>
+        <button class="top-btn" id="btnControlToggle" aria-label="Control type">
+            <span id="controlIndicator">🕹️ Joystick</span>
+        </button>
+        <button class="top-btn" id="btnSettings" aria-label="Settings">⚙️</button>
+    </div>
+
+    <!-- Joystick Zone -->
+    <div id="joyZone">
+        <div id="joyBase">
+            <div id="joyKnob"></div>
+        </div>
+        <div id="wheelIndicator"></div>
+    </div>
+
+    <!-- Action Zone (right side buttons in play mode) -->
+    <div id="actionZone">
+        <button class="action-btn" id="btnJump" aria-label="Jump">⬆️</button>
+        <button class="action-btn" id="btnDash" aria-label="Dash">💨</button>
+        <button class="action-btn" id="btnSpin" aria-label="Spin">🌀</button>
+    </div>
+
+    <!-- Bottom HUD -->
+    <div id="bottomHud">
+        <button class="hud-btn" id="btnBrush" aria-label="Brush">🖌️<span class="label">Brush</span></button>
+        <button class="hud-btn" id="btnEraser" aria-label="Eraser">🧹<span class="label">Eraser</span></button>
+        <button class="hud-btn" id="btnColor" aria-label="Color">🎨<span class="label">Color</span></button>
+        <button class="hud-btn" id="btnCostume" aria-label="Costume">👗<span class="label">Costume</span></button>
+        <button class="hud-btn" id="btnImage" aria-label="Image">📁<span class="label">Images</span></button>
+        <button class="hud-btn" id="btnUndo" aria-label="Undo">↩️<span class="label">Undo</span></button>
+        <button class="hud-btn" id="btnClear" aria-label="Clear">🗑️<span class="label">Clear</span></button>
+        <button class="hud-btn" id="btnPlay" aria-label="Play">▶️<span class="label">Play</span></button>
+    </div>
+
+    <!-- Brush Panel -->
+    <div class="panel" id="brushPanel">
+        <div class="panel-header">
+            <h3>🖌️ Brush Settings</h3>
+            <button class="close-btn" data-close="brushPanel">✕</button>
+        </div>
+        <div class="panel-content">
+            <div class="slider-row">
+                <label>Size</label>
+                <input type="range" id="brushSize" min="1" max="50" value="8">
+                <span id="brushSizeVal" style="color:var(--gold);font-weight:700;min-width:30px;text-align:center;">8</span>
+            </div>
+            <div class="slider-row">
+                <label>Opacity</label>
+                <input type="range" id="brushOpacity" min="5" max="100" value="100">
+                <span id="brushOpacityVal" style="color:var(--gold);font-weight:700;min-width:30px;text-align:center;">100%</span>
+            </div>
+            <div class="color-palette" id="brushColors">
+                <div class="color-swatch selected" data-color="#e94560" style="background:#e94560;"></div>
+                <div class="color-swatch" data-color="#f5c518" style="background:#f5c518;"></div>
+                <div class="color-swatch" data-color="#4ecdc4" style="background:#4ecdc4;"></div>
+                <div class="color-swatch" data-color="#45b7d1" style="background:#45b7d1;"></div>
+                <div class="color-swatch" data-color="#ff6b6b" style="background:#ff6b6b;"></div>
+                <div class="color-swatch" data-color="#a855f7" style="background:#a855f7;"></div>
+                <div class="color-swatch" data-color="#22c55e" style="background:#22c55e;"></div>
+                <div class="color-swatch" data-color="#f97316" style="background:#f97316;"></div>
+                <div class="color-swatch" data-color="#ffffff" style="background:#ffffff;border-color:#666;"></div>
+                <div class="color-swatch" data-color="#000000" style="background:#000000;"></div>
+                <div class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6;"></div>
+                <div class="color-swatch" data-color="#ec4899" style="background:#ec4899;"></div>
+            </div>
+            <div class="btn-row">
+                <button id="btnBrushClose">Done</button>
+                <button id="btnBrushSmall">Small</button>
+                <button id="btnBrushMedium">Medium</button>
+                <button id="btnBrushLarge">Large</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Costume Panel -->
+    <div class="panel" id="costumePanel">
+        <div class="panel-header">
+            <h3>👗 Costumes & Masks</h3>
+            <button class="close-btn" data-close="costumePanel">✕</button>
+        </div>
+        <div class="panel-content">
+            <h4 style="color:var(--text-dim);font-size:13px;font-weight:600;">Costumes</h4>
+            <div class="costume-grid" id="costumeGrid">
+                <div class="costume-item active" data-costume="none"><div class="costume-preview">🚫</div><span>None</span></div>
+                <div class="costume-item" data-costume="hero"><div class="costume-preview">🦸</div><span>Hero</span></div>
+                <div class="costume-item" data-costume="princess"><div class="costume-preview">👸</div><span>Princess</span></div>
+                <div class="costume-item" data-costume="ninja"><div class="costume-preview">🥷</div><span>Ninja</span></div>
+                <div class="costume-item" data-costume="robot"><div class="costume-preview">🤖</div><span>Robot</span></div>
+                <div class="costume-item" data-costume="wizard"><div class="costume-preview">🧙</div><span>Wizard</span></div>
+            </div>
+            <h4 style="color:var(--text-dim);font-size:13px;font-weight:600;margin-top:6px;">Masks</h4>
+            <div class="costume-grid" id="maskGrid">
+                <div class="costume-item active" data-mask="none"><div class="costume-preview">🚫</div><span>None</span></div>
+                <div class="costume-item" data-mask="mask1"><div class="costume-preview">🎭</div><span>Classic</span></div>
+                <div class="costume-item" data-mask="mask2"><div class="costume-preview">😺</div><span>Cat</span></div>
+                <div class="costume-item" data-mask="mask3"><div class="costume-preview">🦊</div><span>Fox</span></div>
+                <div class="costume-item" data-mask="mask4"><div class="costume-preview">👁️</div><span>Mystic</span></div>
+                <div class="costume-item" data-mask="mask5"><div class="costume-preview">⚡</div><span>Thunder</span></div>
+            </div>
+            <div class="slider-row" style="margin-top:6px;">
+                <label>Costume Color</label>
+                <input type="color" id="costumeColor" value="#e94560">
+            </div>
+            <div class="slider-row">
+                <label>Mask Color</label>
+                <input type="color" id="maskColor" value="#f5c518">
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Panel -->
+    <div class="panel" id="imagePanel">
+        <div class="panel-header">
+            <h3>📁 Image Assets</h3>
+            <button class="close-btn" data-close="imagePanel">✕</button>
+        </div>
+        <div class="panel-content">
+            <div class="file-upload-area" id="fileUploadArea">
+                📤 Tap to upload image (PNG, JPG, WebP)
+                <input type="file" id="fileInput" accept="image/*" multiple>
+            </div>
+            <div class="upload-options" id="uploadOptions">
+                <button class="upload-option-btn active" data-apply="skin">Skin Texture</button>
+                <button class="upload-option-btn" data-apply="background">Background</button>
+                <button class="upload-option-btn" data-apply="costume">Costume Overlay</button>
+                <button class="upload-option-btn" data-apply="mask">Mask Overlay</button>
+            </div>
+            <div style="text-align:center;color:var(--text-dim);font-size:11px;margin-top:4px;">
+                Choose where to apply uploaded images
+            </div>
+            <div class="btn-row">
+                <button id="btnRemoveBg">Remove Background</button>
+                <button id="btnResetSkin">Reset Skin</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Panel -->
+    <div class="panel" id="settingsPanel">
+        <div class="panel-header">
+            <h3>⚙️ Settings</h3>
+            <button class="close-btn" data-close="settingsPanel">✕</button>
+        </div>
+        <div class="panel-content">
+            <div class="slider-row">
+                <label>Doll Size</label>
+                <input type="range" id="dollScale" min="50" max="200" value="100">
+                <span id="dollScaleVal" style="color:var(--gold);font-weight:700;min-width:40px;text-align:center;">100%</span>
+            </div>
+            <div class="slider-row">
+                <label>Move Speed</label>
+                <input type="range" id="moveSpeed" min="50" max="400" value="200">
+                <span id="moveSpeedVal" style="color:var(--gold);font-weight:700;min-width:40px;text-align:center;">200</span>
+            </div>
+            <div class="btn-row">
+                <button id="btnResetDoll">Reset Doll Position</button>
+                <button id="btnSaveImage">💾 Save as PNG</button>
+            </div>
+            <div style="text-align:center;color:var(--text-dim);font-size:11px;margin-top:4px;">
+                Controls: Left side joystick • Right side actions • Swipe to move
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast"></div>
+
+    <script>
+        (function() {
+            'use strict';
+
+            // ==================== DOM Elements ====================
+            const mainCanvas = document.getElementById('mainCanvas');
+            const mainCtx = mainCanvas.getContext('2d');
+            const bgCanvas = document.getElementById('bgCanvas');
+            const bgCtx = bgCanvas.getContext('2d');
+            const joyZone = document.getElementById('joyZone');
+            const joyBase = document.getElementById('joyBase');
+            const joyKnob = document.getElementById('joyKnob');
+            const wheelIndicator = document.getElementById('wheelIndicator');
+            const actionZone = document.getElementById('actionZone');
+            const toast = document.getElementById('toast');
+            const modeIndicator = document.getElementById('modeIndicator');
+            const controlIndicator = document.getElementById('controlIndicator');
+            const btnModeToggle = document.getElementById('btnModeToggle');
+            const btnControlToggle = document.getElementById('btnControlToggle');
+            const btnSettings = document.getElementById('btnSettings');
+            const btnBrush = document.getElementById('btnBrush');
+            const btnEraser = document.getElementById('btnEraser');
+            const btnColor = document.getElementById('btnColor');
+            const btnCostume = document.getElementById('btnCostume');
+            const btnImage = document.getElementById('btnImage');
+            const btnUndo = document.getElementById('btnUndo');
+            const btnClear = document.getElementById('btnClear');
+            const btnPlay = document.getElementById('btnPlay');
+            const btnJump = document.getElementById('btnJump');
+            const btnDash = document.getElementById('btnDash');
+            const btnSpin = document.getElementById('btnSpin');
+            const brushPanel = document.getElementById('brushPanel');
+            const costumePanel = document.getElementById('costumePanel');
+            const imagePanel = document.getElementById('imagePanel');
+            const settingsPanel = document.getElementById('settingsPanel');
+            const fileUploadArea = document.getElementById('fileUploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const brushSizeInput = document.getElementById('brushSize');
+            const brushSizeVal = document.getElementById('brushSizeVal');
+            const brushOpacityInput = document.getElementById('brushOpacity');
+            const brushOpacityVal = document.getElementById('brushOpacityVal');
+            const dollScaleInput = document.getElementById('dollScale');
+            const dollScaleVal = document.getElementById('dollScaleVal');
+            const moveSpeedInput = document.getElementById('moveSpeed');
+            const moveSpeedVal = document.getElementById('moveSpeedVal');
+            const costumeColorInput = document.getElementById('costumeColor');
+            const maskColorInput = document.getElementById('maskColor');
+
+            // ==================== State ====================
+            const state = {
+                mode: 'edit', // 'edit' | 'play'
+                controlType: 'joystick', // 'joystick' | 'wheel'
+                brushColor: '#e94560',
+                brushSize: 8,
+                brushOpacity: 1.0,
+                isEraser: false,
+                isDrawing: false,
+                lastDrawX: 0,
+                lastDrawY: 0,
+                dollX: 0,
+                dollY: 0,
+                dollScale: 1.0,
+                moveSpeed: 200,
+                joystickActive: false,
+                joystickId: null,
+                joystickStartX: 0,
+                joystickStartY: 0,
+                joystickKnobX: 0,
+                joystickKnobY: 0,
+                joyMoveX: 0,
+                joyMoveY: 0,
+                wheelAngle: 0,
+                wheelActive: false,
+                wheelId: null,
+                costume: 'none',
+                mask: 'none',
+                costumeColor: '#e94560',
+                maskColor: '#f5c518',
+                skinImage: null,
+                backgroundImage: null,
+                costumeImage: null,
+                maskImage: null,
+                brushStrokes: [],
+                undoStack: [],
+                maxUndo: 30,
+                jumpVelocity: 0,
+                gravity: 600,
+                isGrounded: true,
+                groundY: 0,
+                velocityX: 0,
+                velocityY: 0,
+                spinAngle: 0,
+                isSpinning: false,
+                spinTimer: 0,
+                dashTimer: 0,
+                dashCooldown: 0,
+                hasDash: true,
+                toastTimeout: null,
+            };
+
+            // ==================== Canvas Setup ====================
+            function resizeCanvases() {
+                mainCanvas.width = window.innerWidth;
+                mainCanvas.height = window.innerHeight;
+                bgCanvas.width = window.innerWidth;
+                bgCanvas.height = window.innerHeight;
+                if (state.dollX === 0 && state.dollY === 0) {
+                    state.dollX = mainCanvas.width / 2;
+                    state.dollY = mainCanvas.height / 2;
+                }
+                state.groundY = mainCanvas.height - 80;
+                if (state.isGrounded && state.mode === 'play') {
+                    state.dollY = state.groundY;
+                }
+                drawBackground();
+                render();
+            }
+
+            window.addEventListener('resize', resizeCanvases);
+            window.addEventListener('orientationchange', () => setTimeout(resizeCanvases, 300));
+
+            // ==================== Drawing Functions ====================
+            function drawBackground() {
+                bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+                const grad = bgCtx.createLinearGradient(0, 0, 0, bgCanvas.height);
+                grad.addColorStop(0, '#1a1a2e');
+                grad.addColorStop(0.5, '#16213e');
+                grad.addColorStop(1, '#0d1b2a');
+                bgCtx.fillStyle = grad;
+                bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
+                if (state.backgroundImage) {
+                    bgCtx.globalAlpha = 0.7;
+                    bgCtx.drawImage(state.backgroundImage, 0, 0, bgCanvas.width, bgCanvas.height);
+                    bgCtx.globalAlpha = 1.0;
+                }
+                bgCtx.fillStyle = 'rgba(255,255,255,0.03)';
+                for (let i = 0; i < 30; i++) {
+                    const x = Math.random() * bgCanvas.width;
+                    const y = Math.random() * bgCanvas.height;
+                    const r = Math.random() * 2 + 0.5;
+                    bgCtx.beginPath();
+                    bgCtx.arc(x, y, r, 0, Math.PI * 2);
+                    bgCtx.fill();
+                }
+            }
+
+            function render() {
+                mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+                const cx = state.dollX;
+                const cy = state.dollY;
+                const s = state.dollScale;
+                mainCtx.save();
+                mainCtx.translate(cx, cy);
+                if (state.isSpinning) {
+                    mainCtx.rotate(state.spinAngle);
+                }
+                mainCtx.scale(s, s);
+                drawDoll(mainCtx, 0, 0);
+                if (state.brushStrokes.length > 0) {
+                    drawBrushStrokes(mainCtx, 0, 0);
+                }
+                mainCtx.restore();
+                if (state.mode === 'play' && state.dashTimer > 0) {
+                    mainCtx.globalAlpha = 0.5;
+                    mainCtx.fillStyle = '#4ecdc4';
+                    mainCtx.beginPath();
+                    mainCtx.arc(state.dollX - 10, state.dollY - 30, 15, 0, Math.PI * 2);
+                    mainCtx.fill();
+                    mainCtx.globalAlpha = 1.0;
+                }
+                if (state.mode === 'edit') {
+                    mainCtx.fillStyle = 'rgba(255,255,255,0.5)';
+                    mainCtx.font = '11px "Segoe UI", sans-serif';
+                    mainCtx.fillText('✏️ Edit Mode – Draw, color, customize!', 12, 24);
+                } else {
+                    mainCtx.fillStyle = 'rgba(255,255,255,0.5)';
+                    mainCtx.font = '11px "Segoe UI", sans-serif';
+                    mainCtx.fillText('🎮 Play Mode – Use joystick to move!', 12, 24);
+                }
+                if (state.controlType === 'joystick' && state.joystickActive) {
+                    const jx = state.joystickKnobX;
+                    const jy = state.joystickKnobY;
+                    mainCtx.fillStyle = 'rgba(245,197,24,0.35)';
+                    mainCtx.beginPath();
+                    mainCtx.arc(jx, jy, 20, 0, Math.PI * 2);
+                    mainCtx.fill();
+                    mainCtx.fillStyle = 'rgba(245,197,24,0.7)';
+                    mainCtx.beginPath();
+                    mainCtx.arc(jx, jy, 10, 0, Math.PI * 2);
+                    mainCtx.fill();
+                }
+                if (state.controlType === 'wheel' && state.wheelActive) {
+                    const wx = state.joystickStartX;
+                    const wy = state.joystickStartY;
+                    mainCtx.strokeStyle = 'rgba(245,197,24,0.8)';
+                    mainCtx.lineWidth = 3;
+                    mainCtx.beginPath();
+                    mainCtx.arc(wx, wy, 45, 0, Math.PI * 2);
+                    mainCtx.stroke();
+                    const angle = state.wheelAngle;
+                    mainCtx.fillStyle = '#e94560';
+                    mainCtx.beginPath();
+                    mainCtx.arc(wx + Math.cos(angle) * 35, wy + Math.sin(angle) * 35, 12, 0, Math.PI * 2);
+                    mainCtx.fill();
+                    mainCtx.strokeStyle = '#f5c518';
+                    mainCtx.lineWidth = 2;
+                    mainCtx.stroke();
+                }
+            }
+
+            function drawBrushStrokes(ctx, offsetX, offsetY) {
+                for (const stroke of state.brushStrokes) {
+                    if (stroke.points.length < 2) continue;
+                    ctx.save();
+                    ctx.globalAlpha = stroke.opacity;
+                    ctx.strokeStyle = stroke.eraser ? '#1a1a2e' : stroke.color;
+                    ctx.lineWidth = stroke.eraser ? stroke.size * 2.5 : stroke.size;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.shadowColor = stroke.eraser ? 'transparent' : stroke.color;
+                    ctx.shadowBlur = stroke.eraser ? 0 : 4;
+                    ctx.beginPath();
+                    ctx.moveTo(stroke.points[0].x - offsetX, stroke.points[0].y - offsetY);
+                    for (let i = 1; i < stroke.points.length; i++) {
+                        ctx.lineTo(stroke.points[i].x - offsetX, stroke.points[i].y - offsetY);
+                    }
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+
+            function drawDoll(ctx, dx, dy) {
+                const scale = 1;
+                const headR = 40 * scale;
+                const bodyW = 50 * scale;
+                const bodyH = 65 * scale;
+                const armW = 14 * scale;
+                const armLen = 55 * scale;
+                const legW = 16 * scale;
+                const legLen = 60 * scale;
+
+                // Shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.25)';
+                ctx.beginPath();
+                ctx.ellipse(0, bodyH + legLen + 5, 55, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Legs
+                ctx.fillStyle = '#2d3748';
+                ctx.strokeStyle = '#1a202c';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(-bodyW / 2 + 6, bodyH);
+                ctx.lineTo(-bodyW / 2 - 2, bodyH + legLen);
+                ctx.lineTo(-bodyW / 2 + 6 + legW, bodyH + legLen);
+                ctx.lineTo(-bodyW / 2 + 6 + legW, bodyH);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(bodyW / 2 - 6, bodyH);
+                ctx.lineTo(bodyW / 2 + 2, bodyH + legLen);
+                ctx.lineTo(bodyW / 2 - 6 - legW, bodyH + legLen);
+                ctx.lineTo(bodyW / 2 - 6 - legW, bodyH);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // Shoes
+                ctx.fillStyle = '#1a202c';
+                ctx.beginPath();
+                ctx.ellipse(-bodyW / 2 + 2, bodyH + legLen + 2, 12, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(bodyW / 2 - 2, bodyH + legLen + 2, 12, 6, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Body
+                const bodyGrad = ctx.createLinearGradient(-bodyW / 2, 0, bodyW / 2, 0);
+                bodyGrad.addColorStop(0, state.costumeColor || '#3b82f6');
+                bodyGrad.addColorStop(0.5, state.costumeColor || '#2563eb');
+                bodyGrad.addColorStop(1, state.costumeColor || '#1d4ed8');
+                ctx.fillStyle = bodyGrad;
+                ctx.strokeStyle = '#1a202c';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(-bodyW / 2, -headR * 0.3, bodyW, bodyH + headR * 0.3, 12);
+                ctx.fill();
+                ctx.stroke();
+
+                // Costume overlay
+                if (state.costumeImage) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.roundRect(-bodyW / 2, -headR * 0.3, bodyW, bodyH + headR * 0.3, 12);
+                    ctx.clip();
+                    ctx.globalAlpha = 0.8;
+                    ctx.drawImage(state.costumeImage, -bodyW / 2, -headR * 0.3, bodyW, bodyH + headR * 0.3);
+                    ctx.restore();
+                }
+                if (state.costume && state.costume !== 'none') {
+                    drawCostumePattern(ctx, bodyW, bodyH, headR);
+                }
+
+                // Arms
+                ctx.fillStyle = state.costumeColor || '#3b82f6';
+                ctx.strokeStyle = '#1a202c';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(-bodyW / 2 - armW, -headR * 0.1, armW, armLen, 6);
+                ctx.fill();
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.roundRect(bodyW / 2, -headR * 0.1, armW, armLen, 6);
+                ctx.fill();
+                ctx.stroke();
+
+                // Hands
+                ctx.fillStyle = '#fcd5ce';
+                ctx.beginPath();
+                ctx.arc(-bodyW / 2 - armW / 2, -headR * 0.1 + armLen + 4, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(bodyW / 2 + armW / 2, -headR * 0.1 + armLen + 4, 7, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Head
+                ctx.fillStyle = '#fcd5ce';
+                ctx.strokeStyle = '#1a202c';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, -headR * 1.5, headR, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Skin texture on head
+                if (state.skinImage) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(0, -headR * 1.5, headR, 0, Math.PI * 2);
+                    ctx.clip();
+                    ctx.globalAlpha = 0.7;
+                    ctx.drawImage(state.skinImage, -headR, -headR * 2.5, headR * 2, headR * 2);
+                    ctx.restore();
+                }
+
+                // Hair
+                const hairColor = '#4a3728';
+                ctx.fillStyle = hairColor;
+                ctx.beginPath();
+                ctx.arc(0, -headR * 1.6, headR * 1.05, Math.PI, 0);
+                ctx.quadraticCurveTo(headR * 0.8, -headR * 2.5, headR * 0.3, -headR * 2.3);
+                ctx.quadraticCurveTo(0, -headR * 2.5, -headR * 0.3, -headR * 2.3);
+                ctx.quadraticCurveTo(-headR * 0.8, -headR * 2.5, -headR * 1.05, -headR * 1.6);
+                ctx.fill();
+                ctx.strokeStyle = '#2d1a0e';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // Eyes
+                const eyeY = -headR * 1.55;
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.ellipse(-14, eyeY, 9, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(14, eyeY, 9, 10, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#3b2f2f';
+                ctx.beginPath();
+                ctx.arc(-13, eyeY + 2, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(15, eyeY + 2, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(-11, eyeY, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(17, eyeY, 2, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eyebrows
+                ctx.strokeStyle = '#4a3728';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(-22, eyeY - 16);
+                ctx.quadraticCurveTo(-14, eyeY - 20, -6, eyeY - 15);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(6, eyeY - 15);
+                ctx.quadraticCurveTo(14, eyeY - 20, 22, eyeY - 16);
+                ctx.stroke();
+
+                // Mouth
+                ctx.strokeStyle = '#d4656a';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(0, -headR * 1.2, 14, 0.1, Math.PI - 0.1);
+                ctx.stroke();
+
+                // Blush
+                ctx.fillStyle = 'rgba(255,150,150,0.4)';
+                ctx.beginPath();
+                ctx.ellipse(-25, -headR * 1.3, 8, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.ellipse(25, -headR * 1.3, 8, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Mask overlay
+                if (state.mask && state.mask !== 'none') {
+                    drawMaskPattern(ctx, headR, eyeY);
+                }
+                if (state.maskImage) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(0, -headR * 1.5, headR * 0.9, 0, Math.PI * 2);
+                    ctx.clip();
+                    ctx.globalAlpha = 0.7;
+                    ctx.drawImage(state.maskImage, -headR, -headR * 2.3, headR * 2, headR * 2);
+                    ctx.restore();
+                }
+            }
+
+            function drawCostumePattern(ctx, bodyW, bodyH, headR) {
+                ctx.save();
+                const cColor = state.costumeColor;
+                switch (state.costume) {
+                    case 'hero':
+                        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+                        ctx.beginPath();
+                        ctx.moveTo(0, -headR * 0.3);
+                        ctx.lineTo(-bodyW * 0.3, bodyH * 0.6);
+                        ctx.lineTo(0, bodyH * 0.35);
+                        ctx.lineTo(bodyW * 0.3, bodyH * 0.6);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.fillStyle = '#f5c518';
+                        ctx.beginPath();
+                        ctx.arc(0, bodyH * 0.5, 8, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                    case 'princess':
+                        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+                        for (let i = 0; i < 5; i++) {
+                            ctx.beginPath();
+                            ctx.arc(-bodyW * 0.2 + i * bodyW * 0.1, bodyH * 0.4, 6, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        ctx.fillStyle = '#f5c518';
+                        ctx.font = '16px sans-serif';
+                        ctx.fillText('👑', -8, -headR * 1.9);
+                        break;
+                    case 'ninja':
+                        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                        ctx.fillRect(-bodyW / 2, -headR * 0.3, bodyW, bodyH);
+                        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                        ctx.fillRect(-bodyW / 2 + 5, bodyH * 0.5, bodyW - 10, 4);
+                        break;
+                    case 'robot':
+                        ctx.strokeStyle = '#a0a0a0';
+                        ctx.lineWidth = 2;
+                        for (let y = 0; y < bodyH; y += 15) {
+                            ctx.beginPath();
+                            ctx.moveTo(-bodyW / 2 + 5, y);
+                            ctx.lineTo(bodyW / 2 - 5, y);
+                            ctx.stroke();
+                        }
+                        ctx.fillStyle = '#4ecdc4';
+                        ctx.fillRect(-bodyW / 2 + 10, bodyH * 0.3, 8, 8);
+                        ctx.fillRect(bodyW / 2 - 18, bodyH * 0.3, 8, 8);
+                        break;
+                    case 'wizard':
+                        ctx.fillStyle = 'rgba(168,85,247,0.4)';
+                        ctx.beginPath();
+                        ctx.moveTo(-bodyW / 2, bodyH);
+                        ctx.quadraticCurveTo(0, bodyH * 0.2, bodyW / 2, bodyH);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.fillStyle = '#f5c518';
+                        ctx.font = '14px sans-serif';
+                        ctx.fillText('✨', bodyW / 2 - 5, bodyH * 0.4);
+                        break;
+                }
+                ctx.restore();
+            }
+
+            function drawMaskPattern(ctx, headR, eyeY) {
+                ctx.save();
+                const mColor = state.maskColor;
+                switch (state.mask) {
+                    case 'mask1':
+                        ctx.fillStyle = mColor;
+                        ctx.globalAlpha = 0.6;
+                        ctx.beginPath();
+                        ctx.ellipse(0, -headR * 1.55, headR * 0.7, headR * 0.45, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                        ctx.fillStyle = '#fff';
+                        ctx.beginPath();
+                        ctx.ellipse(-14, eyeY, 7, 8, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.ellipse(14, eyeY, 7, 8, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = '#333';
+                        ctx.beginPath();
+                        ctx.arc(-13, eyeY + 1, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(15, eyeY + 1, 4, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                    case 'mask2':
+                        ctx.fillStyle = mColor;
+                        ctx.globalAlpha = 0.5;
+                        ctx.beginPath();
+                        ctx.ellipse(0, -headR * 1.5, headR * 0.8, headR * 0.4, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                        ctx.strokeStyle = '#333';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(0, -headR * 1.45, 6, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.fillStyle = '#333';
+                        for (let i = 0; i < 3; i++) {
+                            ctx.beginPath();
+                            ctx.arc(-20 + i * 20, -headR * 1.35, 1.5, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        break;
+                    case 'mask3':
+                        ctx.fillStyle = mColor;
+                        ctx.globalAlpha = 0.55;
+                        ctx.beginPath();
+                        ctx.moveTo(-headR * 0.8, -headR * 1.3);
+                        ctx.quadraticCurveTo(0, -headR * 1.9, headR * 0.8, -headR * 1.3);
+                        ctx.quadraticCurveTo(headR * 0.5, -headR * 1.5, headR * 0.4, -headR * 1.4);
+                        ctx.quadraticCurveTo(0, -headR * 1.6, -headR * 0.4, -headR * 1.4);
+                        ctx.quadraticCurveTo(-headR * 0.5, -headR * 1.5, -headR * 0.8, -headR * 1.3);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                        ctx.fillStyle = '#fff';
+                        ctx.beginPath();
+                        ctx.arc(-20, -headR * 1.5, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(20, -headR * 1.5, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.fillStyle = '#333';
+                        ctx.beginPath();
+                        ctx.arc(-19, -headR * 1.5, 2.5, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.beginPath();
+                        ctx.arc(21, -headR * 1.5, 2.5, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                    case 'mask4':
+                        ctx.fillStyle = mColor;
+                        ctx.globalAlpha = 0.45;
+                        ctx.beginPath();
+                        ctx.arc(0, -headR * 1.55, headR * 0.65, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.arc(-15, -headR * 1.6, 8, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.beginPath();
+                        ctx.arc(15, -headR * 1.6, 8, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.fillStyle = '#f5c518';
+                        ctx.beginPath();
+                        ctx.arc(0, -headR * 1.4, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                        break;
+                    case 'mask5':
+                        ctx.fillStyle = mColor;
+                        ctx.globalAlpha = 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(-headR * 0.6, -headR * 1.3);
+                        ctx.lineTo(-headR * 0.9, -headR * 1.8);
+                        ctx.lineTo(-headR * 0.3, -headR * 1.6);
+                        ctx.lineTo(0, -headR * 2);
+                        ctx.lineTo(headR * 0.3, -headR * 1.6);
+                        ctx.lineTo(headR * 0.9, -headR * 1.8);
+                        ctx.lineTo(headR * 0.6, -headR * 1.3);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.globalAlpha = 1;
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.moveTo(0, -headR * 2.1);
+                        ctx.lineTo(0, -headR * 1.5);
+                        ctx.stroke();
+                        break;
+                }
+                ctx.restore();
+            }
+
+            // ==================== Update Loop ====================
+            let lastTime = 0;
+
+            function update(deltaTime) {
+                const dt = Math.min(deltaTime, 0.05);
+                if (state.mode === 'play') {
+                    const speed = state.moveSpeed;
+                    let moveX = 0;
+                    let moveY = 0;
+                    if (state.controlType === 'joystick') {
+                        moveX = state.joyMoveX;
+                        moveY = state.joyMoveY;
+                    } else if (state.controlType === 'wheel') {
+                        if (state.wheelActive) {
+                            moveX = Math.cos(state.wheelAngle);
+                            moveY = Math.sin(state.wheelAngle);
+                        }
+                    }
+                    state.velocityX = moveX * speed;
+                    if (!state.isGrounded) {
+                        state.velocityY += state.gravity * dt;
+                    }
+                    state.dollX += state.velocityX * dt;
+                    state.dollY += state.velocityY * dt;
+                    if (state.dashTimer > 0) {
+                        state.dashTimer -= dt;
+                        state.dollX += Math.cos(state.spinAngle || 0) * 350 * dt;
+                    }
+                    if (state.dashCooldown > 0) {
+                        state.dashCooldown -= dt;
+                    }
+                    if (state.isSpinning) {
+                        state.spinAngle += 10 * dt;
+                        state.spinTimer -= dt;
+                        if (state.spinTimer <= 0) state.isSpinning = false;
+                    }
+                    const minX = 40;
+                    const maxX = mainCanvas.width - 40;
+                    const minY = 60;
+                    const maxY = mainCanvas.height - 50;
+                    state.dollX = Math.max(minX, Math.min(maxX, state.dollX));
+                    state.dollY = Math.max(minY, Math.min(maxY, state.dollY));
+                    if (state.dollY >= state.groundY) {
+                        state.dollY = state.groundY;
+                        state.velocityY = 0;
+                        state.isGrounded = true;
+                    } else {
+                        state.isGrounded = false;
+                    }
+                }
+            }
+
+            function gameLoop(timestamp) {
+                const deltaTime = lastTime ? (timestamp - lastTime) / 1000 : 0.016;
+                lastTime = timestamp;
+                update(deltaTime);
+                render();
+                updateJoystickVisual();
+                requestAnimationFrame(gameLoop);
+            }
+
+            function updateJoystickVisual() {
+                if (state.controlType === 'joystick') {
+                    if (state.joystickActive) {
+                        const baseSize = 140;
+                        const halfBase = baseSize / 2;
+                        const knobSize = 50;
+                        const maxDist = halfBase - knobSize / 2;
+                        const dx = state.joystickKnobX - state.joystickStartX;
+                        const dy = state.joystickKnobY - state.joystickStartY;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        const clampedDist = Math.min(dist, maxDist);
+                        const angle = Math.atan2(dy, dx);
+                        const clampedDx = dist > 0 ? Math.cos(angle) * clampedDist : 0;
+                        const clampedDy = dist > 0 ? Math.sin(angle) * clampedDist : 0;
+                        state.joyMoveX = dist > 0 ? (clampedDx / maxDist) : 0;
+                        state.joyMoveY = dist > 0 ? (clampedDy / maxDist) : 0;
+                        joyKnob.style.transform = `translate(${clampedDx}px, ${clampedDy}px)`;
+                        joyBase.style.opacity = '1';
+                    } else {
+                        joyKnob.style.transform = 'translate(0px, 0px)';
+                        joyBase.style.opacity = '0.5';
+                        state.joyMoveX = 0;
+                        state.joyMoveY = 0;
+                    }
+                }
+            }
+
+            // ==================== Touch Handling ====================
+            function getCanvasPos(clientX, clientY) {
+                const rect = mainCanvas.getBoundingClientRect();
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            }
+
+            function handleTouchStart(e) {
+                e.preventDefault();
+                for (const touch of e.changedTouches) {
+                    const pos = getCanvasPos(touch.clientX, touch.clientY);
+                    if (state.mode === 'play') {
+                        const isLeft = touch.clientX < window.innerWidth * 0.45;
+                        const isRight = touch.clientX > window.innerWidth * 0.55;
+                        if (isLeft && !state.joystickActive && !state.wheelActive) {
+                            if (state.controlType === 'joystick') {
+                                state.joystickActive = true;
+                                state.joystickId = touch.identifier;
+                                state.joystickStartX = pos.x;
+                                state.joystickStartY = pos.y;
+                                state.joystickKnobX = pos.x;
+                                state.joystickKnobY = pos.y;
+                                const baseSize = 140;
+                                joyBase.style.width = baseSize + 'px';
+                                joyBase.style.height = baseSize + 'px';
+                                joyBase.style.left = (pos.x - baseSize / 2) + 'px';
+                                joyBase.style.top = (pos.y - baseSize / 2) + 'px';
+                                joyKnob.style.width = '50px';
+                                joyKnob.style.height = '50px';
+                                joyBase.style.display = 'flex';
+                                joyZone.classList.add('active');
+                                joyZone.style.left = '0px';
+                                joyZone.style.top = '0px';
+                                joyZone.style.width = '100%';
+                                joyZone.style.height = '100%';
+                                joyZone.style.pointerEvents = 'none';
+                                joyZone.style.display = 'block';
+                            } else if (state.controlType === 'wheel') {
+                                state.wheelActive = true;
+                                state.wheelId = touch.identifier;
+                                state.joystickStartX = pos.x;
+                                state.joystickStartY = pos.y;
+                                state.wheelAngle = 0;
+                                joyZone.classList.add('active');
+                                joyZone.style.display = 'block';
+                                wheelIndicator.style.display = 'block';
+                                wheelIndicator.style.left = (pos.x - 70) + 'px';
+                                wheelIndicator.style.top = (pos.y - 70) + 'px';
+                                joyBase.style.display = 'none';
+                            }
+                        } else if (isRight) {
+                            // Tap on right side for actions
+                        }
+                    } else if (state.mode === 'edit') {
+                        if (state.isDrawing && (state.isEraser || brushPanel.classList.contains('open') ===
+                                false)) {
+                            // Continue drawing
+                        } else if (touch.clientY > window.innerHeight * 0.3) {
+                            startDrawing(pos.x, pos.y, touch.identifier);
+                        }
+                    }
+                }
+            }
+
+            function handleTouchMove(e) {
+                e.preventDefault();
+                for (const touch of e.changedTouches) {
+                    const pos = getCanvasPos(touch.clientX, touch.clientY);
+                    if (state.mode === 'play' && state.controlType === 'joystick' && state.joystickActive && touch
+                        .identifier === state.joystickId) {
+                        state.joystickKnobX = pos.x;
+                        state.joystickKnobY = pos.y;
+                    } else if (state.mode === 'play' && state.controlType === 'wheel' && state.wheelActive && touch
+                        .identifier === state.wheelId) {
+                        const dx = pos.x - state.joystickStartX;
+                        const dy = pos.y - state.joystickStartY;
+                        state.wheelAngle = Math.atan2(dy, dx);
+                    } else if (state.mode === 'edit' && state.isDrawing && touch.identifier === state
+                        .lastDrawTouchId) {
+                        continueDrawing(pos.x, pos.y);
+                    }
+                }
+            }
+
+            function handleTouchEnd(e) {
+                e.preventDefault();
+                for (const touch of e.changedTouches) {
+                    if (state.mode === 'play' && state.controlType === 'joystick' && state.joystickActive && touch
+                        .identifier === state.joystickId) {
+                        state.joystickActive = false;
+                        state.joystickId = null;
+                        state.joyMoveX = 0;
+                        state.joyMoveY = 0;
+                        joyKnob.style.transform = 'translate(0px, 0px)';
+                        joyBase.style.opacity = '0.5';
+                        setTimeout(() => {
+                            if (!state.joystickActive) {
+                                joyBase.style.display = 'none';
+                                joyZone.classList.remove('active');
+                            }
+                        }, 150);
+                    } else if (state.mode === 'play' && state.controlType === 'wheel' && state.wheelActive && touch
+                        .identifier === state.wheelId) {
+                        state.wheelActive = false;
+                        state.wheelId = null;
+                        wheelIndicator.style.display = 'none';
+                        joyZone.classList.remove('active');
+                    } else if (state.mode === 'edit' && state.isDrawing && touch.identifier === state
+                        .lastDrawTouchId) {
+                        endDrawing();
+                    }
+                }
+            }
+
+            function handleTouchCancel(e) {
+                handleTouchEnd(e);
+            }
+
+            // Mouse support for desktop testing
+            function handleMouseDown(e) {
+                e.preventDefault();
+                const pos = getCanvasPos(e.clientX, e.clientY);
+                if (state.mode === 'edit') {
+                    if (e.clientY > window.innerHeight * 0.3) {
+                        startDrawing(pos.x, pos.y, 'mouse');
+                    }
+                } else if (state.mode === 'play') {
+                    const isLeft = e.clientX < window.innerWidth * 0.45;
+                    if (isLeft && !state.joystickActive && !state.wheelActive) {
+                        if (state.controlType === 'joystick') {
+                            state.joystickActive = true;
+                            state.joystickId = 'mouse';
+                            state.joystickStartX = pos.x;
+                            state.joystickStartY = pos.y;
+                            state.joystickKnobX = pos.x;
+                            state.joystickKnobY = pos.y;
+                            joyBase.style.display = 'flex';
+                            joyBase.style.left = (pos.x - 70) + 'px';
+                            joyBase.style.top = (pos.y - 70) + 'px';
+                            joyZone.classList.add('active');
+                            joyZone.style.display = 'block';
+                        } else if (state.controlType === 'wheel') {
+                            state.wheelActive = true;
+                            state.wheelId = 'mouse';
+                            state.joystickStartX = pos.x;
+                            state.joystickStartY = pos.y;
+                            state.wheelAngle = 0;
+                            joyZone.classList.add('active');
+                            joyZone.style.display = 'block';
+                            wheelIndicator.style.display = 'block';
+                            wheelIndicator.style.left = (pos.x - 70) + 'px';
+                            wheelIndicator.style.top = (pos.y - 70) + 'px';
+                            joyBase.style.display = 'none';
+                        }
+                    }
+                }
+            }
+
+            function handleMouseMove(e) {
+                e.preventDefault();
+                const pos = getCanvasPos(e.clientX, e.clientY);
+                if (state.mode === 'edit' && state.isDrawing) {
+                    continueDrawing(pos.x, pos.y);
+                } else if (state.mode === 'play' && state.controlType === 'joystick' && state.joystickActive &&
+                    state.joystickId === 'mouse') {
+                    state.joystickKnobX = pos.x;
+                    state.joystickKnobY = pos.y;
+                } else if (state.mode === 'play' && state.controlType === 'wheel' && state.wheelActive && state
+                    .wheelId === 'mouse') {
+                    const dx = pos.x - state.joystickStartX;
+                    const dy = pos.y - state.joystickStartY;
+                    state.wheelAngle = Math.atan2(dy, dx);
+                }
+            }
+
+            function handleMouseUp(e) {
+                e.preventDefault();
+                if (state.mode === 'edit' && state.isDrawing) {
+                    endDrawing();
+                } else if (state.mode === 'play' && state.controlType === 'joystick' && state.joystickActive) {
+                    state.joystickActive = false;
+                    state.joystickId = null;
+                    state.joyMoveX = 0;
+                    state.joyMoveY = 0;
+                    joyKnob.style.transform = 'translate(0px, 0px)';
+                    joyBase.style.opacity = '0.5';
+                    setTimeout(() => {
+                        if (!state.joystickActive) {
+                            joyBase.style.display = 'none';
+                            joyZone.classList.remove('active');
+                        }
+                    }, 150);
+                } else if (state.mode === 'play' && state.controlType === 'wheel' && state.wheelActive) {
+                    state.wheelActive = false;
+                    state.wheelId = null;
+                    wheelIndicator.style.display = 'none';
+                    joyZone.classList.remove('active');
+                }
+            }
+
+            function startDrawing(x, y, touchId) {
+                state.isDrawing = true;
+                state.lastDrawX = x;
+                state.lastDrawY = y;
+                state.lastDrawTouchId = touchId;
+                const newStroke = {
+                    points: [{ x: x - state.dollX, y: y - state.dollY }],
+                    color: state.isEraser ? '#1a1a2e' : state.brushColor,
+                    size: state.brushSize,
+                    opacity: state.brushOpacity,
+                    eraser: state.isEraser,
+                };
+                state.brushStrokes.push(newStroke);
+                state.undoStack.push({ type: 'stroke', data: newStroke });
+                if (state.undoStack.length > state.maxUndo) {
+                    state.undoStack.shift();
+                }
+            }
+
+            function continueDrawing(x, y) {
+                if (!state.isDrawing || state.brushStrokes.length === 0) return;
+                const currentStroke = state.brushStrokes[state.brushStrokes.length - 1];
+                currentStroke.points.push({ x: x - state.dollX, y: y - state.dollY });
+                state.lastDrawX = x;
+                state.lastDrawY = y;
+            }
+
+            function endDrawing() {
+                state.isDrawing = false;
+                state.lastDrawTouchId = null;
+                render();
+            }
+
+            // ==================== Event Listeners ====================
+            mainCanvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+            mainCanvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+            mainCanvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+            mainCanvas.addEventListener('touchcancel', handleTouchCancel, { passive: false });
+            mainCanvas.addEventListener('mousedown', handleMouseDown);
+            mainCanvas.addEventListener('mousemove', handleMouseMove);
+            mainCanvas.addEventListener('mouseup', handleMouseUp);
+            mainCanvas.addEventListener('mouseleave', handleMouseUp);
+
+            // Prevent default on all touch events on body
+            document.body.addEventListener('touchstart', (e) => {
+                if (e.target === mainCanvas || e.target.closest('#joyZone') || e.target.closest('#actionZone')) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            document.body.addEventListener('touchmove', (e) => {
+                if (e.target === mainCanvas || e.target.closest('#joyZone') || e.target.closest('#actionZone')) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+
+            // ==================== UI Functions ====================
+            function showToast(msg) {
+                toast.textContent = msg;
+                toast.classList.add('show');
+                if (state.toastTimeout) clearTimeout(state.toastTimeout);
+                state.toastTimeout = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 1800);
+            }
+
+            function closeAllPanels() {
+                brushPanel.classList.remove('open');
+                costumePanel.classList.remove('open');
+                imagePanel.classList.remove('open');
+                settingsPanel.classList.remove('open');
+            }
+
+            function toggleMode() {
+                if (state.mode === 'edit') {
+                    state.mode = 'play';
+                    modeIndicator.textContent = '🎮 PLAY';
+                    btnModeToggle.classList.add('active');
+                    actionZone.classList.add('active');
+                    actionZone.style.display = 'flex';
+                    actionZone.style.right = '12px';
+                    actionZone.style.top = '50%';
+                    actionZone.style.transform = 'translateY(-50%)';
+                    state.isGrounded = true;
+                    state.dollY = state.groundY;
+                    state.velocityY = 0;
+                    showToast('🎮 Play Mode – Use joystick!');
+                } else {
+                    state.mode = 'edit';
+                    modeIndicator.textContent = '🎨 EDIT';
+                    btnModeToggle.classList.remove('active');
+                    actionZone.classList.remove('active');
+                    actionZone.style.display = 'none';
+                    state.joystickActive = false;
+                    state.wheelActive = false;
+                    state.joyMoveX = 0;
+                    state.joyMoveY = 0;
+                    joyBase.style.display = 'none';
+                    wheelIndicator.style.display = 'none';
+                    joyZone.classList.remove('active');
+                    showToast('✏️ Edit Mode – Draw & customize!');
+                }
+                closeAllPanels();
+                render();
+            }
+
+            function toggleControlType() {
+                if (state.controlType === 'joystick') {
+                    state.controlType = 'wheel';
+                    controlIndicator.textContent = '🔄 Wheel';
+                    joyBase.style.display = 'none';
+                    state.joystickActive = false;
+                    state.wheelActive = false;
+                    showToast('🔄 Wheel control activated');
+                } else {
+                    state.controlType = 'joystick';
+                    controlIndicator.textContent = '🕹️ Joystick';
+                    wheelIndicator.style.display = 'none';
+                    state.wheelActive = false;
+                    state.joystickActive = false;
+                    showToast('🕹️ Joystick control activated');
+                }
+            }
+
+            // Mode toggle
+            btnModeToggle.addEventListener('click', toggleMode);
+
+            // Control toggle
+            btnControlToggle.addEventListener('click', toggleControlType);
+
+            // Settings
+            btnSettings.addEventListener('click', () => {
+                closeAllPanels();
+                settingsPanel.classList.toggle('open');
+            });
+
+            // Brush button
+            btnBrush.addEventListener('click', () => {
+                closeAllPanels();
+                brushPanel.classList.toggle('open');
+                state.isEraser = false;
+                btnBrush.classList.add('active');
+                btnEraser.classList.remove('active');
+            });
+
+            // Eraser button
+            btnEraser.addEventListener('click', () => {
+                state.isEraser = !state.isEraser;
+                btnEraser.classList.toggle('active', state.isEraser);
+                if (state.isEraser) {
+                    btnBrush.classList.remove('active');
+                    showToast('🧹 Eraser mode');
+                } else {
+                    showToast('🖌️ Brush mode');
+                }
+            });
+
+            // Color button (opens brush panel with color focus)
+            btnColor.addEventListener('click', () => {
+                closeAllPanels();
+                brushPanel.classList.toggle('open');
+                showToast('🎨 Pick a color');
+            });
+
+            // Costume button
+            btnCostume.addEventListener('click', () => {
+                closeAllPanels();
+                costumePanel.classList.toggle('open');
+            });
+
+            // Image button
+            btnImage.addEventListener('click', () => {
+                closeAllPanels();
+                imagePanel.classList.toggle('open');
+            });
+
+            // Undo
+            btnUndo.addEventListener('click', () => {
+                if (state.brushStrokes.length > 0) {
+                    state.brushStrokes.pop();
+                    showToast('↩️ Undo');
+                    render();
+                } else {
+                    showToast('Nothing to undo');
+                }
+            });
+
+            // Clear
+            btnClear.addEventListener('click', () => {
+                state.brushStrokes = [];
+                state.undoStack = [];
+                showToast('🗑️ Cleared!');
+                render();
+            });
+
+            // Play button (also toggles mode)
+            btnPlay.addEventListener('click', toggleMode);
+
+            // Panel close buttons
+            document.querySelectorAll('.close-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const panelId = btn.dataset.close;
+                    document.getElementById(panelId).classList.remove('open');
+                });
+            });
+
+            // Brush panel controls
+            brushSizeInput.addEventListener('input', () => {
+                state.brushSize = parseInt(brushSizeInput.value);
+                brushSizeVal.textContent = state.brushSize;
+            });
+            brushOpacityInput.addEventListener('input', () => {
+                state.brushOpacity = parseInt(brushOpacityInput.value) / 100;
+                brushOpacityVal.textContent = Math.round(state.brushOpacity * 100) + '%';
+            });
+
+            // Color swatches
+            document.querySelectorAll('.color-swatch').forEach(swatch => {
+                swatch.addEventListener('click', () => {
+                    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove(
+                        'selected'));
+                    swatch.classList.add('selected');
+                    state.brushColor = swatch.dataset.color;
+                    state.isEraser = false;
+                    btnEraser.classList.remove('active');
+                    btnBrush.classList.add('active');
+                });
+            });
+
+            // Brush size quick buttons
+            document.getElementById('btnBrushSmall').addEventListener('click', () => {
+                state.brushSize = 4;
+                brushSizeInput.value = 4;
+                brushSizeVal.textContent = '4';
+                showToast('Small brush');
+            });
+            document.getElementById('btnBrushMedium').addEventListener('click', () => {
+                state.brushSize = 12;
+                brushSizeInput.value = 12;
+                brushSizeVal.textContent = '12';
+                showToast('Medium brush');
+            });
+            document.getElementById('btnBrushLarge').addEventListener('click', () => {
+                state.brushSize = 28;
+                brushSizeInput.value = 28;
+                brushSizeVal.textContent = '28';
+                showToast('Large brush');
+            });
+            document.getElementById('btnBrushClose').addEventListener('click', () => {
+                brushPanel.classList.remove('open');
+            });
+
+            // Costume grid
+            document.querySelectorAll('#costumeGrid .costume-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('#costumeGrid .costume-item').forEach(i => i.classList
+                        .remove('active'));
+                    item.classList.add('active');
+                    state.costume = item.dataset.costume;
+                    showToast('👗 Costume: ' + state.costume);
+                    render();
+                });
+            });
+
+            // Mask grid
+            document.querySelectorAll('#maskGrid .costume-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    document.querySelectorAll('#maskGrid .costume-item').forEach(i => i.classList
+                        .remove('active'));
+                    item.classList.add('active');
+                    state.mask = item.dataset.mask;
+                    showToast('🎭 Mask: ' + state.mask);
+                    render();
+                });
+            });
+
+            // Costume color
+            costumeColorInput.addEventListener('input', () => {
+                state.costumeColor = costumeColorInput.value;
+                render();
+            });
+            maskColorInput.addEventListener('input', () => {
+                state.maskColor = maskColorInput.value;
+                render();
+            });
+
+            // File upload
+            let currentApplyMode = 'skin';
+            document.querySelectorAll('.upload-option-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.upload-option-btn').forEach(b => b.classList.remove(
+                        'active'));
+                    btn.classList.add('active');
+                    currentApplyMode = btn.dataset.apply;
+                    showToast('📁 Apply to: ' + currentApplyMode);
+                });
+            });
+
+            fileUploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            fileInput.addEventListener('change', (e) => {
+                const files = e.target.files;
+                if (files.length === 0) return;
+                for (const file of files) {
+                    if (!file.type.startsWith('image/')) continue;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            applyImage(img, currentApplyMode, file.name);
+                        };
+                        img.src = ev.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+                fileInput.value = '';
+            });
+
+            function applyImage(img, mode, name) {
+                switch (mode) {
+                    case 'skin':
+                        state.skinImage = img;
+                        showToast('✅ Skin texture applied: ' + name);
+                        break;
+                    case 'background':
+                        state.backgroundImage = img;
+                        drawBackground();
+                        showToast('✅ Background applied: ' + name);
+                        break;
+                    case 'costume':
+                        state.costumeImage = img;
+                        showToast('✅ Costume overlay applied: ' + name);
+                        break;
+                    case 'mask':
+                        state.maskImage = img;
+                        showToast('✅ Mask overlay applied: ' + name);
+                        break;
+                    default:
+                        showToast('❌ Unknown apply mode');
+                }
+                render();
+            }
+
+            // Remove background
+            document.getElementById('btnRemoveBg').addEventListener('click', () => {
+                state.backgroundImage = null;
+                drawBackground();
+                showToast('🗑️ Background removed');
+            });
+
+            // Reset skin
+            document.getElementById('btnResetSkin').addEventListener('click', () => {
+                state.skinImage = null;
+                state.costumeImage = null;
+                state.maskImage = null;
+                showToast('🔄 Skin & overlays reset');
+                render();
+            });
+
+            // Doll scale
+            dollScaleInput.addEventListener('input', () => {
+                state.dollScale = parseInt(dollScaleInput.value) / 100;
+                dollScaleVal.textContent = Math.round(state.dollScale * 100) + '%';
+                render();
+            });
+
+            // Move speed
+            moveSpeedInput.addEventListener('input', () => {
+                state.moveSpeed = parseInt(moveSpeedInput.value);
+                moveSpeedVal.textContent = state.moveSpeed;
+            });
+
+            // Reset doll position
+            document.getElementById('btnResetDoll').addEventListener('click', () => {
+                state.dollX = mainCanvas.width / 2;
+                state.dollY = state.groundY;
+                state.velocityX = 0;
+                state.velocityY = 0;
+                showToast('🔄 Doll position reset');
+                render();
+            });
+
+            // Save image
+            document.getElementById('btnSaveImage').addEventListener('click', () => {
+                render();
+                const link = document.createElement('a');
+                link.download = 'doll-studio-' + Date.now() + '.png';
+                link.href = mainCanvas.toDataURL('image/png');
+                link.click();
+                showToast('💾 Saved as PNG!');
+            });
+
+            // Action buttons (play mode)
+            btnJump.addEventListener('click', () => {
+                if (state.mode === 'play' && state.isGrounded) {
+                    state.velocityY = -380;
+                    state.isGrounded = false;
+                    showToast('⬆️ Jump!');
+                }
+            });
+            btnDash.addEventListener('click', () => {
+                if (state.mode === 'play' && state.dashCooldown <= 0 && state.hasDash) {
+                    state.dashTimer = 0.25;
+                    state.dashCooldown = 1.5;
+                    state.spinAngle = Math.atan2(state.joyMoveY, state.joyMoveX) || 0;
+                    showToast('💨 Dash!');
+                } else if (state.mode === 'play' && state.dashCooldown > 0) {
+                    showToast('⏳ Cooldown...');
+                }
+            });
+            btnSpin.addEventListener('click', () => {
+                if (state.mode === 'play' && !state.isSpinning) {
+                    state.isSpinning = true;
+                    state.spinTimer = 1.2;
+                    state.spinAngle = 0;
+                    showToast('🌀 Spin!');
+                }
+            });
+
+            // Initialize wheel indicator ticks
+            const wheelSize = 140;
+            for (let i = 0; i < 8; i++) {
+                const tick = document.createElement('div');
+                tick.className = 'tick';
+                const angle = (i / 8) * Math.PI * 2;
+                tick.style.transform = `rotate(${angle}rad)`;
+                tick.style.transformOrigin = `50% ${wheelSize/2}px`;
+                wheelIndicator.appendChild(tick);
+            }
+
+            // ==================== Swipe Support ====================
+            let swipeStartX = 0;
+            let swipeStartY = 0;
+            let swipeStartTime = 0;
+            let isSwiping = false;
+
+            mainCanvas.addEventListener('touchstart', (e) => {
+                if (state.mode === 'play' && e.changedTouches.length === 1) {
+                    const touch = e.changedTouches[0];
+                    const pos = getCanvasPos(touch.clientX, touch.clientY);
+                    const isCenter = touch.clientX > window.innerWidth * 0.3 && touch.clientX < window.innerWidth *
+                        0.7;
+                    if (isCenter && !state.joystickActive && !state.wheelActive) {
+                        swipeStartX = touch.clientX;
+                        swipeStartY = touch.clientY;
+                        swipeStartTime = Date.now();
+                        isSwiping = true;
+                    }
+                }
+            }, { passive: true });
+
+            mainCanvas.addEventListener('touchmove', (e) => {
+                if (isSwiping && state.mode === 'play' && !state.joystickActive && !state.wheelActive) {
+                    const touch = e.changedTouches[0];
+                    const dx = touch.clientX - swipeStartX;
+                    const dy = touch.clientY - swipeStartY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 30) {
+                        const speed = state.moveSpeed;
+                        const normalizedDx = dx / dist;
+                        const normalizedDy = dy / dist;
+                        state.joyMoveX = normalizedDx * Math.min(dist / 100, 1);
+                        state.joyMoveY = normalizedDy * Math.min(dist / 100, 1);
+                    }
+                }
+            }, { passive: true });
+
+            mainCanvas.addEventListener('touchend', (e) => {
+                if (isSwiping && state.mode === 'play' && !state.joystickActive && !state.wheelActive) {
+                    const dt = Date.now() - swipeStartTime;
+                    const touch = e.changedTouches[0];
+                    const dx = touch.clientX - swipeStartX;
+                    const dy = touch.clientY - swipeStartY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dt < 300 && dist > 50) {
+                        const angle = Math.atan2(dy, dx);
+                        const speed = state.moveSpeed;
+                        state.velocityX = Math.cos(angle) * speed * 2;
+                        state.velocityY = Math.sin(angle) * speed * 2;
+                        if (Math.abs(dy) > Math.abs(dx) && dy < -30) {
+                            if (state.isGrounded) {
+                                state.velocityY = -350;
+                                state.isGrounded = false;
+                                showToast('⬆️ Swipe Jump!');
+                            }
+                        }
+                        setTimeout(() => {
+                            if (!state.joystickActive) {
+                                state.velocityX *= 0.3;
+                                state.velocityY *= 0.3;
+                            }
+                        }, 200);
+                    } else {
+                        state.joyMoveX = 0;
+                        state.joyMoveY = 0;
+                    }
+                    isSwiping = false;
+                }
+            }, { passive: true });
+
+            // ==================== Initialization ====================
+            function init() {
+                resizeCanvases();
+                state.dollX = mainCanvas.width / 2;
+                state.dollY = state.groundY;
+                joyBase.style.display = 'none';
+                wheelIndicator.style.display = 'none';
+                joyZone.style.display = 'none';
+                actionZone.style.display = 'none';
+                drawBackground();
+                render();
+                requestAnimationFrame(gameLoop);
+                showToast('🎨 Doll Studio Pro – Ready!');
+            }
+
+            // Polyfill for roundRect
+            if (!CanvasRenderingContext2D.prototype.roundRect) {
+                CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                    if (typeof r === 'number') r = { tl: r, tr: r, br: r, bl: r };
+                    this.beginPath();
+                    this.moveTo(x + r.tl, y);
+                    this.lineTo(x + w - r.tr, y);
+                    this.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+                    this.lineTo(x + w, y + h - r.br);
+                    this.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+                    this.lineTo(x + r.bl, y + h);
+                    this.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+                    this.lineTo(x, y + r.tl);
+                    this.quadraticCurveTo(x, y, x + r.tl, y);
+                    this.closePath();
+                    return this;
+                };
+            }
+
+            init();
+        })();
+    </script>
+</body>
+</html>
