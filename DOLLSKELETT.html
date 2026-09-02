@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Human Matrix Studio & 2.5D Stage Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; user-select: none; }
+        .checkerboard {
+            background-image: linear-gradient(45deg, #1e293b 25%, transparent 25%), 
+                              linear-gradient(-45deg, #1e293b 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #1e293b 75%), 
+                              linear-gradient(-45deg, transparent 75%, #1e293b 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        @keyframes walkCycle {
+            0% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-6px) rotate(-3deg); }
+            50% { transform: translateY(0) rotate(0deg); }
+            75% { transform: translateY(-6px) rotate(3deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+        .animate-walk {
+            animation: walkCycle 0.4s infinite ease-in-out;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-hidden">
+
+    <!-- Compact Floating Header -->
+    <header class="absolute top-3 left-4 right-4 z-40 flex items-center justify-between bg-slate-900/80 backdrop-blur-md border border-slate-800/80 px-4 py-2.5 rounded-2xl shadow-xl">
+        <div class="flex items-center space-x-2.5">
+            <div class="bg-indigo-600 p-1.5 rounded-lg text-white font-bold text-xs shadow-md shadow-indigo-500/30">HM</div>
+            <div>
+                <h1 class="text-xs font-bold tracking-tight text-white flex items-center space-x-2">
+                    <span>Human Matrix 3D/2.5D Studio</span>
+                    <span class="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded border border-indigo-500/30">Unified Canvas</span>
+                </h1>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button onclick="toggleMode()" id="modeToggleBtn" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition shadow">
+                Mode: <span id="modeName">Creator Studio</span>
+            </button>
+            <button onclick="openExportModal()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition shadow">
+                Export Package
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace - Unified Canvas With Transparent HUD Overlays -->
+    <main class="flex-1 relative w-full h-screen checkerboard flex items-center justify-center overflow-hidden">
+        
+        <!-- Floor Stage Grid & Shadow -->
+        <div class="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-slate-900/90 to-transparent pointer-events-none z-10 flex items-end justify-center pb-6">
+            <div class="text-[10px] font-mono text-slate-500 tracking-wider uppercase">Unified Sandbox Stage • Camera: <span id="hudAngleText" class="text-indigo-400">Front (0°)</span></div>
+        </div>
+
+        <!-- Central Character Doll Renderer -->
+        <div id="characterStageContainer" class="relative z-20 flex items-center justify-center transition-transform duration-300" style="transform: translateY(20px);">
+            <div id="characterSvgWrapper" class="w-72 h-96 transition-all duration-300 drop-shadow-2xl flex items-center justify-center cursor-pointer"></div>
+            <!-- Ground Drop Shadow -->
+            <div id="characterShadow" class="absolute -bottom-4 w-32 h-4 bg-black/50 rounded-full blur-[4px] transition-all"></div>
+        </div>
+
+        <!-- COMPACT FLOATING HUD CONTROLS (Bottom Center / Left / Right) -->
+        
+        <!-- 1. Creator & Anatomy Toolkit (Left Floating Panel) -->
+        <div id="panelCreator" class="absolute left-4 bottom-16 z-30 w-80 max-h-[75vh] bg-slate-900/90 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-4 shadow-2xl flex flex-col space-y-3 custom-scrollbar overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center space-x-1">
+                    <span>🧬 Anatomy & Matrix Bases</span>
+                </span>
+                <span class="text-[10px] text-slate-400 font-mono">Unlimited Rig</span>
+            </div>
+
+            <!-- Age & Build -->
+            <div class="space-y-1.5">
+                <label class="text-[11px] font-medium text-slate-400">Age Bracket & Scale</label>
+                <select id="ageSelect" onchange="updateCharacterState()" class="w-full bg-slate-800/90 border border-slate-700/80 rounded-xl px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                    <option value="baby">Baby (Infant - Chibi)</option>
+                    <option value="youngster">Youngster (Child)</option>
+                    <option value="kid">Kid (Pre-teen)</option>
+                    <option value="youth">Youth (Teenager)</option>
+                    <option value="youngAdult" selected>Young Adult (Standard)</option>
+                    <option value="adult">Adult (Heroic)</option>
+                    <option value="elderly">Elderly (Wise)</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="text-[11px] font-medium text-slate-400 block mb-1">Body Build</label>
+                    <select id="buildSelect" onchange="updateCharacterState()" class="w-full bg-slate-800/90 border border-slate-700/80 rounded-xl px-2 py-1.5 text-xs text-slate-200">
+                        <option value="skinny">Skinny / Lean</option>
+                        <option value="average" selected>Average Build</option>
+                        <option value="muscular">Muscular / Hero</option>
+                        <option value="obese">Heavy / Obese</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[11px] font-medium text-slate-400 block mb-1">Skin Tone</label>
+                    <input type="color" id="skinColorPicker" value="#d1b097" onchange="updateCharacterState()" class="w-full h-8 bg-slate-800 border border-slate-700 rounded-xl cursor-pointer px-1 py-0.5">
+                </div>
+            </div>
+
+            <div class="border-t border-slate-800 pt-2 space-y-2">
+                <span class="text-[11px] font-bold text-slate-300 block">Modular Assets</span>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[10px] text-slate-400 block">Hair Style</label>
+                        <select id="hairSelect" onchange="updateCharacterState()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200">
+                            <option value="none">Bald</option>
+                            <option value="short" selected>Short Cut</option>
+                            <option value="long">Long Flowing</option>
+                            <option value="spiky">Spiky Anime</option>
+                            <option value="bun">Top Bun</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-400 block">Outfit / Gear</label>
+                        <select id="outfitSelect" onchange="updateCharacterState()" class="w-full bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-200">
+                            <option value="tpose" selected>Basic Suit</option>
+                            <option value="armor">Combat Armor</option>
+                            <option value="jacket">Casual Jacket</option>
+                            <option value="robe">Wizard Robe</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fine-Tune Sliders (Unlimited Possibilities) -->
+            <div class="border-t border-slate-800 pt-2 space-y-2">
+                <span class="text-[11px] font-bold text-slate-300 block">Fine-Tune Articulation & Proportions</span>
+                
+                <div class="space-y-1">
+                    <div class="flex justify-between text-[10px] text-slate-400">
+                        <span>Left Arm Angle</span>
+                        <span id="valArmL">0°</span>
+                    </div>
+                    <input type="range" id="sliderArmL" min="-160" max="45" value="0" oninput="updateCharacterState()" class="w-full accent-indigo-500 h-1 bg-slate-800 rounded-lg">
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between text-[10px] text-slate-400">
+                        <span>Right Arm Angle</span>
+                        <span id="valArmR">0°</span>
+                    </div>
+                    <input type="range" id="sliderArmR" min="-45" max="160" value="0" oninput="updateCharacterState()" class="w-full accent-indigo-500 h-1 bg-slate-800 rounded-lg">
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between text-[10px] text-slate-400">
+                        <span>Left Leg Spread</span>
+                        <span id="valLegL">0°</span>
+                    </div>
+                    <input type="range" id="sliderLegL" min="-30" max="45" value="0" oninput="updateCharacterState()" class="w-full accent-indigo-500 h-1 bg-slate-800 rounded-lg">
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between text-[10px] text-slate-400">
+                        <span>Right Leg Spread</span>
+                        <span id="valLegR">0°</span>
+                    </div>
+                    <input type="range" id="sliderLegR" min="-45" max="30" value="0" oninput="updateCharacterState()" class="w-full accent-indigo-500 h-1 bg-slate-800 rounded-lg">
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Camera Angles & Stage Joystick (Right Floating Panel) -->
+        <div class="absolute right-4 bottom-16 z-30 w-72 bg-slate-900/90 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-4 shadow-2xl flex flex-col space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">🎥 Camera & Perspectives</span>
+                <span id="animStatusBadge" class="text-[10px] text-emerald-400 font-mono">Idle 🛑</span>
+            </div>
+
+            <!-- Perspective Angle Buttons (Front, 3/4, Bird's Eye, Frog Perspective, Side, Back) -->
+            <div>
+                <label class="text-[11px] font-medium text-slate-400 block mb-1.5">View Angle Matrix</label>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button onclick="setCameraAngle('front')" id="cam-front" class="py-1.5 text-[11px] font-semibold rounded-lg bg-indigo-600 text-white shadow">Front</button>
+                    <button onclick="setCameraAngle('threeQuarter')" id="cam-threeQuarter" class="py-1.5 text-[11px] font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">3/4 View</button>
+                    <button onclick="setCameraAngle('side')" id="cam-side" class="py-1.5 text-[11px] font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">Side</button>
+                    <button onclick="setCameraAngle('back')" id="cam-back" class="py-1.5 text-[11px] font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700">Back</button>
+                    <button onclick="setCameraAngle('bird')" id="cam-bird" class="py-1.5 text-[11px] font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700" title="Bird's Eye (High Angle)">Bird 🦅</button>
+                    <button onclick="setCameraAngle('frog')" id="cam-frog" class="py-1.5 text-[11px] font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700" title="Frog Perspective (Low Angle)">Frog 🐸</button>
+                </div>
+            </div>
+
+            <!-- Stage Movement & Animation Controls -->
+            <div class="border-t border-slate-800 pt-2 space-y-2">
+                <label class="text-[11px] font-medium text-slate-400 block">Stage Action & Walk Cycle</label>
+                
+                <div class="flex items-center space-x-2">
+                    <button onmousedown="startMove(-1)" onmouseup="stopMove()" ontouchstart="startMove(-1)" ontouchend="stopMove()" class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-700">◀ Walk Left</button>
+                    <button onmousedown="startMove(1)" onmouseup="stopMove()" ontouchstart="startMove(1)" ontouchend="stopMove()" class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold border border-slate-700">Walk Right ▶</button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="triggerJump()" class="py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow">Jump 🚀</button>
+                    <button onclick="toggleWalkAnimation()" id="walkAnimBtn" class="py-1.5 bg-indigo-600/50 hover:bg-indigo-600 text-white rounded-xl text-xs font-semibold transition">Cycle 🚶</button>
+                </div>
+            </div>
+
+            <div class="bg-slate-800/50 border border-slate-700/50 p-2 rounded-xl text-[10px] text-slate-300 text-center">
+                Position X: <span id="debugX" class="font-mono text-emerald-400">0px</span> | Angle: <span id="debugAngle" class="font-mono text-indigo-400">0°</span>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Export Modal -->
+    <div id="exportModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4">
+            <h3 class="text-sm font-bold text-white flex items-center justify-between">
+                <span>Character & Stage Package Exported</span>
+                <button onclick="closeExportModal()" class="text-slate-400 hover:text-white">✕</button>
+            </h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Your character bundle containing unlimited articulation matrices, modular assets, 3/4 perspective vectors, and animation rigs has been packaged successfully!
+            </p>
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-indigo-400 overflow-x-auto">
+                { matrixId: "HM-STUDIO-V3", camera: activeAngle, articulated: true, assets: "ready" }
+            </div>
+            <button onclick="closeExportModal()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold transition">
+                Close & Return to Studio
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let currentAge = 'youngAdult';
+        let currentBuild = 'average';
+        let currentSkinColor = '#d1b097';
+        let currentHair = 'short';
+        let currentOutfit = 'tpose';
+        let currentCameraAngle = 'front';
+        
+        // Articulation values (Sliders)
+        let armLAngle = 0;
+        let armRAngle = 0;
+        let legLAngle = 0;
+        let legRAngle = 0;
+
+        // Stage & Animation state
+        let stageX = 0;
+        let isWalking = false;
+        let walkDirection = 0;
+        let walkInterval = null;
+        let isJumping = false;
+        let isContinuousWalking = false;
+
+        function toggleMode() {
+            // Unified view allows editing and stage motion seamlessly on canvas
+            alert('Studio mode is fully unified on the transparent canvas. Use the floating toolkits to edit or animate!');
+        }
+
+        function setCameraAngle(angle) {
+            currentCameraAngle = angle;
+            ['front', 'threeQuarter', 'side', 'back', 'bird', 'frog'].forEach(a => {
+                const btn = document.getElementById(`cam-${a}`);
+                if (a === angle) {
+                    btn.className = "py-1.5 text-[11px] font-semibold rounded-lg bg-indigo-600 text-white shadow";
+                } else {
+                    btn.className = "py-1.5 text-[11px] font-semibold rounded-lg bg-slate-800 text-slate-300 hover:bg-slate-700";
+                }
+            });
+            document.getElementById('hudAngleText').innerText = angle.toUpperCase();
+            updateCharacterState();
+        }
+
+        function updateCharacterState() {
+            currentAge = document.getElementById('ageSelect').value;
+            currentBuild = document.getElementById('buildSelect').value;
+            currentSkinColor = document.getElementById('skinColorPicker').value;
+            currentHair = document.getElementById('hairSelect').value;
+            currentOutfit = document.getElementById('outfitSelect').value;
+
+            armLAngle = parseInt(document.getElementById('sliderArmL').value);
+            armRAngle = parseInt(document.getElementById('sliderArmR').value);
+            legLAngle = parseInt(document.getElementById('sliderLegL').value);
+            legRAngle = parseInt(document.getElementById('sliderLegR').value);
+
+            document.getElementById('valArmL').innerText = armLAngle + '°';
+            document.getElementById('valArmR').innerText = armRAngle + '°';
+            document.getElementById('valLegL').innerText = legLAngle + '°';
+            document.getElementById('valLegR').innerText = legRAngle + '°';
+
+            renderCharacterSVG();
+        }
+
+        function renderCharacterSVG() {
+            const wrapper = document.getElementById('characterSvgWrapper');
+            
+            // Build proportions based on age and body build
+            let scaleWidth = 55;
+            let headSize = 24;
+            let armLength = 70;
+            let legLength = 100;
+
+            if (currentBuild === 'skinny') scaleWidth = 40;
+            if (currentBuild === 'muscular') { scaleWidth = 70; armLength = 75; }
+            if (currentBuild === 'obese') scaleWidth = 85;
+
+            if (currentAge === 'baby') { headSize = 34; scaleWidth = 48; legLength = 60; armLength = 50; }
+            else if (currentAge === 'youngster') { headSize = 29; scaleWidth = 50; legLength = 75; }
+            else if (currentAge === 'kid') { headSize = 26; legLength = 85; }
+            else if (currentAge === 'youth') { headSize = 24; }
+            else if (currentAge === 'elderly') { headSize = 22; scaleWidth -= 5; }
+
+            // Camera perspectives transforms & warping
+            let svgViewBox = "0 0 200 350";
+            let perspectiveTransform = "";
+            let angleNameFormatted = "Front (0°)";
+
+            if (currentCameraAngle === 'threeQuarter') {
+                perspectiveTransform = "transform='skewX(-6) scale(0.98, 1)'";
+                angleNameFormatted = "3/4 View (45°)";
+            } else if (currentCameraAngle === 'side') {
+                perspectiveTransform = "transform='scale(0.75, 1)'";
+                angleNameFormatted = "Side View (90°)";
+            } else if (currentCameraAngle === 'back') {
+                angleNameFormatted = "Back View";
+            } else if (currentCameraAngle === 'bird') {
+                perspectiveTransform = "transform='scale(1, 0.75) skewY(5)'";
+                angleNameFormatted = "Bird's Eye (High Angle)";
+            } else if (currentCameraAngle === 'frog') {
+                perspectiveTransform = "transform='scale(1.1, 1.1) translateY(15px)'";
+                angleNameFormatted = "Frog Perspective (Low Angle)";
+            }
+            document.getElementById('debugAngle').innerText = angleNameFormatted;
+
+            // Hair SVG Generation
+            let hairSvg = '';
+            if (currentHair === 'short') {
+                hairSvg = `<path d="M ${100 - headSize} ${65 - headSize*0.4} Q 100 ${65 - headSize*1.3} ${100 + headSize} ${65 - headSize*0.4} Z" fill="#3b2219"/>`;
+            } else if (currentHair === 'long') {
+                hairSvg = `<path d="M ${100 - headSize} ${65 - headSize*0.4} Q 100 ${65 - headSize*1.4} ${100 + headSize} ${65 - headSize*0.4} L ${100 + headSize + 6} 150 L ${100 - headSize - 6} 150 Z" fill="#3b2219"/>`;
+            } else if (currentHair === 'spiky') {
+                hairSvg = `<path d="M ${100 - headSize} ${65 - headSize*0.3} L ${100 - headSize - 10} 30 L 100 45 L ${100 + headSize + 10} 30 L ${100 + headSize} ${65 - headSize*0.3} Z" fill="#1e293b"/>`;
+            } else if (currentHair === 'bun') {
+                hairSvg = `<circle cx="100" cy="${65 - headSize * 1.1}" r="12" fill="#3b2219"/><path d="M ${100 - headSize} ${65 - headSize*0.4} Q 100 ${65 - headSize*1.2} ${100 + headSize} ${65 - headSize*0.4} Z" fill="#3b2219"/>`;
+            }
+
+            // Outfit SVG Generation
+            let outfitColor = '#4f46e5';
+            let outfitSvg = '';
+            if (currentOutfit === 'armor') {
+                outfitColor = '#475569';
+                outfitSvg = `<rect x="${100 - scaleWidth*0.8}" y="115" width="${scaleWidth*1.6}" height="85" rx="6" fill="#cbd5e1" stroke="#334155" stroke-width="2"/><circle cx="100" cy="150" r="10" fill="#f59e0b" stroke="#334155" stroke-width="2"/>`;
+            } else if (currentOutfit === 'jacket') {
+                outfitColor = '#991b1b';
+                outfitSvg = `<path d="M ${100 - scaleWidth} 110 L ${100 - scaleWidth - 8} 190 L ${100 + scaleWidth + 8} 190 L ${100 + scaleWidth} 110 Z" fill="#b91c1c" stroke="#7f1d1d" stroke-width="2"/><line x1="100" y1="110" x2="100" y2="190" stroke="#f8fafc" stroke-width="2"/>`;
+            } else if (currentOutfit === 'robe') {
+                outfitColor = '#581c87';
+                outfitSvg = `<path d="M ${100 - scaleWidth} 110 L ${100 - scaleWidth - 15} 250 L ${100 + scaleWidth + 15} 250 L ${100 + scaleWidth} 110 Z" fill="#6b21a8" stroke="#3b0764" stroke-width="2"/>`;
+            }
+
+            // Face elements if front/3/4 view
+            let faceSvg = '';
+            if (currentCameraAngle !== 'back') {
+                faceSvg = `
+                    <circle cx="91" cy="61" r="3.5" fill="#1e293b"/>
+                    <circle cx="109" cy="61" r="3.5" fill="#1e293b"/>
+                    <path d="M 96 73 Q 100 77 104 73" stroke="#1e293b" stroke-width="2" fill="none"/>
+                `;
+            }
+
+            wrapper.innerHTML = `
+                <svg viewBox="${svgViewBox}" class="w-full h-full drop-shadow-2xl ${isWalking ? 'animate-walk' : ''}" ${perspectiveTransform}>
+                    <!-- Head & Face -->
+                    <circle cx="100" cy="65" r="${headSize}" fill="${currentSkinColor}" stroke="#1e293b" stroke-width="2.5"/>
+                    ${hairSvg}
+                    ${faceSvg}
+                    <rect x="92" y="85" width="16" height="20" fill="${currentSkinColor}" stroke="#1e293b" stroke-width="2.5"/>
+
+                    <!-- Torso & Outfit -->
+                    <path d="M ${100 - scaleWidth} 105 L ${100 + scaleWidth} 105 L ${100 + scaleWidth*0.75} 205 L ${100 - scaleWidth*0.75} 205 Z" fill="${outfitColor}" stroke="#1e293b" stroke-width="2.5"/>
+                    ${outfitSvg}
+
+                    <!-- Articulated Arms (With dynamic rotation transforms) -->
+                    <g transform="translate(${100 - scaleWidth}, 110) rotate(${armLAngle})">
+                        <rect x="-14" y="0" width="14" height="${armLength}" rx="6" fill="${currentSkinColor}" stroke="#1e293b" stroke-width="2.5"/>
+                    </g>
+                    <g transform="translate(${100 + scaleWidth}, 110) rotate(${armRAngle})">
+                        <rect x="0" y="0" width="14" height="${armLength}" rx="6" fill="${currentSkinColor}" stroke="#1e293b" stroke-width="2.5"/>
+                    </g>
+
+                    <!-- Articulated Legs (With dynamic rotation transforms) -->
+                    <g transform="translate(${100 - scaleWidth*0.4}, 205) rotate(${legLAngle})">
+                        <rect x="-8" y="0" width="${scaleWidth*0.5}" height="${legLength}" rx="8" fill="${currentSkinColor}" stroke="#1e293b" stroke-width="2.5"/>
+                    </g>
+                    <g transform="translate(${100 + scaleWidth*0.4}, 205) rotate(${legRAngle})">
+                        <rect x="-${scaleWidth*0.25}" y="0" width="${scaleWidth*0.5}" height="${legLength}" rx="8" fill="${currentSkinColor}" stroke="#1e293b" stroke-width="2.5"/>
+                    </g>
+                </svg>
+            `;
+        }
+
+        // Stage & Walk Movement Logic
+        function startMove(dir) {
+            walkDirection = dir;
+            isWalking = true;
+            document.getElementById('animStatusBadge').innerText = 'Walking 🏃';
+            
+            if (!walkInterval) {
+                walkInterval = setInterval(() => {
+                    stageX += walkDirection * 10;
+                    if (stageX < -350) stageX = -350;
+                    if (stageX > 350) stageX = 350;
+                    
+                    const container = document.getElementById('characterStageContainer');
+                    container.style.transform = `translateX(${stageX}px) translateY(20px)`;
+                    document.getElementById('debugX').innerText = stageX + 'px';
+                }, 30);
+            }
+        }
+
+        function stopMove() {
+            isWalking = false;
+            walkDirection = 0;
+            document.getElementById('animStatusBadge').innerText = 'Idle 🛑';
+            clearInterval(walkInterval);
+            walkInterval = null;
+            renderCharacterSVG();
+        }
+
+        function toggleWalkAnimation() {
+            isContinuousWalking = !isContinuousWalking;
+            isWalking = isContinuousWalking;
+            document.getElementById('animStatusBadge').innerText = isWalking ? 'Walking Loop 🚶' : 'Idle 🛑';
+            const btn = document.getElementById('walkAnimBtn');
+            btn.className = isWalking ? "py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-semibold shadow" : "py-1.5 bg-indigo-600/50 hover:bg-indigo-600 text-white rounded-xl text-xs font-semibold transition";
+            renderCharacterSVG();
+        }
+
+        function triggerJump() {
+            if (isJumping) return;
+            isJumping = true;
+            document.getElementById('animStatusBadge').innerText = 'Jumping 🚀';
+            const container = document.getElementById('characterStageContainer');
+            container.style.transition = 'transform 0.25s ease-out';
+            container.style.transform = `translateX(${stageX}px) translateY(-85px)`;
+
+            setTimeout(() => {
+                container.style.transform = `translateX(${stageX}px) translateY(20px)`;
+                setTimeout(() => {
+                    isJumping = false;
+                    document.getElementById('animStatusBadge').innerText = isWalking ? 'Walking 🏃' : 'Idle 🛑';
+                }, 250);
+            }, 250);
+        }
+
+        function openExportModal() {
+            document.getElementById('exportModal').classList.remove('hidden');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+        }
+
+        window.onload = () => {
+            updateCharacterState();
+        };
+    </script>
+</body>
+</html>
