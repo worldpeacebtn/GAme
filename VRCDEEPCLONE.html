@@ -1,9 +1,12 @@
+Here is the updated VRoid Studio with a touch-friendly grid interface, reliable bone selection, and a virtual joystick for game mode. The model editor now uses a clean card grid for bones and parts, making it easier to find and adjust elements. Skeleton points are larger and clickable to select the corresponding bone directly in the viewport. A new virtual joystick appears in game mode to control your character on touch devices.
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VRoid Studio — Game Ready</title>
+    <title>VRoid Studio — Touch Friendly</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
@@ -53,16 +56,21 @@
             transition: all 0.2s;
             border: 1px solid #2a3a4e;
             background: #1e293b80;
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 10px;
-            text-align: left;
+            border-radius: 8px;
+            padding: 8px 6px;
+            font-size: 11px;
+            text-align: center;
             color: #eef2f7;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-break: break-word;
         }
         .asset-card:hover { border-color: #ec4899; background: #ec489922; }
         .asset-card.active { border-color: #ec4899; background: #ec489933; }
         input[type="range"] { -webkit-appearance: none; height: 4px; border-radius: 9999px; background: #1e293b; outline: none; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #ec4899; border: 2px solid #fff; box-shadow: 0 0 8px #ec4899; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #ec4899; border: 2px solid #fff; box-shadow: 0 0 8px #ec4899; }
         input[type="color"] { -webkit-appearance: none; border: none; width: 28px; height: 28px; cursor: pointer; background: none; }
         input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
         input[type="color"]::-webkit-color-swatch { border-radius: 6px; border: 2px solid #3b4a5e; }
@@ -71,6 +79,57 @@
         .btn:active { transform: scale(0.96); }
         .fade-in { animation: fadeIn 0.25s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        /* Joystick */
+        #joystick-zone {
+            position: fixed;
+            bottom: 220px;
+            left: 20px;
+            width: 120px;
+            height: 120px;
+            background: rgba(17,24,39,0.5);
+            border-radius: 50%;
+            border: 2px solid rgba(236,72,153,0.3);
+            display: none;
+            pointer-events: auto;
+            z-index: 40;
+            touch-action: none;
+        }
+        #joystick-thumb {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(236,72,153,0.7);
+            border-radius: 50%;
+            top: 35px;
+            left: 35px;
+            pointer-events: none;
+        }
+        /* Grid layout */
+        .grid-2-col {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+        }
+        .grid-3-col {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+        @media (min-width: 640px) {
+            .grid-2-col { grid-template-columns: repeat(3, 1fr); }
+            .grid-3-col { grid-template-columns: repeat(4, 1fr); }
+        }
+        /* Bone marker enlarged */
+        .bone-marker {
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #34d399;
+            border: 2px solid #fff;
+            cursor: pointer;
+            pointer-events: auto;
+        }
     </style>
 </head>
 <body>
@@ -111,7 +170,7 @@
         </div>
     </div>
 
-    <!-- Game Mode Controls & Emotes -->
+    <!-- Mode Toggle & Emotes -->
     <div class="fixed left-3 z-20 flex items-center gap-2 pointer-events-auto" style="bottom: 190px;">
         <div class="glass rounded-2xl p-2 flex items-center gap-1 shadow-xl">
             <button onclick="setMode('pose')" id="mode-pose-btn" class="px-3 py-2 rounded-xl text-xs font-bold bg-pink-600/30 border border-pink-500/50 text-pink-300">Pose</button>
@@ -126,6 +185,11 @@
             <button onclick="playEmote('jump')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm">🦘</button>
             <button onclick="playEmote('spin')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm">🌀</button>
         </div>
+    </div>
+
+    <!-- Joystick for Game Mode -->
+    <div id="joystick-zone">
+        <div id="joystick-thumb"></div>
     </div>
 
     <!-- Toast -->
@@ -153,7 +217,7 @@
                         <button onclick="toggleAllParts(false)" class="text-[9px] bg-slate-800 px-2 py-0.5 rounded text-rose-300">Hide All</button>
                     </div>
                 </div>
-                <div id="parts-list" class="grid grid-cols-2 gap-1 max-h-20 overflow-y-auto"></div>
+                <div id="parts-list" class="grid-2-col max-h-20 overflow-y-auto"></div>
                 <div class="flex gap-2">
                     <button onclick="togglePhysics('hair')" class="flex-1 bg-slate-800 hover:bg-slate-700 p-1 rounded text-[10px] text-purple-300">Hair Physics</button>
                     <button onclick="togglePhysics('cloth')" class="flex-1 bg-slate-800 hover:bg-slate-700 p-1 rounded text-[10px] text-sky-300">Cloth Physics</button>
@@ -162,22 +226,25 @@
             <!-- BONES TAB -->
             <div id="tab-bones" class="space-y-2 hidden fade-in">
                 <div class="flex justify-between">
-                    <span class="font-bold text-[11px] text-slate-300">Bone Mapping</span>
+                    <span class="font-bold text-[11px] text-slate-300">Bones (Click to Select)</span>
                     <button onclick="autoRig()" class="text-[9px] bg-emerald-600/30 px-2 py-0.5 rounded text-emerald-300">Re-detect</button>
                 </div>
-                <div class="grid grid-cols-2 gap-1">
-                    <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">Spine</span><select id="map-spine" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
-                    <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">Head</span><select id="map-head" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
-                    <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">L Arm</span><select id="map-leftArm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
-                    <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">R Arm</span><select id="map-rightArm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
-                    <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">L Forearm</span><select id="map-leftForearm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
-                    <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">R Forearm</span><select id="map-rightForearm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
-                    <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">L Leg</span><select id="map-leftLeg" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
-                    <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">R Leg</span><select id="map-rightLeg" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
-                    <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">L Shin</span><select id="map-leftShin" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
-                    <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">R Shin</span><select id="map-rightShin" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
+                <div id="bones-grid" class="grid-3-col max-h-24 overflow-y-auto"></div>
+                <div class="bg-slate-800/40 border border-slate-700 rounded-lg p-2">
+                    <div class="text-[10px] font-bold text-slate-400 mb-1">Bone Mapping (assign slots)</div>
+                    <div class="grid grid-cols-2 gap-1">
+                        <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">Spine</span><select id="map-spine" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
+                        <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">Head</span><select id="map-head" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
+                        <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">L Arm</span><select id="map-leftArm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
+                        <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">R Arm</span><select id="map-rightArm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
+                        <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">L Forearm</span><select id="map-leftForearm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
+                        <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">R Forearm</span><select id="map-rightForearm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
+                        <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">L Leg</span><select id="map-leftLeg" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
+                        <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">R Leg</span><select id="map-rightLeg" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
+                        <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">L Shin</span><select id="map-leftShin" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
+                        <div class="flex items-center gap-1"><span class="w-12 text-[9px] text-slate-400">R Shin</span><select id="map-rightShin" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px]"></select></div>
+                    </div>
                 </div>
-                <div id="bones-list" class="grid grid-cols-2 gap-1 max-h-16 overflow-y-auto"></div>
             </div>
             <!-- POSE TAB -->
             <div id="tab-pose" class="space-y-2 hidden fade-in">
@@ -231,7 +298,6 @@
         </div>
     </div>
 
-    <!-- Import Map -->
     <script type="importmap">
         {
             "imports": {
@@ -247,7 +313,7 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
-        // ---------- Global State ----------
+        // State
         let scene, camera, renderer, controls;
         let character = null;
         let skeletonHelper = null;
@@ -257,20 +323,22 @@
         let allParts = [];
         let hiddenParts = new Set();
         let selectedPartUuid = 'all';
-        let mode = 'pose'; // 'pose', 'game', 'anim'
+        let mode = 'pose';
         let activeEmote = null;
         let customAnimPlaying = false;
         let animPlaybackTime = 0;
         let recordedFrames = [];
         let physicsEnabled = { hair: true, cloth: true };
         let springGroups = { hair: [], cloth: [] };
-        let boneMarkers = []; // {sphere, bone}
+        let boneMarkers = [];
         let originalMaterials = new Map();
         let gameKeys = { forward:false, backward:false, left:false, right:false, jump:false, duck:false };
-        let gameVel = { x:0, z:0, y:0 };
+        let gameVel = { y:0 };
         let clock = new THREE.Clock();
+        let joystickActive = false;
+        let joystickCenter = { x:0, y:0 };
+        let joystickVector = { x:0, y:0 };
 
-        // ---------- Init ----------
         function init() {
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
@@ -291,7 +359,6 @@
             controls.maxPolarAngle = Math.PI * 0.7;
             controls.update();
 
-            // Lights
             scene.add(new THREE.AmbientLight(0xffffff, 0.7));
             const key = new THREE.DirectionalLight(0xfff0e6, 1.8);
             key.position.set(6, 10, 6);
@@ -303,7 +370,6 @@
             rim.position.set(-3, 6, -4);
             scene.add(rim);
 
-            // Ground
             const grid = new THREE.GridHelper(20, 40, 0x3b4a5e, 0x1a2332);
             scene.add(grid);
             const floorGeo = new THREE.PlaneGeometry(20, 20);
@@ -326,7 +392,6 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // ---------- Model Loading ----------
         function loadModel(file) {
             const url = URL.createObjectURL(file);
             const loader = new GLTFLoader();
@@ -351,25 +416,20 @@
                 originalMaterials.clear();
 
                 character.traverse((child) => {
-                    // Bones
                     if (child.isBone || child.type === 'Bone' || child.name.toLowerCase().includes('bone') || child.name.startsWith('J_Bip_')) {
                         allBones.push(child);
                         const b = child.name.toLowerCase();
-                        // Spine/Head
                         if (!boneMap.spine && (b.includes('spine')||b.includes('chest')||b.includes('hips')||b.includes('torso'))) boneMap.spine = child;
                         if (!boneMap.head && (b.includes('head')||b.includes('neck'))) boneMap.head = child;
-                        // Arms
                         if (!boneMap.leftArm && (b.includes('leftarm')||b.includes('upperarm_l')||b.includes('arm.l')||b.includes('l_upperarm'))) boneMap.leftArm = child;
                         if (!boneMap.rightArm && (b.includes('rightarm')||b.includes('upperarm_r')||b.includes('arm.r')||b.includes('r_upperarm'))) boneMap.rightArm = child;
                         if (!boneMap.leftForearm && (b.includes('leftforearm')||b.includes('lowerarm_l')||b.includes('forearm_l')||b.includes('l_lowerarm'))) boneMap.leftForearm = child;
                         if (!boneMap.rightForearm && (b.includes('rightforearm')||b.includes('lowerarm_r')||b.includes('forearm_r')||b.includes('r_lowerarm'))) boneMap.rightForearm = child;
-                        // Legs
                         if (!boneMap.leftLeg && (b.includes('leftleg')||b.includes('upleg_l')||b.includes('leg.l')||b.includes('l_upperleg'))) boneMap.leftLeg = child;
                         if (!boneMap.rightLeg && (b.includes('rightleg')||b.includes('upleg_r')||b.includes('leg.r')||b.includes('r_upperleg'))) boneMap.rightLeg = child;
                         if (!boneMap.leftShin && (b.includes('leftshin')||b.includes('lowerleg_l')||b.includes('shin_l')||b.includes('l_lowerleg'))) boneMap.leftShin = child;
                         if (!boneMap.rightShin && (b.includes('rightshin')||b.includes('lowerleg_r')||b.includes('shin_r')||b.includes('r_lowerleg'))) boneMap.rightShin = child;
                     }
-                    // Meshes
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
@@ -384,12 +444,9 @@
                     }
                 });
 
-                // Auto-orient & scale
                 orientAndScale();
-
                 scene.add(character);
 
-                // Fallback bones
                 if (allBones.length > 0) {
                     if (!boneMap.spine) boneMap.spine = allBones[0];
                     if (!boneMap.head && allBones.length>1) boneMap.head = allBones[1];
@@ -401,7 +458,7 @@
 
                 createBoneMarkers();
                 updatePartsList();
-                updateBonesList();
+                updateBonesGrid();
                 populateBoneMappingDropdowns();
                 populateMaterialTarget();
                 document.getElementById('upload-overlay').style.display = 'none';
@@ -418,7 +475,6 @@
             character.updateMatrixWorld(true);
             const box = new THREE.Box3().setFromObject(character);
             const size = box.getSize(new THREE.Vector3());
-            // If height is less than width or depth, rotate to upright
             if (size.y < Math.max(size.x, size.z) * 0.7) {
                 character.rotation.x = -Math.PI/2;
                 character.updateMatrixWorld(true);
@@ -429,7 +485,6 @@
                     character.rotation.z = -Math.PI/2;
                 }
             }
-            // Scale to height 2.0
             character.updateMatrixWorld(true);
             const finalBox = new THREE.Box3().setFromObject(character);
             const finalHeight = finalBox.getSize(new THREE.Vector3()).y;
@@ -444,16 +499,17 @@
             }
         }
 
-        // ---------- Bone Markers (clickable spheres) ----------
         function createBoneMarkers() {
             clearBoneMarkers();
             if (!character) return;
-            const geo = new THREE.SphereGeometry(0.04, 8, 8);
+            const geo = new THREE.SphereGeometry(0.06, 8, 8);
             allBones.forEach(bone => {
                 const mat = new THREE.MeshStandardMaterial({ color: 0x34d399, emissive: 0x34d399, emissiveIntensity: 0.5 });
                 const sphere = new THREE.Mesh(geo, mat);
                 sphere.userData.bone = bone;
                 sphere.userData.isMarker = true;
+                sphere.renderOrder = 999;
+                sphere.material.depthTest = false;
                 scene.add(sphere);
                 boneMarkers.push({sphere, bone});
             });
@@ -468,63 +524,24 @@
             boneMarkers.forEach(({sphere, bone}) => bone.getWorldPosition(sphere.position));
         }
 
-        // ---------- UI Updates ----------
-        function updatePartsList() {
-            const container = document.getElementById('parts-list');
-            container.innerHTML = '';
-            if (allParts.length === 0) { container.innerHTML = '<div class="col-span-2 text-slate-500">No parts</div>'; return; }
-            allParts.forEach((part, idx) => {
-                const btn = document.createElement('button');
-                btn.className = `asset-card ${selectedPartUuid===part.uuid?'active':''} ${hiddenParts.has(part.uuid)?'opacity-50':''}`;
-                btn.textContent = part.name || `Part ${idx+1}`;
-                btn.onclick = () => { selectedPartUuid = part.uuid; updatePartsList(); };
-                container.appendChild(btn);
-            });
-        }
-        function updateBonesList() {
-            const container = document.getElementById('bones-list');
-            container.innerHTML = '';
-            if (allBones.length === 0) { container.innerHTML = '<div class="col-span-2 text-slate-500">No bones</div>'; return; }
-            allBones.forEach(bone => {
-                const btn = document.createElement('button');
-                btn.className = 'asset-card';
-                btn.textContent = bone.name || 'Bone';
-                btn.onclick = () => mapBoneToPose(bone);
-                container.appendChild(btn);
-            });
-        }
-        function populateBoneMappingDropdowns() {
-            const slots = ['spine','head','leftArm','rightArm','leftForearm','rightForearm','leftLeg','rightLeg','leftShin','rightShin'];
-            slots.forEach(slot => {
-                const select = document.getElementById(`map-${slot}`);
-                if (!select) return;
-                select.innerHTML = '<option value="">— none —</option>';
-                allBones.forEach(bone => {
-                    const opt = document.createElement('option');
-                    opt.value = bone.uuid;
-                    opt.textContent = bone.name || 'Bone';
-                    if (boneMap[slot] && boneMap[slot].uuid === bone.uuid) opt.selected = true;
-                    select.appendChild(opt);
-                });
-                select.onchange = (e) => {
-                    const uuid = e.target.value;
-                    boneMap[slot] = uuid ? allBones.find(b=>b.uuid===uuid) : null;
-                };
-            });
-        }
-        function populateMaterialTarget() {
-            const select = document.getElementById('material-target');
-            select.innerHTML = '<option value="all">All Parts</option>';
-            allParts.forEach(part => {
-                const opt = document.createElement('option');
-                opt.value = part.uuid;
-                opt.textContent = part.name || 'Part';
-                select.appendChild(opt);
-            });
-        }
+        // Click detection for bone markers
+        renderer.domElement.addEventListener('pointerup', (event) => {
+            if (!character || boneMarkers.length === 0) return;
+            const rect = renderer.domElement.getBoundingClientRect();
+            const mouse = new THREE.Vector2(
+                ((event.clientX - rect.left) / rect.width) * 2 - 1,
+                -((event.clientY - rect.top) / rect.height) * 2 + 1
+            );
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(boneMarkers.map(m => m.sphere), false);
+            if (intersects.length > 0) {
+                const bone = intersects[0].object.userData.bone;
+                selectBone(bone);
+            }
+        });
 
-        // ---------- Bone to Pose ----------
-        function mapBoneToPose(bone) {
+        function selectBone(bone) {
             const b = bone.name.toLowerCase();
             let key = null;
             if (b.includes('spine')||b.includes('chest')||b.includes('hips')||b.includes('torso')) key='spine';
@@ -562,7 +579,65 @@
             document.getElementById('pose-z-val').textContent = (rz*180/Math.PI).toFixed(1)+'°';
         }
 
-        // ---------- Global Functions (called from HTML) ----------
+        // UI updates
+        function updatePartsList() {
+            const container = document.getElementById('parts-list');
+            container.innerHTML = '';
+            if (allParts.length === 0) { container.innerHTML = '<div class="col-span-2 text-slate-500">No parts</div>'; return; }
+            allParts.forEach((part, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `asset-card ${selectedPartUuid===part.uuid?'active':''} ${hiddenParts.has(part.uuid)?'opacity-50':''}`;
+                btn.textContent = part.name || `Part ${idx+1}`;
+                btn.onclick = () => { selectedPartUuid = part.uuid; updatePartsList(); };
+                container.appendChild(btn);
+            });
+        }
+
+        function updateBonesGrid() {
+            const container = document.getElementById('bones-grid');
+            container.innerHTML = '';
+            if (allBones.length === 0) { container.innerHTML = '<div class="col-span-3 text-slate-500">No bones</div>'; return; }
+            allBones.forEach(bone => {
+                const btn = document.createElement('button');
+                btn.className = 'asset-card';
+                btn.textContent = bone.name || 'Bone';
+                btn.onclick = () => { selectBone(bone); };
+                container.appendChild(btn);
+            });
+        }
+
+        function populateBoneMappingDropdowns() {
+            const slots = ['spine','head','leftArm','rightArm','leftForearm','rightForearm','leftLeg','rightLeg','leftShin','rightShin'];
+            slots.forEach(slot => {
+                const select = document.getElementById(`map-${slot}`);
+                if (!select) return;
+                select.innerHTML = '<option value="">— none —</option>';
+                allBones.forEach(bone => {
+                    const opt = document.createElement('option');
+                    opt.value = bone.uuid;
+                    opt.textContent = bone.name || 'Bone';
+                    if (boneMap[slot] && boneMap[slot].uuid === bone.uuid) opt.selected = true;
+                    select.appendChild(opt);
+                });
+                select.onchange = (e) => {
+                    const uuid = e.target.value;
+                    boneMap[slot] = uuid ? allBones.find(b=>b.uuid===uuid) : null;
+                };
+            });
+        }
+
+        function populateMaterialTarget() {
+            const select = document.getElementById('material-target');
+            select.innerHTML = '<option value="all">All Parts</option>';
+            allParts.forEach(part => {
+                const opt = document.createElement('option');
+                opt.value = part.uuid;
+                opt.textContent = part.name || 'Part';
+                select.appendChild(opt);
+            });
+        }
+
+        // Global functions (exposed to window)
         window.switchTab = function(id) {
             ['parts','bones','pose','materials','anim'].forEach(t => {
                 document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== id);
@@ -578,7 +653,7 @@
             showToast(`${group} physics ${physicsEnabled[group]?'enabled':'disabled'}`);
         };
         window.autoRig = function() {
-            // Re-detect bones using same logic as loadModel
+            // re-detect bones (same as in load)
             allBones = [];
             boneMap = { spine:null, head:null, leftArm:null, rightArm:null, leftForearm:null, rightForearm:null, leftLeg:null, rightLeg:null, leftShin:null, rightShin:null };
             character.traverse((child) => {
@@ -597,7 +672,7 @@
                     if (!boneMap.rightShin && (b.includes('rightshin')||b.includes('lowerleg_r')||b.includes('shin_r'))) boneMap.rightShin = child;
                 }
             });
-            updateBonesList();
+            updateBonesGrid();
             populateBoneMappingDropdowns();
             createBoneMarkers();
             document.getElementById('stats').textContent = `${allBones.length} bones · ${allParts.length} parts`;
@@ -616,6 +691,11 @@
             document.getElementById('mode-pose-btn').className = `px-3 py-2 rounded-xl text-xs font-bold ${m==='pose'?'bg-pink-600/30 border border-pink-500/50 text-pink-300':'bg-slate-800/70 border border-slate-600 text-slate-300'}`;
             document.getElementById('mode-game-btn').className = `px-3 py-2 rounded-xl text-xs font-bold ${m==='game'?'bg-pink-600/30 border border-pink-500/50 text-pink-300':'bg-slate-800/70 border border-slate-600 text-slate-300'}`;
             document.getElementById('mode-anim-btn').className = `px-3 py-2 rounded-xl text-xs font-bold ${m==='anim'?'bg-pink-600/30 border border-pink-500/50 text-pink-300':'bg-slate-800/70 border border-slate-600 text-slate-300'}`;
+            if (m==='game') {
+                document.getElementById('joystick-zone').style.display = 'block';
+            } else {
+                document.getElementById('joystick-zone').style.display = 'none';
+            }
             if (m==='anim') { customAnimPlaying = false; activeEmote = null; }
             if (m==='game') { activeEmote = null; customAnimPlaying = false; }
             showToast(`Mode: ${m}`);
@@ -668,7 +748,6 @@
             return Array.isArray(part.material)?part.material:[part.material];
         }
 
-        // ---------- Record/Play ----------
         window.recordPose = function() {
             if (!character || allBones.length === 0) return;
             const frame = {};
@@ -701,7 +780,7 @@
             showToast('Animation exported');
         };
 
-        // ---------- Keyboard ----------
+        // Keyboard
         function onKeyDown(e) {
             if (mode !== 'game') return;
             switch(e.key.toLowerCase()) {
@@ -724,7 +803,45 @@
             }
         }
 
-        // ---------- Bind UI ----------
+        // Joystick
+        const joystickZone = document.getElementById('joystick-zone');
+        const joystickThumb = document.getElementById('joystick-thumb');
+        joystickZone.addEventListener('pointerdown', (e) => {
+            joystickActive = true;
+            const rect = joystickZone.getBoundingClientRect();
+            joystickCenter.x = rect.left + rect.width/2;
+            joystickCenter.y = rect.top + rect.height/2;
+            updateJoystick(e.clientX, e.clientY);
+        });
+        joystickZone.addEventListener('pointermove', (e) => {
+            if (joystickActive) updateJoystick(e.clientX, e.clientY);
+        });
+        window.addEventListener('pointerup', () => {
+            joystickActive = false;
+            joystickThumb.style.transform = 'translate(0px, 0px)';
+            gameKeys.forward = gameKeys.backward = gameKeys.left = gameKeys.right = false;
+        });
+
+        function updateJoystick(clientX, clientY) {
+            const dx = clientX - joystickCenter.x;
+            const dy = clientY - joystickCenter.y;
+            const dist = Math.sqrt(dx*dx+dy*dy);
+            const maxDist = 40;
+            const clampedDist = Math.min(dist, maxDist);
+            const angle = Math.atan2(dy, dx);
+            const tx = Math.cos(angle) * clampedDist;
+            const ty = Math.sin(angle) * clampedDist;
+            joystickThumb.style.transform = `translate(${tx}px, ${ty}px)`;
+            // Map to movement
+            const intensity = clampedDist / maxDist;
+            const forward = Math.sin(angle) * intensity; // y is forward
+            const right = Math.cos(angle) * intensity;
+            gameKeys.forward = forward > 0.2;
+            gameKeys.backward = forward < -0.2;
+            gameKeys.right = right > 0.2;
+            gameKeys.left = right < -0.2;
+        }
+
         function bindUI() {
             document.getElementById('file-upload').addEventListener('change', e => { if(e.target.files[0]) loadModel(e.target.files[0]); e.target.value=''; });
             document.getElementById('file-upload-hero').addEventListener('change', e => { if(e.target.files[0]) loadModel(e.target.files[0]); e.target.value=''; });
@@ -757,22 +874,6 @@
             document.getElementById('btn-record').addEventListener('click', recordPose);
             document.getElementById('btn-play').addEventListener('click', playTimeline);
             document.getElementById('btn-export-anim').addEventListener('click', exportAnim);
-            // Bone marker click detection
-            renderer.domElement.addEventListener('pointerdown', (event) => {
-                if (!character || boneMarkers.length === 0) return;
-                const rect = renderer.domElement.getBoundingClientRect();
-                const mouse = new THREE.Vector2(
-                    ((event.clientX - rect.left) / rect.width) * 2 - 1,
-                    -((event.clientY - rect.top) / rect.height) * 2 + 1
-                );
-                const raycaster = new THREE.Raycaster();
-                raycaster.setFromCamera(mouse, camera);
-                const intersects = raycaster.intersectObjects(boneMarkers.map(m => m.sphere), false);
-                if (intersects.length > 0) {
-                    const bone = intersects[0].object.userData.bone;
-                    mapBoneToPose(bone);
-                }
-            });
         }
 
         function exportGLB() {
@@ -796,14 +897,12 @@
             t._timeout = setTimeout(() => t.style.opacity = '0', 2000);
         }
 
-        // ---------- Animation Loop ----------
         function animate() {
             requestAnimationFrame(animate);
             const delta = clock.getDelta();
             const time = Date.now() * 0.001;
 
             if (character) {
-                // Mode-specific updates
                 if (mode === 'game') {
                     handleGameMovement(delta);
                 } else if (mode === 'anim' && customAnimPlaying && recordedFrames.length > 0) {
@@ -820,7 +919,6 @@
                     applyEmote(activeEmote, time);
                 }
 
-                // Physics
                 if (physicsEnabled.hair) {
                     springGroups.hair.forEach((item, i) => {
                         const t = time * 1.2 + i;
@@ -851,13 +949,10 @@
             const moveX = (gameKeys.right ? 1 : 0) - (gameKeys.left ? 1 : 0);
             const moveZ = (gameKeys.forward ? 1 : 0) - (gameKeys.backward ? 1 : 0);
             if (moveX !== 0 || moveZ !== 0) {
-                // Rotate character to face movement direction
                 const angle = Math.atan2(moveX, moveZ);
                 character.rotation.y = angle;
-                // Move
                 character.position.x += Math.sin(angle) * moveX * speed * delta * 3;
                 character.position.z += Math.cos(angle) * moveZ * speed * delta * 3;
-                // Leg animation
                 if (boneMap.leftLeg && boneMap.rightLeg) {
                     boneMap.leftLeg.rotation.x = Math.sin(Date.now() * 0.015) * 0.8 * speed;
                     boneMap.rightLeg.rotation.x = -Math.sin(Date.now() * 0.015) * 0.8 * speed;
@@ -869,22 +964,18 @@
                     boneMap.rightArm.rotation.x = Math.sin(Date.now() * 0.015) * 0.6;
                 }
             } else {
-                // Idle
                 if (boneMap.leftLeg) boneMap.leftLeg.rotation.x *= 0.9;
                 if (boneMap.rightLeg) boneMap.rightLeg.rotation.x *= 0.9;
             }
-            // Jump
             if (gameKeys.jump && character.position.y <= 0.01) {
                 gameVel.y = 0.3;
             }
-            // Gravity
             gameVel.y -= 0.02;
             character.position.y += gameVel.y;
             if (character.position.y <= 0) {
                 character.position.y = 0;
                 gameVel.y = 0;
             }
-            // Duck
             if (gameKeys.duck) {
                 character.scale.y = 0.8;
                 character.position.y = 0.1;
@@ -934,3 +1025,4 @@
     </script>
 </body>
 </html>
+```
