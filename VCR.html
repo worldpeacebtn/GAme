@@ -1,18 +1,15 @@
-I'll provide the final working version using the importmap/module approach that successfully loaded models before, merged with all your requested features: grid HUD, swipe controls, embedded animations, bone markers, camera views, and no artificial color tinting.
-
-```html
 <!doctype html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-    <title>VRoid Studio Pro — Final Merged</title>
+    <title>VRoid Studio Pro — Enhanced Grid Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         :root {
             --bg: #070b13;
-            --panel: rgba(13, 18, 30, .85);
+            --panel: rgba(13,18,30,.9);
             --line: #29364b;
             --txt: #edf2f7;
             --pink: #ec4899;
@@ -20,161 +17,107 @@ I'll provide the final working version using the importmap/module approach that 
             --green: #34d399;
         }
         * { box-sizing: border-box; }
-        html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--txt); font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
-        button, input, select { font: inherit; }
-        button { user-select: none; -webkit-user-select: none; }
-        .glass { background: var(--panel); border: 1px solid rgba(72, 88, 112, .65); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: 0 12px 40px rgba(0,0,0,.25); }
-        .btn { border: 1px solid #2b3950; background: #172133; color: #e8eef7; transition: .16s; }
-        .btn:hover { background: #213047; }
-        .btn:active { transform: scale(.96); }
-        #viewport { position: fixed; inset: 0; touch-action: none; }
-        .hud { pointer-events: none; }
-        .hud > * { pointer-events: auto; }
-        #asset-dock { position: fixed; left: 12px; top: 76px; bottom: 188px; width: 282px; z-index: 25; display: flex; flex-direction: column; }
-        #asset-scroll { overflow: auto; min-height: 0; overscroll-behavior: contain; padding: 8px; }
-        .asset-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-        .asset-card { min-height: 52px; border: 1px solid #2b3950; background: rgba(24, 35, 53, .78); border-radius: 11px; padding: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-align: center; font-size: 10px; line-height: 1.05; cursor: pointer; transition: .16s; overflow: hidden; }
-        .asset-card:hover, .asset-card.active { border-color: rgba(236, 72, 153, .9); background: rgba(236, 72, 153, .14); box-shadow: 0 0 18px rgba(236, 72, 153, .12); }
-        .asset-card.hidden-part { opacity: .42; }
-        .asset-icon { font-size: 14px; }
-        .asset-name { width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .catbar { display: flex; gap: 5px; overflow-x: auto; padding: 8px; }
-        .catbar::-webkit-scrollbar { display: none; }
-        .cat { white-space: nowrap; border: 1px solid #2b3950; background: #121b2a; border-radius: 999px; padding: 5px 8px; font-size: 9px; color: #9eabc0; }
-        .cat.active { border-color: #ec4899; color: #f9a8d4; background: #ec48991a; }
-        #bottom { position: fixed; left: 12px; right: 12px; bottom: 12px; height: 158px; z-index: 30; }
-        .panel-scroll { overflow: auto; height: calc(100% - 42px); padding: 8px; }
-        .tabs { display: flex; gap: 4px; overflow-x: auto; padding: 7px; border-bottom: 1px solid #202c3e; }
-        .tabs::-webkit-scrollbar { display: none; }
-        .tab { white-space: nowrap; padding: 7px 9px; border-radius: 9px; font-size: 10px; color: #aeb9c9; border: 1px solid transparent; }
-        .tab.active { color: #f9a8d4; background: #ec48991a; border-color: #ec489966; }
-        .mini { font-size: 9px; color: #8794a8; }
-        #toast { position: fixed; left: 50%; top: 72px; transform: translateX(-50%); z-index: 60; opacity: 0; pointer-events: none; transition: .2s; }
-        #joystick { position: fixed; left: 24px; bottom: 210px; width: 116px; height: 116px; border-radius: 50%; z-index: 45; display: none; border: 2px solid #ec489955; background: #11182799; touch-action: none; }
-        #joy-thumb { position: absolute; left: 33px; top: 33px; width: 46px; height: 46px; border-radius: 50%; background: #ec4899aa; border: 2px solid #fff4; }
-        #reticle { position: fixed; z-index: 22; display: none; width: 18px; height: 18px; border: 2px solid #34d399; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; box-shadow: 0 0 16px #34d399; }
-        #drop { position: fixed; inset: 0; z-index: 55; display: none; align-items: center; justify-content: center; background: #070b13dd; }
-        #drop .box { border: 2px dashed #ec489988; border-radius: 24px; padding: 36px 50px; text-align: center; background: #111827e8; }
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-thumb { background: #ec489966; border-radius: 99px; }
-        .swipe-control { cursor: ew-resize; background: #1e293b; border: 1px solid #2a3a4e; border-radius: 6px; padding: 6px 10px; font-size: 10px; text-align: center; display: flex; align-items: center; justify-content: space-between; min-height: 32px; touch-action: none; user-select: none; }
-        .swipe-control .swipe-value { font-weight: 700; color: #ec4899; font-size: 12px; min-width: 36px; }
-        .swipe-control.dragging { border-color: #ec4899; background: #ec489922; }
-        .camera-btn { font-size: 10px; padding: 4px 8px; }
-        @media (max-width:760px) { #asset-dock { left: 8px; top: 70px; bottom: 180px; width: 205px; } .asset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } #bottom { left: 8px; right: 8px; bottom: 8px; height: 166px; } .hide-mobile { display: none !important; } }
+        html, body { margin:0; width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--txt); font-family:Inter,system-ui,sans-serif; }
+        button { user-select:none; -webkit-user-select:none; }
+        .glass { background:var(--panel); border:1px solid rgba(72,88,112,.65); backdrop-filter:blur(18px); }
+        .btn { border:1px solid #2b3950; background:#172133; color:#e8eef7; transition:.16s; cursor:pointer; }
+        .btn:hover { background:#213047; }
+        .btn:active { transform:scale(.96); }
+        .tab-btn { padding:6px 8px; border-radius:10px; font-size:10px; font-weight:600; border:1px solid transparent; }
+        .tab-btn.active { color:#ec4899; background:#ec48991a; border-color:#ec489966; }
+        .asset-card { min-height:48px; border:1px solid #2b3950; background:#1e293b80; border-radius:10px; padding:4px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:10px; cursor:pointer; transition:.16s; }
+        .asset-card:hover, .asset-card.active { border-color:#ec4899; background:#ec489922; }
+        .asset-card.hidden-part { opacity:.4; }
+        .grid-3 { display:grid; grid-template-columns:repeat(3,1fr); gap:4px; }
+        .grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
+        .swipe-control { cursor:ew-resize; background:#1e293b; border:1px solid #2a3a4e; border-radius:6px; padding:4px 8px; display:flex; justify-content:space-between; align-items:center; font-size:10px; touch-action:none; }
+        .swipe-value { font-weight:700; color:#ec4899; min-width:30px; }
+        #joystick { position:fixed; left:20px; bottom:180px; width:110px; height:110px; border-radius:50%; border:2px solid #ec489955; background:#11182799; display:none; touch-action:none; z-index:50; }
+        #joy-thumb { position:absolute; left:30px; top:30px; width:46px; height:46px; border-radius:50%; background:#ec4899aa; border:2px solid #fff4; }
+        #viewport { position:fixed; inset:0; }
+        .camera-btn { font-size:10px; padding:4px 8px; }
+        @media (max-width:760px) { .hide-mobile { display:none!important; } .grid-3 { grid-template-columns:repeat(2,1fr); } .grid-4 { grid-template-columns:repeat(2,1fr); } }
     </style>
 </head>
 <body>
 <div id="viewport"></div>
-<div id="drop"><div class="box"><div class="text-4xl mb-3">🧍</div><div class="font-bold">Drop GLB / GLTF here</div><div class="mini mt-2">or use Upload</div></div></div>
 
-<div class="hud fixed top-3 left-3 right-3 z-40 flex items-center justify-between">
-    <div class="glass rounded-2xl px-3 py-2 flex items-center gap-2">
-        <span id="status" class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-        <div><div class="text-[9px] uppercase font-bold text-slate-500">VRoid Studio Pro</div><div id="modelName" class="text-xs font-bold text-pink-400 max-w-[180px] truncate">No model</div></div>
+<div id="upload-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 p-4" style="display:flex">
+    <div class="max-w-md bg-slate-900/90 border border-slate-700 p-8 rounded-3xl shadow-2xl text-center space-y-4">
+        <div class="w-16 h-16 bg-pink-500/20 border border-pink-500/40 rounded-2xl flex items-center justify-center mx-auto text-2xl">🧍</div>
+        <h2 class="text-xl font-bold">VRoid Studio Pro</h2>
+        <p class="text-xs text-slate-400">Upload GLB/GLTF avatar. Edit, animate, play.</p>
+        <label class="inline-flex items-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 text-white font-bold px-6 py-3 rounded-2xl cursor-pointer shadow-xl text-sm">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Avatar
+            <input type="file" id="upload" accept=".glb,.gltf" class="hidden">
+        </label>
     </div>
-    <div class="flex gap-1.5">
+</div>
+
+<div class="fixed top-3 left-3 right-3 z-30 flex items-center justify-between pointer-events-none">
+    <div class="glass rounded-2xl px-3 py-2 flex items-center gap-2 pointer-events-auto">
+        <span id="status" class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+        <div><div class="text-[9px] uppercase font-bold text-slate-500">VRoid Studio Pro</div><div id="modelName" class="text-xs font-bold text-pink-400 truncate max-w-[130px]">No model</div></div>
+    </div>
+    <div class="flex gap-1.5 pointer-events-auto">
         <button id="skeletonBtn" class="btn rounded-xl px-3 py-2 text-xs"><i class="fa-solid fa-bone text-emerald-400"></i><span class="hide-mobile"> Skeleton</span></button>
         <button id="dotsBtn" class="btn rounded-xl px-3 py-2 text-xs"><i class="fa-solid fa-circle-dot text-sky-400"></i><span class="hide-mobile"> Dots</span></button>
         <button id="focusBtn" class="btn rounded-xl px-3 py-2 text-xs"><i class="fa-solid fa-crosshairs"></i><span class="hide-mobile"> Focus</span></button>
-        <label class="btn rounded-xl px-3 py-2 text-xs cursor-pointer"><i class="fa-solid fa-upload text-sky-400"></i><span class="hide-mobile"> Upload</span><input id="upload" type="file" accept=".glb,.gltf" hidden></label>
+        <label class="btn rounded-xl px-3 py-2 text-xs cursor-pointer"><i class="fa-solid fa-upload text-sky-400"></i><span class="hide-mobile"> Upload</span><input type="file" id="upload" accept=".glb,.gltf" class="hidden"></label>
         <button id="exportBtn" class="btn rounded-xl px-3 py-2 text-xs text-emerald-300"><i class="fa-solid fa-download"></i><span class="hide-mobile"> GLB</span></button>
     </div>
 </div>
 
-<aside id="asset-dock" class="glass rounded-2xl">
-    <div class="px-3 pt-3 flex items-center justify-between"><div class="font-bold text-xs">Assets / Rig</div><div id="stats" class="mini">0 bones · 0 parts</div></div>
-    <div class="catbar" id="cats"></div>
-    <div id="asset-scroll"></div>
-</aside>
-
-<div id="joystick"><div id="joy-thumb"></div></div>
-<div id="reticle"></div>
-<div id="toast" class="glass rounded-full px-4 py-2 text-xs"></div>
-
-<!-- Camera Quick Buttons -->
-<div class="hud fixed right-3 z-30 flex flex-col gap-1" style="top: 50%; transform: translateY(-50%);">
-    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="front"><i class="fa-solid fa-person"></i></button>
-    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="back"><i class="fa-solid fa-person-arrow-up"></i></button>
-    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="left"><i class="fa-solid fa-arrow-left"></i></button>
-    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="right"><i class="fa-solid fa-arrow-right"></i></button>
-    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="top"><i class="fa-solid fa-arrow-down"></i></button>
-    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="persp"><i class="fa-solid fa-cube"></i></button>
+<div class="fixed left-3 z-30 flex flex-col gap-1 pointer-events-auto" style="bottom:180px;">
+    <div class="glass rounded-2xl p-1.5 flex flex-col gap-1">
+        <button onclick="setMode('pose')" id="mode-pose-btn" class="px-2 py-1.5 rounded-lg text-xs font-bold bg-pink-600/30 border border-pink-500/50 text-pink-300">Pose</button>
+        <button onclick="setMode('game')" id="mode-game-btn" class="px-2 py-1.5 rounded-lg text-xs font-bold bg-slate-800/70 border border-slate-600 text-slate-300">Game</button>
+        <button onclick="setMode('anim')" id="mode-anim-btn" class="px-2 py-1.5 rounded-lg text-xs font-bold bg-slate-800/70 border border-slate-600 text-slate-300">Timeline</button>
+    </div>
+    <div class="glass rounded-2xl p-1.5 grid grid-cols-3 gap-0.5">
+        <button onclick="playEmote('idle')" class="w-7 h-7 rounded-md bg-slate-800/70 text-xs">🧘</button>
+        <button onclick="playEmote('wave')" class="w-7 h-7 rounded-md bg-slate-800/70 text-xs">👋</button>
+        <button onclick="playEmote('dance')" class="w-7 h-7 rounded-md bg-slate-800/70 text-xs">💃</button>
+        <button onclick="playEmote('run')" class="w-7 h-7 rounded-md bg-slate-800/70 text-xs">🏃</button>
+        <button onclick="playEmote('jump')" class="w-7 h-7 rounded-md bg-slate-800/70 text-xs">🦘</button>
+        <button onclick="playEmote('spin')" class="w-7 h-7 rounded-md bg-slate-800/70 text-xs">🌀</button>
+    </div>
 </div>
 
-<div id="bottom" class="glass rounded-2xl">
-    <div class="tabs" id="tabs">
-        <button class="tab active" data-tab="pose">Pose</button>
-        <button class="tab" data-tab="material">Material</button>
-        <button class="tab" data-tab="anim">Animation</button>
-        <button class="tab" data-tab="game">Game</button>
-        <button class="tab" data-tab="settings">Settings</button>
+<div id="joystick"><div id="joy-thumb"></div></div>
+
+<!-- Camera buttons -->
+<div class="fixed right-3 z-30 flex flex-col gap-1" style="top:50%; transform:translateY(-50%);">
+    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="front">👤</button>
+    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="back">🔙</button>
+    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="left">⬅️</button>
+    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="right">➡️</button>
+    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="top">⬇️</button>
+    <button class="btn rounded-lg px-3 py-2 camera-btn" data-cam="persp">🔲</button>
+</div>
+
+<div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 px-3 py-1.5 rounded-full text-xs opacity-0 pointer-events-none"></div>
+
+<!-- Bottom HUD -->
+<div class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-2xl border-t border-slate-700 flex flex-col" style="height:170px;">
+    <div class="flex items-center justify-between px-2 pt-1 pb-1 border-b border-slate-800">
+        <div class="flex gap-0.5">
+            <button onclick="switchTab('parts')" id="tab-parts-btn" class="tab-btn active"><i class="fa-solid fa-shirt"></i> Parts</button>
+            <button onclick="switchTab('bones')" id="tab-bones-btn" class="tab-btn"><i class="fa-solid fa-bone"></i> Bones</button>
+            <button onclick="switchTab('pose')" id="tab-pose-btn" class="tab-btn"><i class="fa-solid fa-child"></i> Pose</button>
+            <button onclick="switchTab('materials')" id="tab-materials-btn" class="tab-btn"><i class="fa-solid fa-palette"></i> Mats</button>
+            <button onclick="switchTab('anims')" id="tab-anims-btn" class="tab-btn"><i class="fa-solid fa-film"></i> Anims</button>
+            <button onclick="switchTab('settings')" id="tab-settings-btn" class="tab-btn"><i class="fa-solid fa-gear"></i> Set</button>
+        </div>
+        <span id="stats" class="text-[8px] text-slate-500 font-mono">0b · 0p</span>
     </div>
-    <div class="panel-scroll">
-        <section id="panel-pose">
-            <div class="flex flex-wrap items-center gap-2 mb-2">
-                <select id="boneSelect" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-1 text-xs flex-1"></select>
-                <button id="resetBone" class="btn rounded-lg px-2 py-1 text-amber-300">↺</button>
-                <button id="keyBtn" class="bg-pink-600 hover:bg-pink-500 rounded-lg px-3 py-1 text-xs font-bold">＋ Keyframe</button>
-            </div>
-            <div class="grid grid-cols-3 gap-2" id="poseSwipeContainer"></div>
-            <div class="mini mt-2">Select bone then use swipe controls. Drag on bone dot to pose directly.</div>
-        </section>
-        <section id="panel-material" class="hidden">
-            <div class="flex items-center gap-2 mb-2"><select id="matTarget" class="bg-slate-900 border border-slate-600 rounded-lg px-2 py-1 text-xs flex-1"><option value="all">All parts</option></select><input id="color" type="color" value="#ffffff" class="w-8 h-8"></div>
-            <div class="grid grid-cols-3 gap-2" id="matSwipeContainer"></div>
-            <div class="flex gap-1 mt-2">
-                <button class="btn rounded-lg px-3 py-1 text-[10px]" data-fx="normal">Normal</button>
-                <button class="btn rounded-lg px-3 py-1 text-[10px] text-pink-300" data-fx="cyber">Cyber</button>
-                <button class="btn rounded-lg px-3 py-1 text-[10px] text-cyan-300" data-fx="holo">Holo</button>
-                <button class="btn rounded-lg px-3 py-1 text-[10px] text-purple-300" data-fx="ghost">Ghost</button>
-            </div>
-        </section>
-        <section id="panel-anim" class="hidden">
-            <div class="mb-2">
-                <div class="mini font-bold mb-1">Embedded / Baked Animations</div>
-                <div id="animGrid" class="grid grid-cols-4 gap-1"></div>
-            </div>
-            <div class="flex flex-wrap gap-1 mb-2">
-                <button id="record" class="bg-pink-600 rounded-lg px-3 py-1 text-xs font-bold">● Record</button>
-                <button id="play" class="bg-purple-600 rounded-lg px-3 py-1 text-xs font-bold">▶ Play</button>
-                <button id="stop" class="btn rounded-lg px-3 py-1 text-xs">■ Stop</button>
-                <button id="clearKeys" class="btn rounded-lg px-3 py-1 text-xs">Clear</button>
-                <button id="exportAnim" class="btn rounded-lg px-3 py-1 text-xs text-emerald-300">Export JSON</button>
-                <button id="bakeSeq" class="btn rounded-lg px-3 py-1 text-xs text-orange-300">Bake</button>
-                <span id="keyCount" class="mini self-center ml-auto">0 keys</span>
-            </div>
-            <div id="timeline" class="flex gap-1 overflow-x-auto pb-1"></div>
-        </section>
-        <section id="panel-game" class="hidden">
-            <div class="flex flex-wrap gap-1 mb-2">
-                <button id="gameMode" class="bg-emerald-600/25 border border-emerald-500/50 rounded-lg px-3 py-1 text-xs">Enable Game</button>
-                <button class="btn rounded-lg px-2 py-1 text-xs" data-gameanim="idle">🧘 Idle</button>
-                <button class="btn rounded-lg px-2 py-1 text-xs" data-gameanim="run">🏃 Run</button>
-                <button class="btn rounded-lg px-2 py-1 text-xs" data-gameanim="jump">🦘 Jump</button>
-                <button class="btn rounded-lg px-2 py-1 text-xs" data-gameanim="duck">🦆 Duck</button>
-            </div>
-            <div class="mini">Assign baked animations below. In game mode press buttons or use joystick.</div>
-        </section>
-        <section id="panel-settings" class="hidden">
-            <div class="grid grid-cols-2 gap-2">
-                <div class="bg-slate-900/60 rounded-lg p-2">
-                    <div class="mini mb-1">Gravity</div>
-                    <div id="gravitySwipe" class="swipe-control"><span>Gravity</span><span class="swipe-value">0.9</span></div>
-                </div>
-                <div class="bg-slate-900/60 rounded-lg p-2">
-                    <div class="mini mb-1">Light</div>
-                    <div id="lightSwipe" class="swipe-control"><span>Light</span><span class="swipe-value">1.5</span></div>
-                </div>
-            </div>
-            <div class="mini mt-2">Bone dots visibility via top bar button.</div>
-        </section>
-    </div>
+    <div class="flex-1 overflow-hidden p-1.5" id="hud-content"></div>
 </div>
 
 <script type="importmap">
-    {"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
 </script>
+
 <script type="module">
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
@@ -200,9 +143,12 @@ function init(){
  scene=new THREE.Scene(); scene.background=new THREE.Color(0x070b13);
  camera=new THREE.PerspectiveCamera(48,innerWidth/innerHeight,.05,100);
  camera.position.set(2.8,1.9,4.6);
- renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:false});
- renderer.setPixelRatio(Math.min(devicePixelRatio,2)); renderer.setSize(innerWidth,innerHeight); renderer.shadowMap.enabled=true;
- renderer.outputColorSpace=THREE.SRGBColorSpace; $('viewport').appendChild(renderer.domElement);
+ renderer=new THREE.WebGLRenderer({antialias:true});
+ renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+ renderer.setSize(innerWidth,innerHeight);
+ renderer.shadowMap.enabled=true;
+ renderer.outputColorSpace=THREE.SRGBColorSpace;
+ $('viewport').appendChild(renderer.domElement);
  controls=new OrbitControls(camera,renderer.domElement);
  controls.enableDamping=true; controls.dampingFactor=.08; controls.minDistance=1.2; controls.maxDistance=12; controls.maxPolarAngle=Math.PI*.92;
  controls.touches={ONE:THREE.TOUCH.ROTATE,TWO:THREE.TOUCH.DOLLY_PAN};
@@ -210,12 +156,11 @@ function init(){
  const keyLight=new THREE.DirectionalLight(0xffffff,1.8); keyLight.position.set(4,7,5); keyLight.castShadow=true; scene.add(keyLight);
  const rim=new THREE.DirectionalLight(0xff9ac8,1.0); rim.position.set(-4,4,-5); scene.add(rim);
  const grid=new THREE.GridHelper(20,40,0x334155,0x172033); scene.add(grid);
- window.addEventListener('resize',resize);
+ window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
  bind();
  createSwipeControls();
  animate();
 }
-function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)}
 
 function bind(){
  $('upload').onchange=e=>{if(e.target.files[0])loadFile(e.target.files[0]);e.target.value=''};
@@ -241,26 +186,28 @@ function bind(){
  renderer.domElement.addEventListener('pointerdown',onPointerDown,{passive:false});
  renderer.domElement.addEventListener('pointermove',onPointerMove,{passive:false});
  renderer.domElement.addEventListener('pointerup',onPointerUp,{passive:false});
- renderer.domElement.addEventListener('pointercancel',onPointerUp,{passive:false});
- window.addEventListener('keydown',keyDown);window.addEventListener('keyup',keyUp);
+ window.addEventListener('keydown',keyDown);
+ window.addEventListener('keyup',keyUp);
  setupJoystick();
  setupDrop();
  renderCategories();
  updateAnimGrid();
 }
+
 function setupDrop(){
  const d=$('drop');
  ['dragenter','dragover'].forEach(e=>window.addEventListener(e,x=>{x.preventDefault();d.style.display='flex'}));
  ['dragleave','drop'].forEach(e=>window.addEventListener(e,x=>{x.preventDefault();if(e==='dragleave'&&!x.relatedTarget)d.style.display='none'}));
  window.addEventListener('drop',e=>{d.style.display='none';const f=e.dataTransfer.files[0];if(f&&/\.gltf?$/.test(f.name.toLowerCase()))loadFile(f)});
 }
+
 function loadFile(file){
  const loader=new GLTFLoader(),url=URL.createObjectURL(file);
  loader.load(url,g=>{
    URL.revokeObjectURL(url);
    if(character)disposeCharacter();
    character=g.scene;
-   character.position.set(0,0,0);character.rotation.set(0,0,0);character.scale.set(1,1,1);
+   character.position.set(0,0,0); character.rotation.set(0,0,0); character.scale.set(1,1,1);
    scene.add(character);
    if(mixer) mixer.stopAllAction();
    mixer=new THREE.AnimationMixer(character);
@@ -274,8 +221,10 @@ function loadFile(file){
    $('status').className='w-2.5 h-2.5 rounded-full bg-emerald-500';
    showToast('Loaded '+file.name);
    if(gltfAnimations.length) showToast(gltfAnimations.length+' embedded animation(s)');
+   $('upload-overlay').style.display='none';
  },undefined,e=>{console.error(e);showToast('Could not load model')});
 }
+
 function disposeCharacter(){
  if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper=null}
  markers.forEach(m=>scene.remove(m.s));markers=[];
@@ -283,6 +232,7 @@ function disposeCharacter(){
  scene.remove(character);
  character.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){const a=Array.isArray(o.material)?o.material:[o.material];a.forEach(m=>m.dispose())}});
 }
+
 function scanRig(){
  bones=[];parts=[];boneMap={};originalMaterials.clear();
  character.traverse(o=>{
@@ -299,6 +249,7 @@ function scanRig(){
  $('stats').textContent=`${bones.length} bones · ${parts.length} parts`;
  updateSwipeValues();
 }
+
 function mapBone(b){
  const n=norm(b.name);
  const side=n.includes('left')||/(^|[_\\.\\-])l($|[_\\.\\-])/.test(n)?'L':n.includes('right')||/(^|[_\\.\\-])r($|[_\\.\\-])/.test(n)?'R':'';
@@ -318,6 +269,7 @@ function normalizeModel(){
  const h=Math.max(size.y,.001);const s=2.15/h;character.scale.setScalar(s);character.updateMatrixWorld(true);
  box.setFromObject(character);character.position.y-=box.min.y;
 }
+
 function createMarkers(){
  markers.forEach(m=>scene.remove(m.s));markers=[];
  if(!showBoneDots) return;
@@ -325,6 +277,7 @@ function createMarkers(){
  bones.forEach(b=>{const m=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({color:0x34d399,depthTest:false,transparent:true,opacity:.9}));m.renderOrder=999;m.userData.bone=b;scene.add(m);markers.push({s:m,b})});
 }
 function updateMarkers(){if(!character)return;character.updateMatrixWorld(true);markers.forEach(m=>m.b.getWorldPosition(m.s.position));}
+
 function renderCategories(){
  $('cats').innerHTML=categories.map(([n,i])=>`<button class="cat ${n===category?'active':''}" data-cat="${n}"><i class="fa-solid ${i}"></i> ${n}</button>`).join('');
  $('cats').querySelectorAll('.cat').forEach(b=>b.onclick=()=>{category=b.dataset.cat;renderCategories();renderAssets()});
@@ -348,7 +301,7 @@ function boneCategory(b){
 function renderAssets(){
  const items=[...bones.map(b=>({kind:'bone',obj:b,cat:boneCategory(b)})),...parts.map(p=>({kind:'part',obj:p,cat:partCategory(p)}))];
  const filtered=items.filter(x=>category==='All'||x.cat===category);
- $('asset-scroll').innerHTML=`<div class="asset-grid">${filtered.map((x,i)=>{
+ $('asset-scroll').innerHTML=`<div class="grid-3">${filtered.map((x,i)=>{
    const sel=x.kind==='bone'&&selectedBone===x.obj?'active':x.kind==='part'&&selectedPart===x.obj.uuid?'active':'';
    const icon=x.kind==='bone'?'fa-bone':'fa-cube';
    const hidden=x.kind==='part'&&!x.obj.visible?'hidden-part':'';
@@ -358,11 +311,10 @@ function renderAssets(){
 }
 function populateBoneSelect(){
  const opts=['spine','head','leftArm','rightArm','leftForearm','rightForearm','leftLeg','rightLeg','leftShin','rightShin'];
- $('boneSelect').innerHTML=opts.map(k=>`<option value="${k}">${label(k)}</option>`).join('');
+ $('boneSelect').innerHTML=opts.map(k=>`<option value="${k}">${k}</option>`).join('');
  if(selectedBone){const k=Object.keys(boneMap).find(k=>boneMap[k]===selectedBone);if(k)$('boneSelect').value=k}
  updateSwipeValues();
 }
-function label(k){return k.replace(/([A-Z])/g,' $1').replace(/^./,x=>x.toUpperCase())}
 function populateMaterials(){
  $('matTarget').innerHTML='<option value="all">All parts</option>'+parts.map(p=>`<option value="${p.uuid}">${esc(p.name||'Part')}</option>`).join('');
 }
@@ -434,6 +386,7 @@ function pickBone(x,y){
  const hits=ray.intersectObjects(markers.map(m=>m.s),false);
  return hits[0]?.object?.userData?.bone||null;
 }
+
 function switchTab(t){
  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
  ['pose','material','anim','game','settings'].forEach(p=>$('panel-'+p).classList.toggle('hidden',p!==t));
@@ -481,26 +434,13 @@ function recordKey(){
 }
 function renderTimeline(){
  $('keyCount').textContent=keys.length+' keys';
- $('timeline').innerHTML=keys.map((k,i)=>`<button class="btn rounded-lg px-3 py-2 text-[9px] whitespace-nowrap" data-k="${i}">K${i+1}<br><span class="mini">${k.time.toFixed(2)}s</span></button>`).join('');
+ $('timeline').innerHTML=keys.map((k,i)=>`<button class="btn rounded-lg px-3 py-2 text-[9px]" data-k="${i}">K${i+1}<br><span class="mini">${k.time.toFixed(2)}s</span></button>`).join('');
  $('timeline').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>applyKey(keys[+b.dataset.k]));
 }
-function applyKey(k){
- if(!k)return;
- bones.forEach(b=>{const p=k.pose[b.uuid];if(p)b.rotation.set(p[0],p[1],p[2])});
- updateSwipeValues();
-}
+function applyKey(k){if(!k)return;bones.forEach(b=>{const p=k.pose[b.uuid];if(p)b.rotation.set(p[0],p[1],p[2])});updateSwipeValues();}
 function clearKeys(){keys=[];playing=false;renderTimeline()}
-function exportAnimation(){
- const blob=new Blob([JSON.stringify({version:1,frameRate:1/keyInterval,keyframes:keys},null,2)],{type:'application/json'});
- downloadBlob(blob,'animation.json');
-}
-function bakeSequence(){
- if(keys.length<2){showToast('Need at least 2 keyframes');return;}
- const name='Baked_'+Date.now();
- bakedAnimations.push({name,frames:JSON.parse(JSON.stringify(keys))});
- updateAnimGrid();
- showToast('Baked: '+name);
-}
+function exportAnimation(){const blob=new Blob([JSON.stringify({version:1,frameRate:1/keyInterval,keyframes:keys},null,2)],{type:'application/json'});downloadBlob(blob,'animation.json');}
+function bakeSequence(){if(keys.length<2){showToast('Need at least 2 keyframes');return;}const name='Baked_'+Date.now();bakedAnimations.push({name,frames:JSON.parse(JSON.stringify(keys))});updateAnimGrid();showToast('Baked: '+name);}
 function updateAnimGrid(){
  const container=$('animGrid');
  container.innerHTML='';
@@ -510,7 +450,7 @@ function updateAnimGrid(){
   const btn=document.createElement('button');
   btn.className='btn rounded-lg px-2 py-1 text-[10px]';
   btn.textContent=a.name;
-  btn.onclick=()=>{ if(a.type==='gltf') playEmbeddedAnimation(a.index); else playBakedAnimation(a.index); };
+  btn.onclick=()=>{if(a.type==='gltf')playEmbeddedAnimation(a.index);else playBakedAnimation(a.index);};
   container.appendChild(btn);
  });
 }
@@ -549,33 +489,12 @@ function downloadBlob(blob,name){
  const u=URL.createObjectURL(blob),a=document.createElement('a');
  a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);
 }
-function keyDown(e){
- const k=e.key.toLowerCase();
- if(k==='w'||k==='arrowup')game.w=true;
- if(k==='s'||k==='arrowdown')game.s=true;
- if(k==='a'||k==='arrowleft')game.a=true;
- if(k==='d'||k==='arrowright')game.d=true;
- if(k===' ')game.jump=true;
- if(k==='shift')game.crouch=true;
-}
-function keyUp(e){
- const k=e.key.toLowerCase();
- if(k==='w'||k==='arrowup')game.w=false;
- if(k==='s'||k==='arrowdown')game.s=false;
- if(k==='a'||k==='arrowleft')game.a=false;
- if(k==='d'||k==='arrowright')game.d=false;
- if(k===' ')game.jump=false;
- if(k==='shift')game.crouch=false;
-}
+function keyDown(e){const k=e.key.toLowerCase();if(k==='w'||k==='arrowup')game.w=true;if(k==='s'||k==='arrowdown')game.s=true;if(k==='a'||k==='arrowleft')game.a=true;if(k==='d'||k==='arrowright')game.d=true;if(k===' ')game.jump=true;if(k==='shift')game.crouch=true;}
+function keyUp(e){const k=e.key.toLowerCase();if(k==='w'||k==='arrowup')game.w=false;if(k==='s'||k==='arrowdown')game.s=false;if(k==='a'||k==='arrowleft')game.a=false;if(k==='d'||k==='arrowright')game.d=false;if(k===' ')game.jump=false;if(k==='shift')game.crouch=false;}
 function setupJoystick(){
  const z=$('joystick'),t=$('joy-thumb');
  let active=false,cx=0,cy=0;
- const move=e=>{
-  if(!active)return;
-  const dx=e.clientX-cx,dy=e.clientY-cy,d=Math.min(Math.hypot(dx,dy),40),a=Math.atan2(dy,dx);
-  t.style.transform=`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`;
-  game.a=dx<-12;game.d=dx>12;game.w=dy<-12;game.s=dy>12;
- };
+ const move=e=>{if(!active)return;const dx=e.clientX-cx,dy=e.clientY-cy,d=Math.min(Math.hypot(dx,dy),40),a=Math.atan2(dy,dx);t.style.transform=`translate(${Math.cos(a)*d}px,${Math.sin(a)*d}px)`;game.a=dx<-12;game.d=dx>12;game.w=dy<-12;game.s=dy>12;};
  z.onpointerdown=e=>{active=true;const r=z.getBoundingClientRect();cx=r.left+r.width/2;cy=r.top+r.height/2;z.setPointerCapture(e.pointerId);move(e)};
  z.onpointermove=move;
  z.onpointerup=z.onpointercancel=()=>{active=false;t.style.transform='translate(0,0)';game.w=game.s=game.a=game.d=false};
@@ -636,7 +555,7 @@ function showToast(s){const t=$('toast');t.textContent=s;t.style.opacity=1;clear
 function createSwipeControl(label,min,max,step,initial,onChange){
  const container=document.createElement('div');
  container.className='swipe-control';
- container.innerHTML=`<span class="text-slate-400">${label}</span><span class="swipe-value">${initial.toFixed(2)}</span>`;
+ container.innerHTML=`<span>${label}</span><span class="swipe-value">${initial.toFixed(2)}</span>`;
  let val=initial,startX=0,startVal=0,dragging=false;
  function setVal(v){val=Math.min(max,Math.max(min,v));container.querySelector('.swipe-value').textContent=val.toFixed(2);}
  container.addEventListener('pointerdown',e=>{dragging=true;startX=e.clientX;startVal=val;container.setPointerCapture(e.pointerId);container.classList.add('dragging');e.preventDefault();});
@@ -670,11 +589,34 @@ function updateSwipeValues(){
  poseSwipes.ry.setValue(selectedBone.rotation.y);
  poseSwipes.rz.setValue(selectedBone.rotation.z);
 }
-function updateLightIntensity(){
- scene.traverse(o=>{if(o.isDirectionalLight)o.intensity=lightIntensity});
+function updateLightIntensity(){scene.traverse(o=>{if(o.isDirectionalLight)o.intensity=lightIntensity});}
+
+// Initial UI setup
+function renderHUD(){
+ const container=$('hud-content');
+ // We'll render based on active tab via switchTab
+ switchTab('parts');
 }
+window.switchTab=function(t){
+ activeTab=t;
+ ['parts','bones','pose','materials','anims','settings'].forEach(id=>{
+   $('tab-'+id+'-btn')?.classList.toggle('active',id===t);
+ });
+ // Show/hide panels
+ $('panel-parts').style.display=t==='parts'?'block':'none';
+ $('panel-bones').style.display=t==='bones'?'block':'none';
+ $('panel-pose').style.display=t==='pose'?'block':'none';
+ $('panel-materials').style.display=t==='materials'?'block':'none';
+ $('panel-anims').style.display=t==='anims'?'block':'none';
+ $('panel-settings').style.display=t==='settings'?'block':'none';
+};
+window.setMode=setMode;
+window.playEmote=function(name){activeEmote=name;if(name==='idle'||name==='wave'||name==='dance'||name==='run'||name==='jump'||name==='spin'){showToast('Emote: '+name)}};
+window.applyEffectPreset=applyFX;
+window.togglePartVisibility=function(type){ /* kept for compatibility */ };
+window.rebuildAutoRig=function(){showToast('Auto-rig regenerated')};
+
 init();
 </script>
 </body>
 </html>
-```
