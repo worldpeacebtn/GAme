@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VRoid Studio — Avatar Editor</title>
-    <script src="https://cdn.tailwindcss.com">
-    </script>
+    <title>VRoid Studio — Avatar Editor (Improved)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         :root {
@@ -33,270 +32,81 @@
             --font-sans: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
             --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: var(--font-sans);
             background: var(--bg-base);
             color: var(--text-primary);
             overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            user-select: none;
-            -webkit-user-select: none;
+            height: 100vh; width: 100vw;
+            user-select: none; -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
-            touch-action: none;
-            overscroll-behavior: none;
+            touch-action: none; overscroll-behavior: none;
         }
-
-        ::-webkit-scrollbar {
-            width: 3px;
-            height: 3px;
-        }
-        ::-webkit-scrollbar-track {
-            background: rgba(17, 24, 39, 0.4);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(236, 72, 153, 0.5);
-            border-radius: 9999px;
-        }
-
-        .glass {
-            background: rgba(17, 24, 39, 0.85);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--border-subtle);
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #ec4899, #a855f7);
-            color: #fff;
-            border: none;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-        .btn-primary:hover {
-            box-shadow: 0 4px 20px rgba(236, 72, 153, 0.4);
-            transform: translateY(-1px);
-        }
-        .btn-primary:active {
-            transform: scale(0.96);
-        }
-
-        .btn-ghost {
-            background: rgba(30, 41, 59, 0.7);
-            color: var(--text-primary);
-            border: 1px solid var(--border-subtle);
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-        .btn-ghost:hover {
-            background: rgba(59, 74, 94, 0.8);
-            border-color: var(--border-strong);
-        }
-        .btn-ghost:active {
-            transform: scale(0.96);
-        }
-
-        .asset-card {
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-        .asset-card:hover {
-            border-color: rgba(236, 72, 153, 0.5) !important;
-            background: rgba(236, 72, 153, 0.08) !important;
-        }
-        .asset-card.active {
-            border-color: #ec4899 !important;
-            background: rgba(236, 72, 153, 0.12) !important;
-            box-shadow: 0 0 15px rgba(236, 72, 153, 0.15);
-        }
-
-        .tab-button {
-            transition: all 0.2s ease;
-            cursor: pointer;
-            border-radius: var(--radius-md);
-            padding: 6px 10px;
-            font-size: 10px;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-            border: 1px solid transparent;
-        }
-        .tab-button:hover {
-            color: #fff;
-            background: rgba(30, 41, 59, 0.6);
-        }
-        .tab-button.active {
-            color: #ec4899;
-            background: rgba(236, 72, 153, 0.12);
-            border-color: rgba(236, 72, 153, 0.3);
-        }
-
-        input[type="range"] {
-            -webkit-appearance: none;
-            appearance: none;
-            height: 4px;
-            border-radius: 9999px;
-            background: var(--bg-input);
-            outline: none;
-            cursor: pointer;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: var(--accent-pink);
-            border: 2px solid #fff;
-            box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
-            cursor: pointer;
-        }
-        input[type="color"] {
-            -webkit-appearance: none;
-            appearance: none;
-            border: none;
-            border-radius: 6px;
-            padding: 0;
-            cursor: pointer;
-            width: 28px;
-            height: 28px;
-            background: none;
-        }
-        input[type="color"]::-webkit-color-swatch-wrapper {
-            padding: 2px;
-        }
-        input[type="color"]::-webkit-color-swatch {
-            border-radius: 4px;
-            border: 2px solid var(--border-strong);
-        }
-
-        #canvas-container canvas {
-            display: block;
-        }
-
-        .glitch-effect {
-            animation: glitchShift 0.25s infinite;
-        }
-        @keyframes glitchShift {
-            0% {
-                transform: translate(0);
-            }
-            25% {
-                transform: translate(-2px, 1px);
-            }
-            50% {
-                transform: translate(2px, -1px);
-            }
-            75% {
-                transform: translate(-1px, 2px);
-            }
-            100% {
-                transform: translate(0);
-            }
-        }
-
-        .pulse-ring {
-            animation: pulseRing 2s infinite;
-        }
-        @keyframes pulseRing {
-            0% {
-                box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.4);
-            }
-            70% {
-                box-shadow: 0 0 0 12px rgba(236, 72, 153, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(236, 72, 153, 0);
-            }
-        }
-
-        .fade-in {
-            animation: fadeIn 0.3s ease-out;
-        }
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(6px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+        ::-webkit-scrollbar { width: 3px; height: 3px; }
+        ::-webkit-scrollbar-track { background: rgba(17,24,39,0.4); }
+        ::-webkit-scrollbar-thumb { background: rgba(236,72,153,0.5); border-radius: 9999px; }
+        .glass { background: rgba(17,24,39,0.85); backdrop-filter: blur(20px); border: 1px solid var(--border-subtle); }
+        .btn-primary { background: linear-gradient(135deg, #ec4899, #a855f7); color: #fff; border: none; transition: all 0.2s ease; cursor: pointer; }
+        .btn-primary:hover { box-shadow: 0 4px 20px rgba(236,72,153,0.4); transform: translateY(-1px); }
+        .btn-primary:active { transform: scale(0.96); }
+        .btn-ghost { background: rgba(30,41,59,0.7); color: var(--text-primary); border: 1px solid var(--border-subtle); transition: all 0.2s ease; cursor: pointer; }
+        .btn-ghost:hover { background: rgba(59,74,94,0.8); border-color: var(--border-strong); }
+        .btn-ghost:active { transform: scale(0.96); }
+        .asset-card { transition: all 0.2s ease; cursor: pointer; }
+        .asset-card:hover { border-color: rgba(236,72,153,0.5) !important; background: rgba(236,72,153,0.08) !important; }
+        .asset-card.active { border-color: #ec4899 !important; background: rgba(236,72,153,0.12) !important; box-shadow: 0 0 15px rgba(236,72,153,0.15); }
+        .tab-button { transition: all 0.2s ease; cursor: pointer; border-radius: var(--radius-md); padding: 6px 10px; font-size: 10px; font-weight: 600; letter-spacing: 0.3px; border: 1px solid transparent; }
+        .tab-button:hover { color: #fff; background: rgba(30,41,59,0.6); }
+        .tab-button.active { color: #ec4899; background: rgba(236,72,153,0.12); border-color: rgba(236,72,153,0.3); }
+        input[type="range"] { -webkit-appearance: none; appearance: none; height: 4px; border-radius: 9999px; background: var(--bg-input); outline: none; cursor: pointer; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent-pink); border: 2px solid #fff; box-shadow: 0 0 10px rgba(236,72,153,0.5); cursor: pointer; }
+        input[type="color"] { -webkit-appearance: none; appearance: none; border: none; border-radius: 6px; padding: 0; cursor: pointer; width: 28px; height: 28px; background: none; }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+        input[type="color"]::-webkit-color-swatch { border-radius: 4px; border: 2px solid var(--border-strong); }
+        #canvas-container canvas { display: block; }
     </style>
 </head>
 <body>
 
-    <!-- 3D Canvas -->
     <div id="canvas-container" class="fixed inset-0 z-0"></div>
 
-    <!-- Upload Overlay -->
     <div id="upload-overlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur-md p-4 transition-opacity duration-500">
         <div class="max-w-lg w-full bg-slate-900/90 border border-slate-700/70 p-6 sm:p-10 rounded-3xl shadow-2xl text-center space-y-5">
-            <div class="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto text-3xl text-white shadow-lg pulse-ring">
-                <i class="fa-solid fa-cube"></i>
-            </div>
+            <div class="w-20 h-20 bg-gradient-to-br from-pink-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto text-3xl text-white shadow-lg pulse-ring"><i class="fa-solid fa-cube"></i></div>
             <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-white">VRoid Studio</h1>
-            <p class="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-sm mx-auto">
-                Upload your <span class="text-pink-400 font-semibold">GLB</span> avatar model. Edit materials, pose bones, record animations, and export.
-            </p>
-            <label class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 active:scale-95 text-white font-bold px-6 py-3.5 rounded-2xl shadow-xl cursor-pointer transition-all text-sm">
-                <i class="fa-solid fa-cloud-arrow-up"></i>
-                <span>Upload Avatar (.glb / .gltf)</span>
-                <input type="file" id="file-upload-hero" accept=".glb,.gltf" class="hidden">
-            </label>
+            <p class="text-xs sm:text-sm text-slate-400 leading-relaxed max-w-sm mx-auto">Upload your <span class="text-pink-400 font-semibold">GLB</span> avatar. Edit materials, pose bones, record animations, and export.</p>
+            <label class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-500 hover:to-purple-500 active:scale-95 text-white font-bold px-6 py-3.5 rounded-2xl shadow-xl cursor-pointer transition-all text-sm"><i class="fa-solid fa-cloud-arrow-up"></i><span>Upload Avatar (.glb / .gltf)</span><input type="file" id="file-upload-hero" accept=".glb,.gltf" class="hidden"></label>
             <p class="text-[10px] text-slate-500">VRM files are not supported — please convert to GLB first</p>
         </div>
     </div>
 
-    <!-- Top Bar -->
     <div class="fixed top-3 left-3 right-3 z-20 flex items-center justify-between pointer-events-none">
         <div class="glass rounded-2xl px-3.5 py-2 shadow-xl pointer-events-auto flex items-center gap-2.5">
             <div id="status-indicator" class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></div>
-            <div>
-                <div class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">VRoid Studio</div>
-                <div id="model-name-display" class="text-xs font-bold text-pink-400 truncate max-w-[120px] sm:max-w-[220px]">No Model Loaded</div>
-            </div>
+            <div><div class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">VRoid Studio</div><div id="model-name-display" class="text-xs font-bold text-pink-400 truncate max-w-[120px] sm:max-w-[220px]">No Model Loaded</div></div>
         </div>
         <div class="flex items-center gap-2 pointer-events-auto">
-            <button id="btn-toggle-skeleton" class="btn-ghost px-3 py-2 rounded-xl shadow-lg flex items-center gap-1.5 text-xs font-semibold">
-                <i class="fa-solid fa-bone text-emerald-400"></i>
-                <span class="hidden sm:inline">Skeleton</span>
-            </button>
-            <button id="btn-export-glb" class="btn-ghost px-3 py-2 rounded-xl shadow-lg flex items-center gap-1.5 text-xs font-semibold text-emerald-300">
-                <i class="fa-solid fa-download"></i>
-                <span class="hidden sm:inline">Export GLB</span>
-            </button>
-            <label class="btn-ghost px-3 py-2 rounded-xl shadow-lg flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-sky-300">
-                <i class="fa-solid fa-upload text-sky-400"></i>
-                <span class="hidden sm:inline">Upload</span>
-                <input type="file" id="file-upload" accept=".glb,.gltf" class="hidden">
-            </label>
+            <button id="btn-toggle-skeleton" class="btn-ghost px-3 py-2 rounded-xl shadow-lg flex items-center gap-1.5 text-xs font-semibold"><i class="fa-solid fa-bone text-emerald-400"></i><span class="hidden sm:inline">Skeleton</span></button>
+            <button id="btn-export-glb" class="btn-ghost px-3 py-2 rounded-xl shadow-lg flex items-center gap-1.5 text-xs font-semibold text-emerald-300"><i class="fa-solid fa-download"></i><span class="hidden sm:inline">Export GLB</span></button>
+            <label class="btn-ghost px-3 py-2 rounded-xl shadow-lg flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-sky-300"><i class="fa-solid fa-upload text-sky-400"></i><span class="hidden sm:inline">Upload</span><input type="file" id="file-upload" accept=".glb,.gltf" class="hidden"></label>
         </div>
     </div>
 
-    <!-- Scene Controls (bottom-left) -->
     <div class="fixed left-3 z-20 flex items-center gap-2 pointer-events-auto" style="bottom: 200px;">
         <div class="glass rounded-2xl p-2 flex items-center gap-1.5 shadow-xl">
-            <button onclick="playEmote('idle')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90" title="Idle">🧘</button>
-            <button onclick="playEmote('wave')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90" title="Wave">👋</button>
-            <button onclick="playEmote('dance')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90" title="Dance">💃</button>
-            <button onclick="playEmote('jump')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90" title="Jump">🦘</button>
-            <button onclick="playEmote('spin')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90" title="Spin">🌀</button>
+            <button onclick="playEmote('idle')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90">🧘</button>
+            <button onclick="playEmote('wave')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90">👋</button>
+            <button onclick="playEmote('dance')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90">💃</button>
+            <button onclick="playEmote('jump')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90">🦘</button>
+            <button onclick="playEmote('spin')" class="w-9 h-9 rounded-xl bg-slate-800/70 hover:bg-slate-700 flex items-center justify-center text-sm transition-all active:scale-90">🌀</button>
         </div>
     </div>
 
-    <!-- Toast -->
     <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 backdrop-blur-xl px-4 py-2 rounded-full border border-slate-700 text-xs text-slate-200 opacity-0 transition-opacity duration-300 pointer-events-none shadow-2xl"></div>
 
     <!-- Bottom Dock -->
     <div class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-2xl border-t border-slate-700/80 shadow-[0_-8px_30px_rgba(0,0,0,0.7)] flex flex-col" style="height: 180px;">
-        <!-- Tab Bar -->
         <div class="flex items-center justify-between px-2 pt-2 pb-1 border-b border-slate-800">
             <div class="flex gap-1">
                 <button onclick="switchTab('parts')" id="tab-parts-btn" class="tab-button active"><i class="fa-solid fa-shirt mr-1"></i>Parts</button>
@@ -308,7 +118,6 @@
             <span id="stats-display" class="text-[9px] text-slate-500 font-mono pr-2">0 bones · 0 parts</span>
         </div>
 
-        <!-- Tab Content -->
         <div class="flex-1 overflow-y-auto p-3 text-xs space-y-3">
             <!-- PARTS TAB -->
             <div id="tab-parts" class="space-y-2 fade-in">
@@ -319,20 +128,28 @@
                         <button onclick="toggleAllParts(false)" class="text-[9px] bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg text-rose-300 transition-all">Hide All</button>
                     </div>
                 </div>
-                <div id="parts-list" class="space-y-1 max-h-24 overflow-y-auto">
-                    <div class="text-slate-500 italic text-[11px]">Upload a model to see its parts</div>
-                </div>
+                <div id="parts-list" class="space-y-1 max-h-24 overflow-y-auto"><div class="text-slate-500 italic text-[11px]">Upload a model to see its parts</div></div>
             </div>
 
             <!-- BONES TAB -->
             <div id="tab-bones" class="space-y-2 hidden fade-in">
                 <div class="flex items-center justify-between">
                     <span class="text-slate-300 font-bold text-[11px]"><i class="fa-solid fa-sitemap text-emerald-400 mr-1.5"></i>Joint Hierarchy</span>
-                    <button onclick="autoRigBones()" class="text-[9px] bg-emerald-600/30 hover:bg-emerald-600/50 px-2 py-1 rounded-lg text-emerald-300 transition-all">Force Auto-Rig</button>
+                    <button onclick="autoRigBones()" class="text-[9px] bg-emerald-600/30 hover:bg-emerald-600/50 px-2 py-1 rounded-lg text-emerald-300 transition-all">Re-detect Bones</button>
                 </div>
-                <div id="bones-list" class="space-y-1 font-mono text-[10px] max-h-24 overflow-y-auto">
-                    <div class="text-slate-500 italic">No bones detected</div>
+                <!-- Bone Mapping Panel -->
+                <div class="bg-slate-800/40 border border-slate-700 rounded-lg p-2 space-y-1.5">
+                    <div class="text-[10px] font-bold text-slate-400">Bone Mapping (assign joints)</div>
+                    <div class="grid grid-cols-2 gap-1">
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">Spine</span><select id="map-spine" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">Head</span><select id="map-head" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">Left Arm</span><select id="map-leftArm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">Right Arm</span><select id="map-rightArm" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">Left Leg</span><select id="map-leftLeg" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                        <div class="flex items-center gap-1"><span class="text-[9px] text-slate-400 w-14">Right Leg</span><select id="map-rightLeg" class="flex-1 bg-slate-900 border border-slate-600 rounded px-1 py-0.5 text-[9px] text-white outline-none"></select></div>
+                    </div>
                 </div>
+                <div id="bones-list" class="space-y-1 font-mono text-[10px] max-h-16 overflow-y-auto"><div class="text-slate-500 italic">No bones detected</div></div>
             </div>
 
             <!-- POSE TAB -->
@@ -340,28 +157,14 @@
                 <div class="flex items-center gap-2">
                     <span class="text-[10px] text-slate-400 whitespace-nowrap">Joint:</span>
                     <select id="pose-bone-select" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-2 py-1.5 text-white text-xs outline-none">
-                        <option value="spine">Spine / Torso</option>
-                        <option value="head">Head / Neck</option>
-                        <option value="leftArm">Left Arm</option>
-                        <option value="rightArm">Right Arm</option>
-                        <option value="leftLeg">Left Leg</option>
-                        <option value="rightLeg">Right Leg</option>
+                        <option value="spine">Spine / Torso</option><option value="head">Head / Neck</option><option value="leftArm">Left Arm</option><option value="rightArm">Right Arm</option><option value="leftLeg">Left Leg</option><option value="rightLeg">Right Leg</option>
                     </select>
                     <button onclick="resetPose()" class="text-[9px] bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded-lg text-amber-300 transition-all">↺</button>
                 </div>
                 <div class="grid grid-cols-3 gap-1.5">
-                    <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700">
-                        <div class="flex justify-between text-[9px] text-slate-400"><span>Pitch</span><span id="pose-x-val" class="text-pink-400 font-bold">0°</span></div>
-                        <input type="range" id="pose-x" min="-3.14" max="3.14" step="0.02" value="0" class="w-full accent-pink-500">
-                    </div>
-                    <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700">
-                        <div class="flex justify-between text-[9px] text-slate-400"><span>Yaw</span><span id="pose-y-val" class="text-purple-400 font-bold">0°</span></div>
-                        <input type="range" id="pose-y" min="-3.14" max="3.14" step="0.02" value="0" class="w-full accent-purple-500">
-                    </div>
-                    <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700">
-                        <div class="flex justify-between text-[9px] text-slate-400"><span>Roll</span><span id="pose-z-val" class="text-sky-400 font-bold">0°</span></div>
-                        <input type="range" id="pose-z" min="-3.14" max="3.14" step="0.02" value="0" class="w-full accent-sky-500">
-                    </div>
+                    <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700"><div class="flex justify-between text-[9px] text-slate-400"><span>Pitch</span><span id="pose-x-val" class="text-pink-400 font-bold">0°</span></div><input type="range" id="pose-x" min="-3.14" max="3.14" step="0.02" value="0" class="w-full accent-pink-500"></div>
+                    <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700"><div class="flex justify-between text-[9px] text-slate-400"><span>Yaw</span><span id="pose-y-val" class="text-purple-400 font-bold">0°</span></div><input type="range" id="pose-y" min="-3.14" max="3.14" step="0.02" value="0" class="w-full accent-purple-500"></div>
+                    <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700"><div class="flex justify-between text-[9px] text-slate-400"><span>Roll</span><span id="pose-z-val" class="text-sky-400 font-bold">0°</span></div><input type="range" id="pose-z" min="-3.14" max="3.14" step="0.02" value="0" class="w-full accent-sky-500"></div>
                 </div>
             </div>
 
@@ -369,23 +172,13 @@
             <div id="tab-materials" class="space-y-2 hidden fade-in">
                 <div class="flex items-center gap-2">
                     <span class="text-[10px] text-slate-400">Target:</span>
-                    <select id="material-target" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-2 py-1.5 text-white text-xs outline-none">
-                        <option value="all">All Parts</option>
-                    </select>
+                    <select id="material-target" class="flex-1 bg-slate-800 border border-slate-600 rounded-lg px-2 py-1.5 text-white text-xs outline-none"><option value="all">All Parts</option></select>
                 </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-slate-300 text-[10px]">Base Color</span>
-                    <input type="color" id="mat-color" value="#ffffff" class="w-8 h-8 rounded-lg border-0 cursor-pointer">
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700">
-                        <div class="flex justify-between text-[9px] text-slate-400"><span>Roughness</span><span id="mat-rough-val" class="text-amber-400 font-bold">0.5</span></div>
-                        <input type="range" id="mat-roughness" min="0" max="1" step="0.01" value="0.5" class="w-full accent-amber-500">
-                    </div>
-                    <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700">
-                        <div class="flex justify-between text-[9px] text-slate-400"><span>Metalness</span><span id="mat-metal-val" class="text-purple-400 font-bold">0.1</span></div>
-                        <input type="range" id="mat-metalness" min="0" max="1" step="0.01" value="0.1" class="w-full accent-purple-500">
-                    </div>
+                <div class="flex items-center justify-between"><span class="text-slate-300 text-[10px]">Base Color</span><input type="color" id="mat-color" value="#ffffff" class="w-8 h-8 rounded-lg border-0 cursor-pointer"></div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700"><div class="flex justify-between text-[9px] text-slate-400"><span>Roughness</span><span id="mat-rough-val" class="text-amber-400 font-bold">0.5</span></div><input type="range" id="mat-roughness" min="0" max="1" step="0.01" value="0.5" class="w-full accent-amber-500"></div>
+                    <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700"><div class="flex justify-between text-[9px] text-slate-400"><span>Metal</span><span id="mat-metal-val" class="text-purple-400 font-bold">0.1</span></div><input type="range" id="mat-metalness" min="0" max="1" step="0.01" value="0.1" class="w-full accent-purple-500"></div>
+                    <div class="bg-slate-800/50 p-2 rounded-xl border border-slate-700"><div class="flex justify-between text-[9px] text-slate-400"><span>Opacity</span><span id="mat-opacity-val" class="text-sky-400 font-bold">1.0</span></div><input type="range" id="mat-opacity" min="0" max="1" step="0.01" value="1.0" class="w-full accent-sky-500"></div>
                 </div>
                 <div class="grid grid-cols-3 gap-1.5">
                     <button onclick="applyEffect('cyberglitch')" class="bg-pink-600/25 hover:bg-pink-600/40 border border-pink-500/40 p-2 rounded-xl text-pink-300 font-bold text-[10px] transition-all"><i class="fa-solid fa-bolt mr-0.5"></i>Glitch</button>
@@ -397,10 +190,7 @@
 
             <!-- ANIM TAB -->
             <div id="tab-anim" class="space-y-2 hidden fade-in">
-                <div class="flex items-center justify-between">
-                    <span class="text-slate-300 font-bold text-[11px]"><i class="fa-solid fa-circle-dot text-rose-500 mr-1.5"></i>Keyframe Recorder</span>
-                    <span id="keyframe-count" class="text-pink-400 font-mono text-[10px]">0 Frames</span>
-                </div>
+                <div class="flex items-center justify-between"><span class="text-slate-300 font-bold text-[11px]"><i class="fa-solid fa-circle-dot text-rose-500 mr-1.5"></i>Keyframe Recorder</span><span id="keyframe-count" class="text-pink-400 font-mono text-[10px]">0 Frames</span></div>
                 <div class="flex gap-1.5">
                     <button id="btn-record-keyframe" class="flex-1 bg-pink-600 hover:bg-pink-500 active:scale-95 text-white font-bold py-1.5 rounded-xl text-[10px] transition-all"><i class="fa-solid fa-circle text-[6px] mr-1"></i>Record Pose</button>
                     <button id="btn-play-anim" class="flex-1 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold py-1.5 rounded-xl text-[10px] transition-all"><i class="fa-solid fa-play text-[8px] mr-1"></i>Play</button>
@@ -417,14 +207,8 @@
         </div>
     </div>
 
-    <!-- Three.js Import Map -->
     <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
+        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
     </script>
 
     <script type="module">
@@ -433,7 +217,6 @@
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
         import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 
-        // ==================== STATE ====================
         let scene, camera, renderer, controls;
         let character = null;
         let skeletonHelper = null;
@@ -450,20 +233,15 @@
         let animationClock = new THREE.Clock();
         let springBones = [];
         let effectInterval = null;
-
-        // Camera
         const cameraState = { target: new THREE.Vector3(0, 1.2, 0), distance: 4.5, theta: Math.PI * 0.5, phi: Math.PI * 0.38 };
 
-        // ==================== INIT ====================
         function init() {
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x0b0f1a);
             scene.fog = new THREE.Fog(0x0b0f1a, 6, 18);
-
             camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
             camera.position.set(3, 3.2, 5);
-
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -473,7 +251,6 @@
             renderer.toneMappingExposure = 1.2;
             renderer.outputColorSpace = THREE.SRGBColorSpace;
             container.appendChild(renderer.domElement);
-
             controls = new OrbitControls(camera, renderer.domElement);
             controls.target.copy(cameraState.target);
             controls.enableDamping = true;
@@ -483,10 +260,8 @@
             controls.maxPolarAngle = Math.PI * 0.7;
             controls.minPolarAngle = Math.PI * 0.15;
             controls.update();
-
             setupLights();
             setupEnvironment();
-
             window.addEventListener('resize', onResize);
             bindUIEvents();
             animate();
@@ -527,7 +302,6 @@
             floor.rotation.x = -Math.PI / 2;
             floor.receiveShadow = true;
             scene.add(floor);
-            // subtle particles
             const particleCount = 80;
             const positions = new Float32Array(particleCount * 3);
             for (let i = 0; i < particleCount; i++) {
@@ -542,24 +316,18 @@
             scene.add(particles);
         }
 
-        // ==================== MODEL LOADING ====================
         function loadModel(file) {
             const url = URL.createObjectURL(file);
             const loader = new GLTFLoader();
-
             loader.load(url, (gltf) => {
                 if (character) {
                     scene.remove(character);
-                    if (skeletonHelper) { scene.remove(skeletonHelper);
-                        skeletonHelper = null; }
+                    if (skeletonHelper) { scene.remove(skeletonHelper); skeletonHelper = null; }
                     stopGlitchEffect();
                 }
-
                 character = gltf.scene;
                 character.scale.set(1.0, 1.0, 1.0);
                 character.position.set(0, 0, 0);
-
-                // Reset state
                 allBones = [];
                 boneMap = { spine: null, head: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null };
                 allParts = [];
@@ -567,51 +335,35 @@
                 selectedPartUuid = 'all';
                 springBones = [];
                 recordedFrames = [];
-
-                // Traverse to detect bones and parts
                 character.traverse((child) => {
-                    // Bones
-                    if (child.isBone || (child.type === 'Bone') || child.name.toLowerCase().includes('bone') || child.name
-                        .startsWith('J_Bip_')) {
-                        allBones.push(child);
+                    if (child.isBone || (child.type === 'Bone') || child.name.toLowerCase().includes('bone') || child.name.startsWith('J_Bip_')) {
+                        // Skip obvious hair/cloth bones
                         const bName = child.name.toLowerCase();
-                        if (!boneMap.spine && (bName.includes('spine') || bName.includes('chest') || bName.includes('hips') ||
-                                bName.includes('torso') || bName.includes('upperbody') || bName.includes('j_bip_c_spine') ||
-                                bName.includes('j_bip_c_chest'))) boneMap.spine = child;
-                        if (!boneMap.head && (bName.includes('head') || bName.includes('neck') || bName.includes('j_bip_c_head') ||
-                                bName.includes('j_bip_c_neck'))) boneMap.head = child;
-                        if (!boneMap.leftArm && (bName.includes('arm.l') || bName.includes('leftarm') || bName.includes(
-                                'upperarm_l') || bName.includes('arm_l') || bName.includes('l_arm') || bName.includes(
-                                'j_bip_l_upperarm') || bName.includes('l_upperarm'))) boneMap.leftArm = child;
-                        if (!boneMap.rightArm && (bName.includes('arm.r') || bName.includes('rightarm') || bName.includes(
-                                'upperarm_r') || bName.includes('arm_r') || bName.includes('r_arm') || bName.includes(
-                                'j_bip_r_upperarm') || bName.includes('r_upperarm'))) boneMap.rightArm = child;
-                        if (!boneMap.leftLeg && (bName.includes('leg.l') || bName.includes('leftleg') || bName.includes(
-                                'upleg_l') || bName.includes('leg_l') || bName.includes('l_leg') || bName.includes(
-                                'j_bip_l_upperleg') || bName.includes('l_upperleg'))) boneMap.leftLeg = child;
-                        if (!boneMap.rightLeg && (bName.includes('leg.r') || bName.includes('rightleg') || bName.includes(
-                                'upleg_r') || bName.includes('leg_r') || bName.includes('r_leg') || bName.includes(
-                                'j_bip_r_upperleg') || bName.includes('r_upperleg'))) boneMap.rightLeg = child;
+                        if (bName.includes('hair') || bName.includes('skirt') || bName.includes('cloth') || bName.includes('tail') || bName.includes('hair_bone')) {
+                            // Still add to allBones but won't auto-assign
+                            allBones.push(child);
+                            return;
+                        }
+                        allBones.push(child);
+                        if (!boneMap.spine && (bName.includes('spine') || bName.includes('chest') || bName.includes('hips') || bName.includes('torso') || bName.includes('upperbody') || bName.includes('j_bip_c_spine') || bName.includes('j_bip_c_chest'))) boneMap.spine = child;
+                        if (!boneMap.head && (bName.includes('head') || bName.includes('neck') || bName.includes('j_bip_c_head') || bName.includes('j_bip_c_neck'))) boneMap.head = child;
+                        if (!boneMap.leftArm && (bName.includes('arm.l') || bName.includes('leftarm') || bName.includes('upperarm_l') || bName.includes('arm_l') || bName.includes('l_arm') || bName.includes('j_bip_l_upperarm') || bName.includes('l_upperarm'))) boneMap.leftArm = child;
+                        if (!boneMap.rightArm && (bName.includes('arm.r') || bName.includes('rightarm') || bName.includes('upperarm_r') || bName.includes('arm_r') || bName.includes('r_arm') || bName.includes('j_bip_r_upperarm') || bName.includes('r_upperarm'))) boneMap.rightArm = child;
+                        if (!boneMap.leftLeg && (bName.includes('leg.l') || bName.includes('leftleg') || bName.includes('upleg_l') || bName.includes('leg_l') || bName.includes('l_leg') || bName.includes('j_bip_l_upperleg') || bName.includes('l_upperleg'))) boneMap.leftLeg = child;
+                        if (!boneMap.rightLeg && (bName.includes('leg.r') || bName.includes('rightleg') || bName.includes('upleg_r') || bName.includes('leg_r') || bName.includes('r_leg') || bName.includes('j_bip_r_upperleg') || bName.includes('r_upperleg'))) boneMap.rightLeg = child;
                     }
-
-                    // Parts (meshes)
                     if (child.isMesh) {
                         child.castShadow = true;
                         child.receiveShadow = true;
                         child.userData.visible = true;
                         allParts.push(child);
-                        // Spring bones detection
                         const mName = (child.name || '').toLowerCase();
-                        if (mName.includes('hair') || mName.includes('skirt') || mName.includes('cloth') || mName.includes(
-                                'tail')) {
+                        if (mName.includes('hair') || mName.includes('skirt') || mName.includes('cloth') || mName.includes('tail')) {
                             springBones.push({ mesh: child, baseRot: child.rotation.clone() });
                         }
                     }
                 });
-
-                // Fallback bone mapping if incomplete
                 if (allBones.length < 3) {
-                    console.warn('Limited bones detected, attempting auto-rig...');
                     generateFallbackSkeleton();
                 }
                 if (!boneMap.spine && allBones.length > 0) boneMap.spine = allBones[0];
@@ -620,26 +372,18 @@
                 if (!boneMap.rightArm && allBones.length > 3) boneMap.rightArm = allBones[3];
                 if (!boneMap.leftLeg && allBones.length > 4) boneMap.leftLeg = allBones[4];
                 if (!boneMap.rightLeg && allBones.length > 5) boneMap.rightLeg = allBones[5];
-
                 scene.add(character);
-
-                // Hide upload overlay
-                const overlay = document.getElementById('upload-overlay');
-                if (overlay) {
-                    overlay.style.opacity = '0';
-                    setTimeout(() => overlay.style.display = 'none', 500);
-                }
-
-                // Update UI
+                document.getElementById('upload-overlay').style.opacity = '0';
+                setTimeout(() => document.getElementById('upload-overlay').style.display = 'none', 500);
                 document.getElementById('status-indicator').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
                 document.getElementById('model-name-display').textContent = file.name;
                 document.getElementById('stats-display').textContent = `${allBones.length} bones · ${allParts.length} parts`;
                 updatePartsList();
                 updateBonesList();
+                populateBoneMappingDropdowns();
                 populateMaterialTarget();
                 document.getElementById('keyframe-count').textContent = '0 Frames';
                 document.getElementById('keyframe-list').innerHTML = 'No keyframes yet — record poses to build an animation';
-
                 showToast(`Loaded ${file.name} — ${allBones.length} bones, ${allParts.length} parts`);
             }, undefined, (error) => {
                 console.error('Failed to load model:', error);
@@ -649,7 +393,6 @@
 
         function generateFallbackSkeleton() {
             if (allBones.length > 0) return;
-            // Create a basic skeleton for unrigged models
             const hips = new THREE.Bone();
             hips.name = 'AutoRig_Hips';
             hips.position.set(0, 0.6, 0);
@@ -696,27 +439,17 @@
             console.log('Auto-rig generated with 9 bones');
         }
 
-        // ==================== UI UPDATES ====================
         function updatePartsList() {
             const container = document.getElementById('parts-list');
-            if (allParts.length === 0) {
-                container.innerHTML = '<div class="text-slate-500 italic text-[11px]">No parts detected</div>';
-                return;
-            }
+            if (allParts.length === 0) { container.innerHTML = '<div class="text-slate-500 italic text-[11px]">No parts detected</div>'; return; }
             container.innerHTML = '';
             allParts.forEach((part, idx) => {
                 const name = part.name || `Part ${idx + 1}`;
                 const isHidden = hiddenParts.has(part.uuid);
                 const isActive = selectedPartUuid === part.uuid;
                 const div = document.createElement('div');
-                div.className =
-                    `asset-card flex items-center justify-between p-2 rounded-lg border ${isActive ? 'active border-pink-500/60 bg-pink-500/10' : 'border-slate-700 bg-slate-800/40'} ${isHidden ? 'opacity-50' : ''}`;
-                div.innerHTML = `
-                    <span class="text-[10px] font-medium text-slate-200 truncate flex-1">${name}</span>
-                    <button class="text-[10px] ${isHidden ? 'text-slate-500' : 'text-emerald-400'} hover:text-emerald-300 px-1" onclick="event.stopPropagation(); togglePartVisibility('${part.uuid}')">
-                        <i class="fa-solid ${isHidden ? 'fa-eye-slash' : 'fa-eye'}"></i>
-                    </button>
-                `;
+                div.className = `asset-card flex items-center justify-between p-2 rounded-lg border ${isActive ? 'active border-pink-500/60 bg-pink-500/10' : 'border-slate-700 bg-slate-800/40'} ${isHidden ? 'opacity-50' : ''}`;
+                div.innerHTML = `<span class="text-[10px] font-medium text-slate-200 truncate flex-1">${name}</span><button class="text-[10px] ${isHidden ? 'text-slate-500' : 'text-emerald-400'} hover:text-emerald-300 px-1" onclick="event.stopPropagation(); togglePartVisibility('${part.uuid}')"><i class="fa-solid ${isHidden ? 'fa-eye-slash' : 'fa-eye'}"></i></button>`;
                 div.onclick = () => selectPart(part);
                 container.appendChild(div);
             });
@@ -724,10 +457,7 @@
 
         function updateBonesList() {
             const container = document.getElementById('bones-list');
-            if (allBones.length === 0) {
-                container.innerHTML = '<div class="text-slate-500 italic">No bones detected</div>';
-                return;
-            }
+            if (allBones.length === 0) { container.innerHTML = '<div class="text-slate-500 italic">No bones detected</div>'; return; }
             container.innerHTML = '';
             allBones.forEach((bone, idx) => {
                 const name = bone.name || `Bone ${idx + 1}`;
@@ -736,6 +466,35 @@
                 div.innerHTML = `<span class="text-emerald-400">🦴</span><span class="text-slate-300 truncate">${name}</span>`;
                 div.onclick = () => mapBoneToPose(bone);
                 container.appendChild(div);
+            });
+        }
+
+        function populateBoneMappingDropdowns() {
+            const keys = ['spine', 'head', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
+            keys.forEach(key => {
+                const select = document.getElementById(`map-${key}`);
+                if (!select) return;
+                select.innerHTML = '';
+                const noneOpt = document.createElement('option');
+                noneOpt.value = '';
+                noneOpt.textContent = '— none —';
+                select.appendChild(noneOpt);
+                allBones.forEach((bone, idx) => {
+                    const opt = document.createElement('option');
+                    opt.value = bone.uuid;
+                    opt.textContent = bone.name || `Bone ${idx + 1}`;
+                    if (boneMap[key] && boneMap[key].uuid === bone.uuid) opt.selected = true;
+                    select.appendChild(opt);
+                });
+                select.addEventListener('change', (e) => {
+                    const selectedUuid = e.target.value;
+                    if (selectedUuid) {
+                        const bone = allBones.find(b => b.uuid === selectedUuid);
+                        boneMap[key] = bone;
+                    } else {
+                        boneMap[key] = null;
+                    }
+                });
             });
         }
 
@@ -759,20 +518,21 @@
         function mapBoneToPose(bone) {
             const bName = bone.name.toLowerCase();
             let key = null;
-            if (bName.includes('spine') || bName.includes('chest') || bName.includes('hips') || bName.includes('torso'))
-                key = 'spine';
+            if (bName.includes('spine') || bName.includes('chest') || bName.includes('hips') || bName.includes('torso')) key = 'spine';
             else if (bName.includes('head') || bName.includes('neck')) key = 'head';
             else if (bName.includes('leftarm') || bName.includes('arm.l') || bName.includes('l_arm')) key = 'leftArm';
             else if (bName.includes('rightarm') || bName.includes('arm.r') || bName.includes('r_arm')) key = 'rightArm';
             else if (bName.includes('leftleg') || bName.includes('leg.l') || bName.includes('l_leg')) key = 'leftLeg';
             else if (bName.includes('rightleg') || bName.includes('leg.r') || bName.includes('r_leg')) key = 'rightLeg';
-            if (key && boneMap[key]) {
+            if (key) {
                 document.getElementById('pose-bone-select').value = key;
                 const boneObj = boneMap[key];
-                document.getElementById('pose-x').value = boneObj.rotation.x;
-                document.getElementById('pose-y').value = boneObj.rotation.y;
-                document.getElementById('pose-z').value = boneObj.rotation.z;
-                updatePoseDisplay();
+                if (boneObj) {
+                    document.getElementById('pose-x').value = boneObj.rotation.x;
+                    document.getElementById('pose-y').value = boneObj.rotation.y;
+                    document.getElementById('pose-z').value = boneObj.rotation.z;
+                    updatePoseDisplay();
+                }
                 showToast(`Mapped ${bone.name} → ${key}`);
             } else {
                 showToast('Cannot map this bone to a pose slot');
@@ -788,7 +548,6 @@
             document.getElementById('pose-z-val').textContent = (rz * 180 / Math.PI).toFixed(1) + '°';
         }
 
-        // ==================== GLOBAL FUNCTIONS ====================
         window.switchTab = function(tabId) {
             const tabs = ['parts', 'bones', 'pose', 'materials', 'anim'];
             tabs.forEach(id => {
@@ -800,30 +559,40 @@
         window.togglePartVisibility = function(uuid) {
             const part = allParts.find(p => p.uuid === uuid);
             if (!part) return;
-            if (part.visible) {
-                part.visible = false;
-                hiddenParts.add(uuid);
-            } else {
-                part.visible = true;
-                hiddenParts.delete(uuid);
-            }
+            if (part.visible) { part.visible = false; hiddenParts.add(uuid); } else { part.visible = true; hiddenParts.delete(uuid); }
             updatePartsList();
         };
 
         window.toggleAllParts = function(show) {
-            allParts.forEach(part => {
-                part.visible = show;
-                if (show) hiddenParts.delete(part.uuid);
-                else hiddenParts.add(part.uuid);
-            });
+            allParts.forEach(part => { part.visible = show; if (show) hiddenParts.delete(part.uuid); else hiddenParts.add(part.uuid); });
             updatePartsList();
         };
 
         window.autoRigBones = function() {
             if (!character) { showToast('Load a model first!'); return; }
-            generateFallbackSkeleton();
+            // Re-run detection but exclude hair bones
+            allBones = [];
+            boneMap = { spine: null, head: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null };
+            character.traverse((child) => {
+                if (child.isBone || (child.type === 'Bone') || child.name.toLowerCase().includes('bone') || child.name.startsWith('J_Bip_')) {
+                    const bName = child.name.toLowerCase();
+                    if (bName.includes('hair') || bName.includes('skirt') || bName.includes('cloth') || bName.includes('tail')) {
+                        allBones.push(child);
+                        return;
+                    }
+                    allBones.push(child);
+                    if (!boneMap.spine && (bName.includes('spine') || bName.includes('chest') || bName.includes('hips') || bName.includes('torso') || bName.includes('upperbody'))) boneMap.spine = child;
+                    if (!boneMap.head && (bName.includes('head') || bName.includes('neck'))) boneMap.head = child;
+                    if (!boneMap.leftArm && (bName.includes('arm.l') || bName.includes('leftarm') || bName.includes('upperarm_l') || bName.includes('l_arm'))) boneMap.leftArm = child;
+                    if (!boneMap.rightArm && (bName.includes('arm.r') || bName.includes('rightarm') || bName.includes('upperarm_r') || bName.includes('r_arm'))) boneMap.rightArm = child;
+                    if (!boneMap.leftLeg && (bName.includes('leg.l') || bName.includes('leftleg') || bName.includes('upleg_l') || bName.includes('l_leg'))) boneMap.leftLeg = child;
+                    if (!boneMap.rightLeg && (bName.includes('leg.r') || bName.includes('rightleg') || bName.includes('upleg_r') || bName.includes('r_leg'))) boneMap.rightLeg = child;
+                }
+            });
             updateBonesList();
-            showToast('Auto-rig attempted!');
+            populateBoneMappingDropdowns();
+            document.getElementById('stats-display').textContent = `${allBones.length} bones · ${allParts.length} parts`;
+            showToast('Bone detection re-run — adjust mapping if needed');
         };
 
         window.resetPose = function() {
@@ -832,10 +601,7 @@
             document.getElementById('pose-z').value = 0;
             updatePoseDisplay();
             const key = document.getElementById('pose-bone-select').value;
-            if (boneMap[key]) {
-                boneMap[key].rotation.set(0, 0, 0);
-                if (skeletonHelper) skeletonHelper.update();
-            }
+            if (boneMap[key]) { boneMap[key].rotation.set(0,0,0); if (skeletonHelper) skeletonHelper.update(); }
             showToast('Pose reset');
         };
 
@@ -845,10 +611,7 @@
             stopGlitchEffect();
             showToast(`Emote: ${name}`);
         };
-
-        window.loadPresetAnim = function(name) {
-            playEmote(name);
-        };
+        window.loadPresetAnim = function(name) { playEmote(name); };
 
         window.applyEffect = function(effect) {
             const mats = getTargetMaterials();
@@ -861,6 +624,8 @@
                 mat.emissive.set(0x000000);
                 mat.emissiveIntensity = 0;
                 mat.wireframe = false;
+                // Preserve texture maps
+                const hasTexture = mat.map !== null && mat.map !== undefined;
                 switch (effect) {
                     case 'cyberglitch':
                         mat.color.set(0xec4899);
@@ -921,31 +686,20 @@
                 if (character) {
                     character.position.x += (Math.random() - 0.5) * 0.06;
                     character.position.z += (Math.random() - 0.5) * 0.06;
-                    setTimeout(() => {
-                        if (character) { character.position.x = 0;
-                            character.position.z = 0; }
-                    }, 60);
+                    setTimeout(() => { if (character) { character.position.x = 0; character.position.z = 0; } }, 60);
                 }
             }, 180);
         }
-
         function stopGlitchEffect() {
-            if (effectInterval) { clearInterval(effectInterval);
-                effectInterval = null; }
-            if (character) { character.position.x = 0;
-                character.position.z = 0; }
+            if (effectInterval) { clearInterval(effectInterval); effectInterval = null; }
+            if (character) { character.position.x = 0; character.position.z = 0; }
         }
 
-        // ==================== KEYFRAMES ====================
         function recordPose() {
             if (!character || allBones.length === 0) { showToast('No model loaded'); return; }
             const frame = {};
             allBones.forEach((bone, idx) => {
-                frame[bone.name || `bone_${idx}`] = {
-                    rx: bone.rotation.x,
-                    ry: bone.rotation.y,
-                    rz: bone.rotation.z
-                };
+                frame[bone.name || `bone_${idx}`] = { rx: bone.rotation.x, ry: bone.rotation.y, rz: bone.rotation.z };
             });
             recordedFrames.push({ time: recordedFrames.length * 0.4, pose: frame });
             document.getElementById('keyframe-count').textContent = `${recordedFrames.length} Frames`;
@@ -957,7 +711,6 @@
             list.appendChild(div);
             showToast(`Recorded frame #${recordedFrames.length}`);
         }
-
         function playCustomAnim() {
             if (recordedFrames.length === 0) { showToast('Record frames first!'); return; }
             customAnimPlaying = true;
@@ -965,7 +718,6 @@
             activeEmote = null;
             showToast('Playing custom animation...');
         }
-
         function exportCustomAnim() {
             if (recordedFrames.length === 0) { showToast('No animation to export'); return; }
             const blob = new Blob([JSON.stringify(recordedFrames, null, 2)], { type: 'application/json' });
@@ -975,8 +727,6 @@
             a.click();
             showToast('Animation exported');
         }
-
-        // ==================== EXPORT ====================
         function exportGLB() {
             if (!character) { showToast('No model to export'); return; }
             const exporter = new GLTFExporter();
@@ -987,13 +737,9 @@
                 a.download = 'edited_avatar.glb';
                 a.click();
                 showToast('GLB exported successfully');
-            }, (error) => {
-                console.error(error);
-                showToast('Export failed');
-            }, { binary: true });
+            }, (error) => { console.error(error); showToast('Export failed'); }, { binary: true });
         }
 
-        // ==================== TOAST ====================
         function showToast(msg) {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
@@ -1002,19 +748,9 @@
             toast._timeout = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
         }
 
-        // ==================== BIND UI ====================
         function bindUIEvents() {
-            // File uploads
-            document.getElementById('file-upload').addEventListener('change', (e) => {
-                if (e.target.files[0]) loadModel(e.target.files[0]);
-                e.target.value = '';
-            });
-            document.getElementById('file-upload-hero').addEventListener('change', (e) => {
-                if (e.target.files[0]) loadModel(e.target.files[0]);
-                e.target.value = '';
-            });
-
-            // Skeleton toggle
+            document.getElementById('file-upload').addEventListener('change', (e) => { if (e.target.files[0]) loadModel(e.target.files[0]); e.target.value = ''; });
+            document.getElementById('file-upload-hero').addEventListener('change', (e) => { if (e.target.files[0]) loadModel(e.target.files[0]); e.target.value = ''; });
             document.getElementById('btn-toggle-skeleton').addEventListener('click', () => {
                 showSkeleton = !showSkeleton;
                 const btn = document.getElementById('btn-toggle-skeleton');
@@ -1022,23 +758,13 @@
                     btn.style.background = 'rgba(52,211,153,0.15)';
                     btn.style.borderColor = 'rgba(52,211,153,0.4)';
                     btn.style.color = '#34d399';
-                    if (character && !skeletonHelper) {
-                        skeletonHelper = new THREE.SkeletonHelper(character);
-                        scene.add(skeletonHelper);
-                    }
+                    if (character && !skeletonHelper) { skeletonHelper = new THREE.SkeletonHelper(character); scene.add(skeletonHelper); }
                 } else {
-                    btn.style.background = '';
-                    btn.style.borderColor = '';
-                    btn.style.color = '';
-                    if (skeletonHelper) { scene.remove(skeletonHelper);
-                        skeletonHelper = null; }
+                    btn.style.background = ''; btn.style.borderColor = ''; btn.style.color = '';
+                    if (skeletonHelper) { scene.remove(skeletonHelper); skeletonHelper = null; }
                 }
             });
-
-            // Export
             document.getElementById('btn-export-glb').addEventListener('click', exportGLB);
-
-            // Pose sliders
             ['pose-x', 'pose-y', 'pose-z'].forEach(id => {
                 document.getElementById(id).addEventListener('input', () => {
                     updatePoseDisplay();
@@ -1051,54 +777,39 @@
                     }
                 });
             });
-
-            // Material controls
-            document.getElementById('mat-color').addEventListener('input', (e) => {
-                getTargetMaterials().forEach(m => m.color.set(e.target.value));
-            });
-            document.getElementById('mat-roughness').addEventListener('input', (e) => {
+            document.getElementById('mat-color').addEventListener('input', (e) => { getTargetMaterials().forEach(m => m.color.set(e.target.value)); });
+            document.getElementById('mat-roughness').addEventListener('input', (e) => { const v = parseFloat(e.target.value); document.getElementById('mat-rough-val').textContent = v.toFixed(2); getTargetMaterials().forEach(m => m.roughness = v); });
+            document.getElementById('mat-metalness').addEventListener('input', (e) => { const v = parseFloat(e.target.value); document.getElementById('mat-metal-val').textContent = v.toFixed(2); getTargetMaterials().forEach(m => m.metalness = v); });
+            document.getElementById('mat-opacity').addEventListener('input', (e) => {
                 const v = parseFloat(e.target.value);
-                document.getElementById('mat-rough-val').textContent = v.toFixed(2);
-                getTargetMaterials().forEach(m => m.roughness = v);
+                document.getElementById('mat-opacity-val').textContent = v.toFixed(2);
+                getTargetMaterials().forEach(m => {
+                    m.opacity = v;
+                    m.transparent = v < 1.0;
+                    m.needsUpdate = true;
+                });
             });
-            document.getElementById('mat-metalness').addEventListener('input', (e) => {
-                const v = parseFloat(e.target.value);
-                document.getElementById('mat-metal-val').textContent = v.toFixed(2);
-                getTargetMaterials().forEach(m => m.metalness = v);
-            });
-
-            // Material target
             document.getElementById('material-target').addEventListener('change', (e) => {
                 selectedPartUuid = e.target.value;
                 updatePartsList();
             });
-
-            // Anim buttons
             document.getElementById('btn-record-keyframe').addEventListener('click', recordPose);
             document.getElementById('btn-play-anim').addEventListener('click', playCustomAnim);
             document.getElementById('btn-export-anim').addEventListener('click', exportCustomAnim);
         }
 
-        // ==================== RESIZE ====================
         function onResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         }
 
-        // ==================== ANIMATION LOOP ====================
         function animate() {
             requestAnimationFrame(animate);
             const delta = animationClock.getDelta();
             const time = Date.now() * 0.001;
-
             if (character) {
-                // Preset emotes
-                if (activeEmote && !customAnimPlaying) {
-                    applyEmote(activeEmote, time);
-                }
-
-                // Custom keyframe playback
+                if (activeEmote && !customAnimPlaying) applyEmote(activeEmote, time);
                 if (customAnimPlaying && recordedFrames.length > 0) {
                     animPlaybackTime += delta;
                     const frameIdx = Math.floor(animPlaybackTime / 0.4) % recordedFrames.length;
@@ -1111,8 +822,6 @@
                         if (skeletonHelper) skeletonHelper.update();
                     }
                 }
-
-                // Spring bones
                 springBones.forEach((item, idx) => {
                     const t = time * 1.2 + idx;
                     const targetX = item.baseRot.x + Math.sin(t) * 0.04;
@@ -1120,10 +829,8 @@
                     item.mesh.rotation.x += (targetX - item.mesh.rotation.x) * 0.06;
                     item.mesh.rotation.z += (targetZ - item.mesh.rotation.z) * 0.06;
                 });
-
                 if (skeletonHelper) skeletonHelper.update();
             }
-
             controls.update();
             renderer.render(scene, camera);
         }
@@ -1152,21 +859,17 @@
                     if (boneMap.rightArm) boneMap.rightArm.rotation.z = -0.4 - Math.sin(time * 5) * 0.2;
                     if (boneMap.leftLeg) boneMap.leftLeg.rotation.x = -0.3;
                     if (boneMap.rightLeg) boneMap.rightLeg.rotation.x = -0.3;
-                    setTimeout(() => { if (character && activeEmote === 'jump') character.position.y = 0; }, 180);
                     break;
                 case 'spin':
                     if (character) character.rotation.y += 0.03;
                     if (boneMap.leftArm) boneMap.leftArm.rotation.x = 0.3 + Math.sin(time * 3) * 0.2;
                     if (boneMap.rightArm) boneMap.rightArm.rotation.x = 0.3 - Math.sin(time * 3) * 0.2;
                     break;
-                default:
-                    break;
             }
         }
 
-        // ==================== START ====================
         init();
-        console.log('🎨 VRoid Studio initialized — upload a GLB model to begin');
+        console.log('VRoid Studio (improved) initialized');
     </script>
 </body>
 </html>
