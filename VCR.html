@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VRoid Studio Pro - Asset Library & Pose Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { overscroll-behavior:none; touch-action:none; font-family:'Inter',sans-serif; -webkit-user-select:none; user-select:none; overflow:hidden; height:100vh; width:100vw; background:#020617; color:#fff; }
+        ::-webkit-scrollbar { width:4px; height:4px; }
+        ::-webkit-scrollbar-track { background:rgba(15,23,42,0.5); }
+        ::-webkit-scrollbar-thumb { background:rgba(236,72,153,0.6); border-radius:9999px; }
+        .asset-thumb { transition:all 0.2s; cursor:pointer; }
+        .asset-thumb:hover { transform:scale(1.05); border-color:#ec4899 !important; }
+        .asset-thumb.active { border-color:#ec4899 !important; background:rgba(236,72,153,0.2) !important; }
+        .glitch-overlay { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:100; opacity:0; transition:opacity 0.3s; }
+        .glitch-overlay.active { opacity:1; animation:glitchShift 0.3s infinite; }
+        @keyframes glitchShift { 0%{transform:translate(0)} 25%{transform:translate(-2px,1px)} 50%{transform:translate(2px,-1px)} 75%{transform:translate(-1px,2px)} 100%{transform:translate(0)} }
+        .pose-drag-indicator { position:absolute; background:rgba(236,72,153,0.5); border-radius:50%; pointer-events:none; }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container" class="fixed inset-0 z-0"></div>
+    <div id="glitch-overlay" class="glitch-overlay"></div>
+
+    <!-- Upload empty state -->
+    <div id="upload-empty-state" class="fixed inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-md p-6 text-center transition-opacity duration-500">
+        <div class="max-w-md bg-slate-900/90 border border-slate-700/80 p-8 rounded-3xl shadow-[0_0_50px_rgba(236,72,153,0.3)] space-y-4">
+            <div class="w-16 h-16 bg-pink-500/20 border border-pink-500/40 rounded-2xl flex items-center justify-center mx-auto text-pink-400 text-2xl animate-bounce"><i class="fa-solid fa-cube"></i></div>
+            <h2 class="text-xl font-bold text-white tracking-wide">VRoid Studio Pro</h2>
+            <p class="text-xs text-slate-400 leading-relaxed">Upload your VRoid or GLB avatar. Full asset library, direct skeleton posing, and export!</p>
+            <label class="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-pink-600 to-rose-500 hover:from-pink-500 hover:to-rose-400 active:scale-95 text-white font-bold px-6 py-3 rounded-2xl shadow-lg cursor-pointer transition-all text-xs">
+                <i class="fa-solid fa-cloud-arrow-up text-sm"></i><span>Upload Avatar (.glb / .vrm)</span>
+                <input type="file" id="gltf-upload-hero" accept=".glb,.gltf,.vrm" class="hidden">
+            </label>
+        </div>
+    </div>
+
+    <!-- Top bar -->
+    <div class="fixed top-3 left-3 right-3 z-20 flex justify-between items-center pointer-events-none">
+        <div class="bg-slate-900/90 backdrop-blur-xl px-3.5 py-2 rounded-2xl border border-slate-700/60 shadow-2xl pointer-events-auto flex items-center space-x-2.5">
+            <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></div>
+            <div>
+                <h1 class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">VRoid Studio Pro</h1>
+                <p id="asset-name" class="text-xs font-bold text-pink-400 truncate max-w-[110px] sm:max-w-xs">Awaiting Model</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2 pointer-events-auto">
+            <button id="btn-toggle-skeleton" class="bg-slate-900/90 hover:bg-slate-800 active:scale-95 text-slate-300 px-3 py-2.5 rounded-2xl shadow-xl border border-slate-700/60 flex items-center space-x-1.5 transition-all text-xs font-bold"><i class="fa-solid fa-bone text-emerald-400"></i><span class="hidden sm:inline">Skeleton</span></button>
+            <button id="btn-export-model" class="bg-emerald-600/90 hover:bg-emerald-500 active:scale-95 text-white px-3 py-2.5 rounded-2xl shadow-xl border border-emerald-500/60 flex items-center space-x-1.5 transition-all text-xs font-bold"><i class="fa-solid fa-download"></i><span class="hidden sm:inline">Export GLB</span></button>
+            <label class="bg-slate-900/90 hover:bg-slate-800 active:scale-95 text-white px-3 py-2.5 rounded-2xl shadow-xl border border-slate-700/60 cursor-pointer flex items-center space-x-1.5 transition-all text-xs font-bold"><i class="fa-solid fa-cloud-arrow-up text-sky-400"></i><span>Upload</span><input type="file" id="gltf-upload" accept=".glb,.gltf,.vrm" class="hidden"></label>
+        </div>
+    </div>
+
+    <!-- Joystick & Controls -->
+    <div class="fixed left-3 right-3 z-15 flex justify-between items-center pointer-events-none px-1" style="bottom: 190px;">
+        <div id="joystick-base" class="relative w-20 h-20 bg-black/30 backdrop-blur-md border border-white/10 rounded-full flex items-center justify-center touch-none shadow-lg pointer-events-auto">
+            <div id="joystick-thumb" class="absolute w-8 h-8 bg-gradient-to-tr from-pink-500/80 to-purple-500/80 rounded-full shadow-md border border-pink-300/40 transition-transform duration-75"></div>
+            <div class="absolute text-[8px] text-white/50 font-bold uppercase tracking-widest pointer-events-none">Move</div>
+        </div>
+        <div class="flex space-x-1.5 bg-black/30 backdrop-blur-md border border-white/10 p-1.5 rounded-full shadow-lg pointer-events-auto">
+            <button onclick="playEmojiEmote('idle')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-xs transition-all active:scale-95">🧘</button>
+            <button onclick="playEmojiEmote('wave')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-xs transition-all active:scale-95">👋</button>
+            <button onclick="playEmojiEmote('dance')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-xs transition-all active:scale-95">💃</button>
+            <button onclick="playEmojiEmote('ghost')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-xs transition-all active:scale-95">👻</button>
+            <button onclick="playEmojiEmote('glitch')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-xs transition-all active:scale-95">⚡</button>
+        </div>
+        <div class="flex space-x-2 items-end pointer-events-auto">
+            <button id="btn-duck" class="w-10 h-10 bg-black/40 hover:bg-black/60 active:scale-90 backdrop-blur-md border border-white/10 rounded-2xl shadow-lg flex items-center justify-center text-sky-300 transition-all"><i class="fa-solid fa-angles-down text-xs"></i></button>
+            <button id="btn-jump" class="w-12 h-12 bg-gradient-to-tr from-pink-600 to-rose-500 hover:from-pink-500 hover:to-rose-400 active:scale-90 backdrop-blur-md border border-pink-400/40 rounded-2xl shadow-xl flex items-center justify-center text-white transition-all"><i class="fa-solid fa-person-running text-xs"></i></button>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast-container" class="fixed top-24 left-1/2 -translate-x-1/2 z-30 bg-slate-900/95 backdrop-blur-xl px-3.5 py-1.5 rounded-full border border-slate-700 text-xs text-slate-200 opacity-0 transition-opacity duration-300 pointer-events-none shadow-2xl">Ready</div>
+
+    <!-- Persistent Dock -->
+    <div id="persistent-dock" class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-2xl border-t border-slate-700/80 shadow-[0_-10px_30px_rgba(0,0,0,0.8)] flex flex-col select-none" style="height: 180px;">
+        <div class="grid grid-cols-4 bg-slate-950/80 border-b border-slate-800 p-1 text-[10px] font-bold text-center">
+            <button onclick="switchTab('tab-assets')" id="btn-tab-assets" class="py-1.5 rounded-xl text-pink-400 bg-slate-800 transition-all"><i class="fa-solid fa-shirt mr-1"></i>Assets</button>
+            <button onclick="switchTab('tab-pose')" id="btn-tab-pose" class="py-1.5 rounded-xl text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-child-reaching mr-1"></i>Posing</button>
+            <button onclick="switchTab('tab-materials')" id="btn-tab-materials" class="py-1.5 rounded-xl text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-palette mr-1"></i>Textures</button>
+            <button onclick="switchTab('tab-timeline')" id="btn-tab-timeline" class="py-1.5 rounded-xl text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-clapperboard mr-1"></i>Anim</button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-3 text-xs space-y-3">
+            <!-- Assets Tab: grid previews -->
+            <div id="tab-assets" class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-300 font-bold"><i class="fa-solid fa-shirt text-pink-400 mr-1.5"></i> Asset Library</span>
+                    <span id="asset-part-count" class="text-pink-400 font-mono text-[10px]">0 Parts</span>
+                </div>
+                <div id="asset-grid" class="grid grid-cols-4 gap-2 max-h-24 overflow-y-auto">
+                    <div class="text-slate-500 italic col-span-4 text-center py-4">Upload a model to see assets</div>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="togglePartVisibility('all')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-xl text-slate-300 font-bold text-[10px]">Show All</button>
+                    <button onclick="togglePartVisibility('hair')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-xl text-slate-300 font-bold text-[10px]">Toggle Hair</button>
+                    <button onclick="togglePartVisibility('clothing')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-xl text-slate-300 font-bold text-[10px]">Toggle Clothes</button>
+                </div>
+            </div>
+
+            <!-- Posing Tab: sliders -->
+            <div id="tab-pose" class="space-y-2.5 hidden">
+                <div class="flex items-center space-x-2">
+                    <label class="text-slate-400 text-[11px] whitespace-nowrap">Joint:</label>
+                    <select id="pose-bone-select" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-2 py-1 text-white font-medium text-xs">
+                        <option value="spine">Spine/Chest/Hips</option>
+                        <option value="head">Head/Neck</option>
+                        <option value="rightArm">Right Arm</option>
+                        <option value="leftArm">Left Arm</option>
+                        <option value="rightLeg">Right Leg</option>
+                        <option value="leftLeg">Left Leg</option>
+                    </select>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-slate-950/50 p-2 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-[10px] text-slate-400"><span>Pitch</span><span id="val-pose-x" class="text-pink-400 font-bold">0°</span></div>
+                        <input type="range" id="slider-pose-x" min="-3.14" max="3.14" step="0.05" value="0" class="w-full accent-pink-500 cursor-pointer">
+                    </div>
+                    <div class="bg-slate-950/50 p-2 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-[10px] text-slate-400"><span>Yaw</span><span id="val-pose-y" class="text-purple-400 font-bold">0°</span></div>
+                        <input type="range" id="slider-pose-y" min="-3.14" max="3.14" step="0.05" value="0" class="w-full accent-purple-500 cursor-pointer">
+                    </div>
+                    <div class="bg-slate-950/50 p-2 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-[10px] text-slate-400"><span>Roll</span><span id="val-pose-z" class="text-sky-400 font-bold">0°</span></div>
+                        <input type="range" id="slider-pose-z" min="-3.14" max="3.14" step="0.05" value="0" class="w-full accent-sky-500 cursor-pointer">
+                    </div>
+                </div>
+                <div class="text-center text-[10px] text-slate-500">Tip: Click on skeleton in 3D view to select bone, then drag to rotate.</div>
+            </div>
+
+            <!-- Materials/Textures Tab -->
+            <div id="tab-materials" class="space-y-2 hidden">
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-slate-400">Part:</span>
+                    <select id="material-part-select" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-2 py-1 text-white text-xs">
+                        <option value="all">All Parts</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-slate-400">Upload Texture:</span>
+                    <label class="flex-1 bg-slate-800 hover:bg-slate-700 cursor-pointer px-2 py-1 rounded-lg text-center text-[10px] text-sky-300 border border-sky-500/30">
+                        <i class="fa-solid fa-image mr-1"></i>Skin/Texture PNG
+                        <input type="file" id="texture-upload" accept=".png,.jpg,.jpeg,.webp" class="hidden">
+                    </label>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-300 font-medium">Base Color</span>
+                    <input type="color" id="mat-color-1" value="#ec4899" class="w-7 h-7 rounded-lg border-0 cursor-pointer bg-transparent">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-slate-950/50 p-2 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-[10px] text-slate-400"><span>Roughness</span><span id="val-roughness" class="text-amber-400 font-bold">0.30</span></div>
+                        <input type="range" id="mat-roughness" min="0" max="1" step="0.05" value="0.3" class="w-full accent-amber-500 cursor-pointer">
+                    </div>
+                    <div class="bg-slate-950/50 p-2 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-[10px] text-slate-400"><span>Metalness</span><span id="val-metalness" class="text-purple-400 font-bold">0.10</span></div>
+                        <input type="range" id="mat-metalness" min="0" max="1" step="0.05" value="0.1" class="w-full accent-purple-500 cursor-pointer">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyEffectPreset('cyberglitch')" class="bg-pink-600/30 hover:bg-pink-600/50 border border-pink-500/50 p-2 rounded-xl text-pink-300 font-bold text-[11px] transition-all"><i class="fa-solid fa-bolt mr-1"></i>CyberGlitch</button>
+                    <button onclick="applyEffectPreset('ghost')" class="bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/50 p-2 rounded-xl text-purple-300 font-bold text-[11px] transition-all"><i class="fa-solid fa-ghost mr-1"></i>Ghost</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyEffectPreset('holo')" class="bg-sky-600/30 hover:bg-sky-600/50 border border-sky-500/50 p-2 rounded-xl text-sky-300 font-bold text-[11px] transition-all"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Holographic</button>
+                    <button onclick="applyEffectPreset('normal')" class="bg-slate-600/30 hover:bg-slate-600/50 border border-slate-500/50 p-2 rounded-xl text-slate-300 font-bold text-[11px] transition-all"><i class="fa-solid fa-rotate-left mr-1"></i>Reset</button>
+                </div>
+                <div class="border-t border-slate-800 pt-2">
+                    <span class="text-[10px] text-slate-400">Texture Library</span>
+                    <div id="texture-library" class="flex flex-wrap gap-1 mt-1">
+                        <span class="text-slate-500 text-[10px] italic">No saved textures</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline Tab -->
+            <div id="tab-timeline" class="space-y-2 hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-300 font-bold"><i class="fa-solid fa-circle-dot text-rose-500 mr-1.5"></i> Keyframe Recorder</span>
+                    <span id="keyframe-count" class="text-pink-400 font-mono text-[11px]">0 Frames</span>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="btn-record-key" class="flex-1 bg-pink-600 hover:bg-pink-500 active:scale-95 text-white font-bold py-1.5 rounded-xl text-[11px]"><i class="fa-solid fa-circle text-[8px] mr-1"></i>Record Pose</button>
+                    <button id="btn-play-anim" class="flex-1 bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold py-1.5 rounded-xl text-[11px]"><i class="fa-solid fa-play text-[10px] mr-1"></i>Play</button>
+                    <button id="btn-export-anim" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded-xl font-bold text-slate-300 text-[10px]">Export</button>
+                </div>
+                <div id="keyframe-list" class="bg-slate-950/60 p-2 rounded-xl border border-slate-800 max-h-16 overflow-y-auto font-mono text-[10px] text-slate-400">Record full poses to build animation sequences</div>
+                <div class="grid grid-cols-2 gap-2 mt-1">
+                    <button onclick="loadPresetAnimation('idle')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-300 text-[10px]">🧘 Idle</button>
+                    <button onclick="loadPresetAnimation('wave')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-300 text-[10px]">👋 Wave</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============ CORE STATE ============
+        let scene, camera, renderer, character;
+        let clock = new THREE.Clock();
+        
+        let charPos = new THREE.Vector3(0, 0, 0);
+        let charVel = new THREE.Vector3(0, 0, 0);
+        let cameraAngleX = 0, cameraAngleY = 0.4, cameraDistance = 5.0;
+
+        let skeletonBones = { leftArm: null, rightArm: null, leftLeg: null, rightLeg: null, spine: null, head: null };
+        let allDetectedBones = [];
+        let springBones = [];
+        let primaryMaterials = [];
+        let skeletonHelper = null;
+        let showSkeletonMode = false;
+        
+        let recordedKeyframes = [];
+        let customAnimPlaying = false;
+        let animPlaybackTime = 0;
+        let activeAnimation = null;
+        
+        let assetParts = { hair: [], clothing: [], body: [], accessories: [], other: [] };
+        let hiddenParts = new Set();
+        let selectedPartUuid = 'all';
+        let textureLibrary = [];
+        let currentEffect = 'normal';
+        let glitchInterval = null;
+
+        const joystickBase = document.getElementById('joystick-base');
+        const joystickThumb = document.getElementById('joystick-thumb');
+        let joystickActive = false;
+        let joystickCenter = { x: 0, y: 0 };
+        let joystickVector = { x: 0, y: 0 };
+        const maxRadius = 30;
+        let isSwiping = false;
+        let previousTouchPosition = { x: 0, y: 0 };
+        let currentEmote = 'idle';
+        let isDucking = false;
+
+        // Direct skeleton picking and dragging
+        let rayCaster = new THREE.Raycaster();
+        let mouse = new THREE.Vector2();
+        let selectedBone = null;
+        let isDraggingBone = false;
+        let dragStartMouse = new THREE.Vector2();
+        let dragStartRotation = new THREE.Euler();
+
+        // ============ INIT ============
+        function initGame() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x020617);
+            scene.fog = new THREE.FogExp2(0x020617, 0.025);
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xfff5ee, 1.5);
+            dirLight.position.set(12, 25, 12);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            createEnvironment();
+            setupControls();
+            setupRaycasting();
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function createEnvironment() {
+            const gridHelper = new THREE.GridHelper(100, 50, 0xec4899, 0x1e293b);
+            gridHelper.position.y = 0;
+            scene.add(gridHelper);
+            const floorGeo = new THREE.PlaneGeometry(100, 100);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.85 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+        }
+
+        // ============ MODEL LOADING & VRoid BONE MAPPING ============
+        function loadGLTFModel(fileUrl, fileName) {
+            const loader = new THREE.GLTFLoader();
+            const dracoLoader = new THREE.DRACOLoader();
+            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.4.1/');
+            loader.setDRACOLoader(dracoLoader);
+
+            loader.load(fileUrl, (gltf) => {
+                if (character) {
+                    scene.remove(character);
+                    if (skeletonHelper) { scene.remove(skeletonHelper); skeletonHelper = null; }
+                    stopGlitchEffect();
+                }
+
+                character = gltf.scene;
+                character.scale.set(1.5, 1.5, 1.5);
+                character.position.copy(charPos);
+
+                primaryMaterials = [];
+                allDetectedBones = [];
+                springBones = [];
+                assetParts = { hair: [], clothing: [], body: [], accessories: [], other: [] };
+                hiddenParts = new Set();
+                skeletonBones = { leftArm: null, rightArm: null, leftLeg: null, rightLeg: null, spine: null, head: null };
+
+                // Traverse to collect meshes, bones, and materials
+                character.traverse((child) => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        child.userData.visible = true;
+                        if (child.material) {
+                            const mats = Array.isArray(child.material) ? child.material : [child.material];
+                            primaryMaterials.push(...mats);
+                        }
+                        // Categorize part
+                        const name = (child.name || '').toLowerCase();
+                        if (name.includes('hair') || name.includes('beard')) assetParts.hair.push(child);
+                        else if (name.includes('skirt') || name.includes('shirt') || name.includes('pant') || name.includes('dress') || name.includes('jacket') || name.includes('cloth') || name.includes('outfit') || name.includes('coat') || name.includes('shoe') || name.includes('boot') || name.includes('sock')) assetParts.clothing.push(child);
+                        else if (name.includes('body') || name.includes('skin') || name.includes('face') || name.includes('head')) assetParts.body.push(child);
+                        else if (name.includes('accessory') || name.includes('glasses') || name.includes('hat') || name.includes('earring') || name.includes('necklace') || name.includes('ring') || name.includes('bracelet')) assetParts.accessories.push(child);
+                        else assetParts.other.push(child);
+                    }
+                    // Detect bones with VRoid naming conventions
+                    if (child.isBone || (child.isObject3D && child.type === 'Bone') || child.name.toLowerCase().includes('bip') || child.name.startsWith('J_Bip_')) {
+                        allDetectedBones.push(child);
+                        const bName = child.name.toLowerCase();
+                        // VRoid mapping
+                        if (!skeletonBones.spine && (bName.includes('spine') || bName.includes('chest') || bName.includes('hips') || bName.includes('j_bip_c_spine') || bName.includes('j_bip_c_chest') || bName.includes('j_bip_c_hips'))) skeletonBones.spine = child;
+                        if (!skeletonBones.head && (bName.includes('head') || bName.includes('neck') || bName.includes('j_bip_c_head') || bName.includes('j_bip_c_neck'))) skeletonBones.head = child;
+                        if (!skeletonBones.leftArm && (bName.includes('arm.l') || bName.includes('leftarm') || bName.includes('upperarm_l') || bName.includes('arm_l') || bName.includes('l_arm') || bName.includes('j_bip_l_upperarm'))) skeletonBones.leftArm = child;
+                        if (!skeletonBones.rightArm && (bName.includes('arm.r') || bName.includes('rightarm') || bName.includes('upperarm_r') || bName.includes('arm_r') || bName.includes('r_arm') || bName.includes('j_bip_r_upperarm'))) skeletonBones.rightArm = child;
+                        if (!skeletonBones.leftLeg && (bName.includes('leg.l') || bName.includes('leftleg') || bName.includes('upleg_l') || bName.includes('leg_l') || bName.includes('l_leg') || bName.includes('j_bip_l_upperleg'))) skeletonBones.leftLeg = child;
+                        if (!skeletonBones.rightLeg && (bName.includes('leg.r') || bName.includes('rightleg') || bName.includes('upleg_r') || bName.includes('leg_r') || bName.includes('r_leg') || bName.includes('j_bip_r_upperleg'))) skeletonBones.rightLeg = child;
+                    }
+                    if (child.name && (child.name.toLowerCase().includes('hair') || child.name.toLowerCase().includes('skirt') || child.name.toLowerCase().includes('cloth'))) {
+                        springBones.push({ bone: child, baseRotation: child.rotation.clone() });
+                    }
+                });
+
+                // If no proper bones found, create dummy skeleton? But we can't animate.
+                if (allDetectedBones.length === 0) {
+                    console.warn("No bones detected. Model may be unrigged.");
+                } else {
+                    // Fill missing slots with best guesses
+                    if (!skeletonBones.spine) skeletonBones.spine = allDetectedBones[0];
+                    if (!skeletonBones.rightArm) skeletonBones.rightArm = allDetectedBones.find(b => b.name.toLowerCase().includes('upperarm') || b.name.toLowerCase().includes('arm.r'));
+                    if (!skeletonBones.leftArm) skeletonBones.leftArm = allDetectedBones.find(b => b.name.toLowerCase().includes('upperarm') || b.name.toLowerCase().includes('arm.l'));
+                    if (!skeletonBones.head) skeletonBones.head = allDetectedBones.find(b => b.name.toLowerCase().includes('head'));
+                }
+
+                if (showSkeletonMode && allDetectedBones.length > 0) {
+                    skeletonHelper = new THREE.SkeletonHelper(character);
+                    scene.add(skeletonHelper);
+                }
+
+                scene.add(character);
+                updateAssetGrid();
+                populatePartSelector();
+
+                const emptyState = document.getElementById('upload-empty-state');
+                if (emptyState) { emptyState.style.opacity = '0'; setTimeout(() => { emptyState.style.display = 'none'; }, 500); }
+                document.getElementById('status-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse';
+                document.getElementById('asset-name').innerText = fileName;
+                showToast(`Loaded ${fileName} - ${allDetectedBones.length} bones, ${Object.values(assetParts).flat().length} parts`);
+            }, undefined, (error) => {
+                console.warn('Error loading GLB:', error);
+                showToast("Failed to load file. Please check format.");
+            });
+        }
+
+        // ============ ASSET GRID UI ============
+        function updateAssetGrid() {
+            const grid = document.getElementById('asset-grid');
+            const allParts = Object.values(assetParts).flat();
+            document.getElementById('asset-part-count').innerText = `${allParts.length} Parts`;
+            if (allParts.length === 0) {
+                grid.innerHTML = '<div class="text-slate-500 italic col-span-4 text-center py-4">No parts detected</div>';
+                return;
+            }
+            grid.innerHTML = '';
+            const categories = [
+                { key: 'hair', label: 'Hair', icon: '💇' },
+                { key: 'clothing', label: 'Clothing', icon: '👕' },
+                { key: 'body', label: 'Body', icon: '🧍' },
+                { key: 'accessories', label: 'Accessories', icon: '💎' },
+                { key: 'other', label: 'Other', icon: '📦' }
+            ];
+            categories.forEach(cat => {
+                if (assetParts[cat.key].length > 0) {
+                    assetParts[cat.key].forEach(part => {
+                        const div = document.createElement('div');
+                        const isHidden = hiddenParts.has(part.uuid);
+                        const isActive = selectedPartUuid === part.uuid;
+                        div.className = `asset-thumb bg-slate-950/50 border ${isHidden ? 'border-slate-700 opacity-50' : 'border-slate-700'} p-1.5 rounded-lg flex flex-col items-center justify-center ${isActive ? 'active' : ''}`;
+                        div.innerHTML = `
+                            <div class="text-xl mb-1">${cat.icon}</div>
+                            <div class="text-[8px] text-slate-300 truncate w-full text-center">${part.name || cat.label}</div>
+                            <div class="text-[6px] text-slate-500">${isHidden ? 'Hidden' : 'Visible'}</div>
+                        `;
+                        div.title = part.name || cat.label;
+                        div.onclick = () => selectPart(part);
+                        grid.appendChild(div);
+                    });
+                }
+            });
+        }
+
+        function selectPart(part) {
+            selectedPartUuid = part.uuid;
+            updateAssetGrid();
+            document.getElementById('material-part-select').value = part.uuid;
+            // Highlight in 3D: briefly emissive
+            if (part.material) {
+                const mats = Array.isArray(part.material) ? part.material : [part.material];
+                mats.forEach(mat => {
+                    mat.emissive = mat.emissive || new THREE.Color(0x000000);
+                    mat.emissive.set(0xec4899);
+                    mat.emissiveIntensity = 0.5;
+                    setTimeout(() => { mat.emissiveIntensity = 0; }, 800);
+                });
+            }
+            showToast(`Selected: ${part.name || 'part'}`);
+        }
+
+        window.togglePartByUuid = function(uuid) {
+            character.traverse((child) => {
+                if (child.uuid === uuid) {
+                    child.visible = !child.visible;
+                    if (child.visible) hiddenParts.delete(uuid);
+                    else hiddenParts.add(uuid);
+                }
+            });
+            updateAssetGrid();
+        };
+
+        window.togglePartVisibility = function(type) {
+            character.traverse((child) => {
+                if (!child.isMesh) return;
+                const name = (child.name || '').toLowerCase();
+                let shouldHide = false;
+                if (type === 'hair' && (name.includes('hair') || name.includes('beard'))) shouldHide = true;
+                if (type === 'clothing' && (name.includes('skirt') || name.includes('shirt') || name.includes('pant') || name.includes('dress') || name.includes('jacket') || name.includes('cloth') || name.includes('shoe') || name.includes('boot'))) shouldHide = true;
+                if (shouldHide) {
+                    if (child.visible) { child.visible = false; hiddenParts.add(child.uuid); }
+                    else { child.visible = true; hiddenParts.delete(child.uuid); }
+                }
+                if (type === 'all') { child.visible = true; hiddenParts.delete(child.uuid); }
+            });
+            updateAssetGrid();
+        };
+
+        // ============ DIRECT SKELETON PICKING & DRAGGING ============
+        function setupRaycasting() {
+            const canvas = renderer.domElement;
+            canvas.addEventListener('mousedown', onMouseDown, false);
+            canvas.addEventListener('mousemove', onMouseMove, false);
+            canvas.addEventListener('mouseup', onMouseUp, false);
+            canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+            canvas.addEventListener('touchend', onTouchEnd, false);
+        }
+
+        function getBoneIntersects(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            const x = ((event.clientX || event.touches[0].clientX) - rect.left) / rect.width * 2 - 1;
+            const y = -((event.clientY || event.touches[0].clientY) - rect.top) / rect.height * 2 + 1;
+            mouse.set(x, y);
+            rayCaster.setFromCamera(mouse, camera);
+            // Only test bones if skeletonHelper exists, or we can test all bone objects
+            const bonesToTest = allDetectedBones;
+            return rayCaster.intersectObjects(bonesToTest, false);
+        }
+
+        function onMouseDown(event) {
+            if (event.button !== 0) return;
+            const intersects = getBoneIntersects(event);
+            if (intersects.length > 0) {
+                const bone = intersects[0].object;
+                selectedBone = bone;
+                isDraggingBone = true;
+                dragStartMouse.set(event.clientX, event.clientY);
+                dragStartRotation = bone.rotation.clone();
+                showToast(`Selected bone: ${bone.name || 'joint'}`);
+                // map to pose select if possible
+                const bName = bone.name.toLowerCase();
+                if (bName.includes('spine') || bName.includes('chest') || bName.includes('hips')) document.getElementById('pose-bone-select').value = 'spine';
+                else if (bName.includes('head') || bName.includes('neck')) document.getElementById('pose-bone-select').value = 'head';
+                else if (bName.includes('arm') && (bName.includes('l') || bName.includes('left'))) document.getElementById('pose-bone-select').value = 'leftArm';
+                else if (bName.includes('arm') && (bName.includes('r') || bName.includes('right'))) document.getElementById('pose-bone-select').value = 'rightArm';
+                else if (bName.includes('leg') && (bName.includes('l') || bName.includes('left'))) document.getElementById('pose-bone-select').value = 'leftLeg';
+                else if (bName.includes('leg') && (bName.includes('r') || bName.includes('right'))) document.getElementById('pose-bone-select').value = 'rightLeg';
+                // update sliders to current rotation
+                document.getElementById('slider-pose-x').value = bone.rotation.x;
+                document.getElementById('slider-pose-y').value = bone.rotation.y;
+                document.getElementById('slider-pose-z').value = bone.rotation.z;
+                updatePoseDisplay();
+            }
+        }
+
+        function onMouseMove(event) {
+            if (isDraggingBone && selectedBone) {
+                const deltaX = event.clientX - dragStartMouse.x;
+                const deltaY = event.clientY - dragStartMouse.y;
+                // Simple rotation around Y and X based on mouse movement
+                selectedBone.rotation.y = dragStartRotation.y + deltaX * 0.01;
+                selectedBone.rotation.x = dragStartRotation.x + deltaY * 0.01;
+                if (skeletonHelper) skeletonHelper.update();
+                // Update sliders if bone matches selected slot
+                const boneKey = document.getElementById('pose-bone-select').value;
+                if (skeletonBones[boneKey] === selectedBone) {
+                    document.getElementById('slider-pose-x').value = selectedBone.rotation.x;
+                    document.getElementById('slider-pose-y').value = selectedBone.rotation.y;
+                    document.getElementById('slider-pose-z').value = selectedBone.rotation.z;
+                    updatePoseDisplay();
+                }
+            }
+        }
+
+        function onMouseUp(event) {
+            isDraggingBone = false;
+            selectedBone = null;
+        }
+
+        function onTouchStart(event) {
+            if (event.touches.length === 1) {
+                const touch = event.touches[0];
+                const mouseEvent = { clientX: touch.clientX, clientY: touch.clientY };
+                const intersects = getBoneIntersects({ clientX: touch.clientX, clientY: touch.clientY });
+                if (intersects.length > 0) {
+                    const bone = intersects[0].object;
+                    selectedBone = bone;
+                    isDraggingBone = true;
+                    dragStartMouse.set(touch.clientX, touch.clientY);
+                    dragStartRotation = bone.rotation.clone();
+                }
+            }
+        }
+
+        function onTouchMove(event) {
+            if (isDraggingBone && selectedBone && event.touches.length === 1) {
+                const touch = event.touches[0];
+                const deltaX = touch.clientX - dragStartMouse.x;
+                const deltaY = touch.clientY - dragStartMouse.y;
+                selectedBone.rotation.y = dragStartRotation.y + deltaX * 0.01;
+                selectedBone.rotation.x = dragStartRotation.x + deltaY * 0.01;
+                if (skeletonHelper) skeletonHelper.update();
+            }
+        }
+
+        function onTouchEnd(event) {
+            isDraggingBone = false;
+            selectedBone = null;
+        }
+
+        // ============ MATERIALS & EFFECTS ============
+        function getMaterialsForSelectedPart() {
+            if (selectedPartUuid === 'all') return primaryMaterials;
+            let mats = [];
+            character.traverse((child) => {
+                if (child.uuid === selectedPartUuid && child.material) {
+                    mats = Array.isArray(child.material) ? child.material : [child.material];
+                }
+            });
+            return mats;
+        }
+
+        window.applyEffectPreset = function(effect) {
+            const mats = getMaterialsForSelectedPart();
+            if (mats.length === 0) { showToast("No materials for selected part!"); return; }
+            stopGlitchEffect();
+            currentEffect = effect;
+            mats.forEach(mat => {
+                mat.transparent = false;
+                mat.opacity = 1;
+                mat.emissive = mat.emissive || new THREE.Color(0x000000);
+                mat.emissive.set(0x000000);
+                mat.emissiveIntensity = 0;
+                mat.wireframe = false;
+                switch(effect) {
+                    case 'cyberglitch':
+                        mat.color.set(0xec4899);
+                        mat.roughness = 0.1;
+                        mat.metalness = 0.9;
+                        mat.emissive.set(0xec4899);
+                        mat.emissiveIntensity = 0.3;
+                        startGlitchEffect();
+                        break;
+                    case 'ghost':
+                        mat.color.set(0xa78bfa);
+                        mat.roughness = 0.3;
+                        mat.metalness = 0.1;
+                        mat.transparent = true;
+                        mat.opacity = 0.6;
+                        mat.emissive.set(0xa78bfa);
+                        mat.emissiveIntensity = 0.5;
+                        break;
+                    case 'holo':
+                        mat.color.set(0x22d3ee);
+                        mat.roughness = 0.05;
+                        mat.metalness = 0.8;
+                        mat.transparent = true;
+                        mat.opacity = 0.7;
+                        mat.emissive.set(0x22d3ee);
+                        mat.emissiveIntensity = 0.8;
+                        break;
+                    case 'normal':
+                        mat.color.set(0xffffff);
+                        mat.roughness = 0.3;
+                        mat.metalness = 0.1;
+                        break;
+                }
+                mat.needsUpdate = true;
+            });
+            showToast(`${effect} applied to ${selectedPartUuid === 'all' ? 'all parts' : 'selected part'}`);
+        };
+
+        function startGlitchEffect() {
+            document.getElementById('glitch-overlay').classList.add('active');
+            if (glitchInterval) clearInterval(glitchInterval);
+            glitchInterval = setInterval(() => {
+                if (character) {
+                    character.position.x = charPos.x + (Math.random() - 0.5) * 0.05;
+                    character.position.z = charPos.z + (Math.random() - 0.5) * 0.05;
+                    setTimeout(() => { character.position.x = charPos.x; character.position.z = charPos.z; }, 50);
+                }
+            }, 200);
+        }
+
+        function stopGlitchEffect() {
+            document.getElementById('glitch-overlay').classList.remove('active');
+            if (glitchInterval) { clearInterval(glitchInterval); glitchInterval = null; }
+        }
+
+        // ============ TEXTURE UPLOAD & LIBRARY ============
+        function setupTextureUpload() {
+            document.getElementById('texture-upload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const textureLoader = new THREE.TextureLoader();
+                const textureUrl = URL.createObjectURL(file);
+                textureLoader.load(textureUrl, (texture) => {
+                    const mats = getMaterialsForSelectedPart();
+                    mats.forEach(mat => {
+                        mat.map = texture;
+                        mat.color.set(0xffffff);
+                        mat.needsUpdate = true;
+                    });
+                    textureLibrary.push({ name: file.name, texture: texture });
+                    updateTextureLibraryUI();
+                    showToast(`Texture applied and saved: ${file.name}`);
+                });
+            });
+        }
+
+        function updateTextureLibraryUI() {
+            const libEl = document.getElementById('texture-library');
+            if (textureLibrary.length === 0) {
+                libEl.innerHTML = '<span class="text-slate-500 text-[10px] italic">No saved textures</span>';
+                return;
+            }
+            libEl.innerHTML = '';
+            textureLibrary.forEach((item, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[10px] text-sky-300 border border-sky-500/30';
+                btn.innerText = `${item.name} (${idx+1})`;
+                btn.onclick = () => applyLibraryTexture(idx);
+                libEl.appendChild(btn);
+            });
+        }
+
+        function applyLibraryTexture(index) {
+            if (!textureLibrary[index]) return;
+            const texture = textureLibrary[index].texture;
+            const mats = getMaterialsForSelectedPart();
+            mats.forEach(mat => {
+                mat.map = texture;
+                mat.color.set(0xffffff);
+                mat.needsUpdate = true;
+            });
+            showToast(`Applied texture: ${textureLibrary[index].name}`);
+        }
+
+        // ============ PRESET ANIMATIONS ============
+        window.loadPresetAnimation = function(animName) {
+            if (!character || allDetectedBones.length === 0) { showToast("Load a rigged model first!"); return; }
+            activeAnimation = animName;
+            currentEmote = animName;
+            customAnimPlaying = false;
+            showToast(`Playing preset: ${animName}`);
+        };
+
+        // ============ KEYFRAME SYSTEM ============
+        function recordFullPose() {
+            if (!character) { showToast("Load a model first!"); return; }
+            const pose = {};
+            allDetectedBones.forEach(bone => {
+                pose[bone.name || bone.uuid] = { rx: bone.rotation.x, ry: bone.rotation.y, rz: bone.rotation.z };
+            });
+            recordedKeyframes.push({ time: recordedKeyframes.length * 0.5, pose: pose });
+            document.getElementById('keyframe-count').innerText = `${recordedKeyframes.length} Frames`;
+            const listEl = document.getElementById('keyframe-list');
+            if (recordedKeyframes.length === 1) listEl.innerHTML = '';
+            const div = document.createElement('div');
+            div.className = 'text-pink-300 font-mono text-[10px] py-0.5';
+            div.innerText = `Frame #${recordedKeyframes.length} - Full pose`;
+            listEl.appendChild(div);
+            showToast(`Recorded frame #${recordedKeyframes.length}`);
+        }
+
+        function playCustomAnimation() {
+            if (recordedKeyframes.length === 0) { showToast("Record frames first!"); return; }
+            customAnimPlaying = true;
+            animPlaybackTime = 0;
+            activeAnimation = null;
+            currentEmote = 'custom';
+            showToast("Playing custom animation...");
+        }
+
+        function exportAnimation() {
+            if (recordedKeyframes.length === 0) { showToast("No animation to export!"); return; }
+            const json = JSON.stringify(recordedKeyframes, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'animation.json';
+            link.click();
+            showToast("Animation exported");
+        }
+
+        // ============ EXPORT MODEL ============
+        function exportModel() {
+            if (!character) { showToast("No model to export!"); return; }
+            const exporter = new THREE.GLTFExporter();
+            exporter.parse(character, (result) => {
+                const blob = new Blob([result], { type: 'application/octet-stream' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'edited_avatar.glb';
+                link.click();
+                showToast("Model exported!");
+            }, (error) => {
+                console.error(error);
+                showToast("Export failed");
+            }, { binary: true });
+        }
+
+        // ============ CONTROLS SETUP ============
+        function setupControls() {
+            window.switchTab = function(tabId) {
+                const tabs = ['tab-assets', 'tab-pose', 'tab-materials', 'tab-timeline'];
+                tabs.forEach(id => document.getElementById(id).classList.add('hidden'));
+                tabs.forEach(id => document.getElementById('btn-' + id).className = 'py-1.5 rounded-xl text-slate-400 hover:text-white transition-all');
+                document.getElementById(tabId).classList.remove('hidden');
+                document.getElementById('btn-' + tabId).className = 'py-1.5 rounded-xl text-pink-400 bg-slate-800 transition-all';
+            };
+
+            document.getElementById('btn-toggle-skeleton').addEventListener('click', () => {
+                showSkeletonMode = !showSkeletonMode;
+                const btn = document.getElementById('btn-toggle-skeleton');
+                if (showSkeletonMode) {
+                    btn.className = 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/50 px-3 py-2.5 rounded-2xl shadow-xl flex items-center space-x-1.5 transition-all text-xs font-bold';
+                    if (character && !skeletonHelper) {
+                        skeletonHelper = new THREE.SkeletonHelper(character);
+                        scene.add(skeletonHelper);
+                    }
+                } else {
+                    btn.className = 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 border border-slate-700/60 px-3 py-2.5 rounded-2xl shadow-xl flex items-center space-x-1.5 transition-all text-xs font-bold';
+                    if (skeletonHelper) { scene.remove(skeletonHelper); skeletonHelper = null; }
+                }
+            });
+
+            document.getElementById('btn-export-model').addEventListener('click', exportModel);
+
+            // Pose sliders
+            const updatePose = () => {
+                const boneKey = document.getElementById('pose-bone-select').value;
+                const rx = parseFloat(document.getElementById('slider-pose-x').value);
+                const ry = parseFloat(document.getElementById('slider-pose-y').value);
+                const rz = parseFloat(document.getElementById('slider-pose-z').value);
+                updatePoseDisplay();
+                if (skeletonBones[boneKey]) {
+                    skeletonBones[boneKey].rotation.set(rx, ry, rz);
+                    if (skeletonHelper) skeletonHelper.update();
+                }
+            };
+            ['slider-pose-x', 'slider-pose-y', 'slider-pose-z'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updatePose);
+            });
+
+            function updatePoseDisplay() {
+                const rx = parseFloat(document.getElementById('slider-pose-x').value);
+                const ry = parseFloat(document.getElementById('slider-pose-y').value);
+                const rz = parseFloat(document.getElementById('slider-pose-z').value);
+                document.getElementById('val-pose-x').innerText = (rx * (180/Math.PI)).toFixed(1) + '°';
+                document.getElementById('val-pose-y').innerText = (ry * (180/Math.PI)).toFixed(1) + '°';
+                document.getElementById('val-pose-z').innerText = (rz * (180/Math.PI)).toFixed(1) + '°';
+            }
+
+            // Material controls
+            document.getElementById('mat-color-1').addEventListener('input', (e) => {
+                getMaterialsForSelectedPart().forEach(mat => mat.color.set(e.target.value));
+            });
+            document.getElementById('mat-roughness').addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                getMaterialsForSelectedPart().forEach(mat => mat.roughness = val);
+                document.getElementById('val-roughness').innerText = val.toFixed(2);
+            });
+            document.getElementById('mat-metalness').addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                getMaterialsForSelectedPart().forEach(mat => mat.metalness = val);
+                document.getElementById('val-metalness').innerText = val.toFixed(2);
+            });
+
+            // Timeline buttons
+            document.getElementById('btn-record-key').addEventListener('click', recordFullPose);
+            document.getElementById('btn-play-anim').addEventListener('click', playCustomAnimation);
+            document.getElementById('btn-export-anim').addEventListener('click', exportAnimation);
+
+            // Joystick
+            joystickBase.addEventListener('touchstart', onJoystickStart, { passive: false });
+            joystickBase.addEventListener('touchmove', onJoystickMove, { passive: false });
+            joystickBase.addEventListener('touchend', onJoystickEnd, { passive: false });
+            joystickBase.addEventListener('mousedown', onJoystickStart);
+            window.addEventListener('mousemove', (e) => {
+                if (joystickActive) updateJoystick(e.clientX, e.clientY);
+                if (isSwiping) handleSwipe(e.clientX, e.clientY);
+            });
+            window.addEventListener('mouseup', () => { joystickActive = false; resetJoystick(); isSwiping = false; });
+
+            const canvasContainer = document.getElementById('canvas-container');
+            canvasContainer.addEventListener('touchstart', (e) => {
+                if (e.target.closest('#joystick-base') || e.target.closest('button') || e.target.closest('#persistent-dock') || e.target.closest('#upload-empty-state')) return;
+                isSwiping = true;
+                previousTouchPosition.x = e.touches[0].clientX;
+                previousTouchPosition.y = e.touches[0].clientY;
+            }, { passive: true });
+            canvasContainer.addEventListener('touchmove', (e) => {
+                if (!isSwiping) return;
+                const touch = e.touches[0];
+                cameraAngleX -= (touch.clientX - previousTouchPosition.x) * 0.008;
+                cameraAngleY = Math.max(0.1, Math.min(1.4, cameraAngleY - (touch.clientY - previousTouchPosition.y) * 0.008));
+                previousTouchPosition.x = touch.clientX;
+                previousTouchPosition.y = touch.clientY;
+            }, { passive: true });
+            canvasContainer.addEventListener('touchend', () => { isSwiping = false; }, { passive: true });
+
+            // Jump & Duck
+            document.getElementById('btn-duck').addEventListener('mousedown', () => { isDucking = true; if (character) character.scale.y = 0.95; });
+            document.getElementById('btn-duck').addEventListener('mouseup', () => { isDucking = false; if (character) character.scale.y = 1.5; });
+            document.getElementById('btn-jump').addEventListener('click', () => { if (charPos.y <= 0.01) { charVel.y = 0.25; showToast("Jump!"); } });
+
+            // File uploads
+            const handleFileUpload = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                loadGLTFModel(URL.createObjectURL(file), file.name);
+            };
+            document.getElementById('gltf-upload').addEventListener('change', handleFileUpload);
+            document.getElementById('gltf-upload-hero').addEventListener('change', handleFileUpload);
+            setupTextureUpload();
+        }
+
+        // ============ JOYSTICK FUNCTIONS ============
+        function onJoystickStart(e) {
+            e.preventDefault();
+            joystickActive = true;
+            const rect = joystickBase.getBoundingClientRect();
+            joystickCenter.x = rect.left + rect.width / 2;
+            joystickCenter.y = rect.top + rect.height / 2;
+            updateJoystick(e.touches ? e.touches[0].clientX : e.clientX, e.touches ? e.touches[0].clientY : e.clientY);
+        }
+        function onJoystickMove(e) {
+            e.preventDefault();
+            if (!joystickActive) return;
+            updateJoystick(e.touches ? e.touches[0].clientX : e.clientX, e.touches ? e.touches[0].clientY : e.clientY);
+        }
+        function onJoystickEnd(e) { e.preventDefault(); joystickActive = false; resetJoystick(); }
+        function updateJoystick(clientX, clientY) {
+            const dx = clientX - joystickCenter.x;
+            const dy = clientY - joystickCenter.y;
+            const distance = Math.sqrt(dx*dx+dy*dy);
+            const angle = Math.atan2(dy, dx);
+            const constrainedDistance = Math.min(distance, maxRadius);
+            joystickThumb.style.transform = `translate(${Math.cos(angle)*constrainedDistance}px, ${Math.sin(angle)*constrainedDistance}px)`;
+            joystickVector.x = (Math.cos(angle)*constrainedDistance) / maxRadius;
+            joystickVector.y = (Math.sin(angle)*constrainedDistance) / maxRadius;
+        }
+        function resetJoystick() {
+            joystickThumb.style.transform = `translate(0px,0px)`;
+            joystickVector.x = 0; joystickVector.y = 0;
+        }
+        function handleSwipe(clientX, clientY) {
+            cameraAngleX -= (clientX - previousTouchPosition.x) * 0.008;
+            cameraAngleY = Math.max(0.1, Math.min(1.4, cameraAngleY - (clientY - previousTouchPosition.y) * 0.008));
+            previousTouchPosition.x = clientX; previousTouchPosition.y = clientY;
+        }
+
+        // ============ ANIMATION LOOP ============
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            // Preset animations
+            if (activeAnimation && character) {
+                const time = Date.now() * 0.003;
+                if (activeAnimation === 'idle') {
+                    if (skeletonBones.spine) skeletonBones.spine.rotation.x = Math.sin(time) * 0.03;
+                } else if (activeAnimation === 'wave') {
+                    if (skeletonBones.rightArm) skeletonBones.rightArm.rotation.z = Math.sin(time * 6) * 0.4 - 0.8;
+                } else if (activeAnimation === 'dance') {
+                    if (skeletonBones.leftArm) skeletonBones.leftArm.rotation.z = Math.sin(time * 5) * 0.5;
+                    if (skeletonBones.rightArm) skeletonBones.rightArm.rotation.z = -Math.sin(time * 5) * 0.5;
+                }
+            }
+
+            // Custom keyframe playback
+            if (customAnimPlaying && recordedKeyframes.length > 0) {
+                animPlaybackTime += delta;
+                const frameIndex = Math.floor(animPlaybackTime * 2) % recordedKeyframes.length;
+                const frame = recordedKeyframes[frameIndex];
+                if (frame && frame.pose) {
+                    allDetectedBones.forEach(bone => {
+                        const bonePose = frame.pose[bone.name || bone.uuid];
+                        if (bonePose) bone.rotation.set(bonePose.rx, bonePose.ry, bonePose.rz);
+                    });
+                    if (skeletonHelper) skeletonHelper.update();
+                }
+            }
+
+            // Movement
+            if (character) {
+                const moveSpeed = isDucking ? 0.06 : 0.12;
+                const isMoving = Math.abs(joystickVector.x) > 0.05 || Math.abs(joystickVector.y) > 0.05;
+                if (isMoving && !activeAnimation && !customAnimPlaying) {
+                    const forward = new THREE.Vector3(Math.sin(cameraAngleX), 0, Math.cos(cameraAngleX));
+                    const side = new THREE.Vector3(Math.cos(cameraAngleX), 0, -Math.sin(cameraAngleX));
+                    const moveDir = new THREE.Vector3();
+                    moveDir.addScaledVector(forward, -joystickVector.y);
+                    moveDir.addScaledVector(side, joystickVector.x);
+                    moveDir.normalize();
+                    charPos.addScaledVector(moveDir, moveSpeed);
+                    character.rotation.y = Math.atan2(moveDir.x, moveDir.z);
+                    const time = Date.now() * 0.015;
+                    if (skeletonBones.leftArm) skeletonBones.leftArm.rotation.x = Math.sin(time) * 0.5;
+                    if (skeletonBones.rightArm) skeletonBones.rightArm.rotation.x = -Math.sin(time) * 0.5;
+                    if (skeletonBones.leftLeg) skeletonBones.leftLeg.rotation.x = -Math.sin(time) * 0.8;
+                    if (skeletonBones.rightLeg) skeletonBones.rightLeg.rotation.x = Math.sin(time) * 0.8;
+                }
+
+                if (skeletonHelper) skeletonHelper.update();
+
+                // Physics
+                if (charPos.y > 0 || charVel.y !== 0) {
+                    charPos.y += charVel.y;
+                    charVel.y -= 0.015;
+                    if (charPos.y <= 0) { charPos.y = 0; charVel.y = 0; }
+                }
+                character.position.copy(charPos);
+
+                // Spring bones
+                const windForce = 0.5 * 0.1;
+                springBones.forEach((item, index) => {
+                    const time = Date.now() * 0.005 + index;
+                    const targetRotX = (item.baseRotation ? item.baseRotation.x : -0.5) + Math.sin(time) * windForce;
+                    const targetRotZ = (item.baseRotation ? item.baseRotation.z : 0) + Math.cos(time * 0.7) * windForce;
+                    item.bone.rotation.x += (targetRotX - item.bone.rotation.x) * 0.1;
+                    item.bone.rotation.z += (targetRotZ - item.bone.rotation.z) * 0.1;
+                });
+            }
+
+            // Camera follow
+            if (character) {
+                const targetCamX = charPos.x + Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+                const targetCamY = charPos.y + Math.sin(cameraAngleY) * cameraDistance + 0.8;
+                const targetCamZ = charPos.z + Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+                camera.position.lerp(new THREE.Vector3(targetCamX, targetCamY, targetCamZ), 0.15);
+                camera.lookAt(charPos.x, charPos.y + 0.8, charPos.z);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // ============ HELPERS ============
+        window.playEmojiEmote = function(emote) {
+            if (emote === 'glitch') { applyEffectPreset('cyberglitch'); return; }
+            if (emote === 'ghost') { applyEffectPreset('ghost'); return; }
+            activeAnimation = emote;
+            currentEmote = emote;
+            customAnimPlaying = false;
+            showToast(`Emote: ${emote}`);
+        };
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-container');
+            toast.innerText = msg;
+            toast.style.opacity = '1';
+            setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+        }
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
