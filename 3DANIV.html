@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Avatar Forge Pro — Visual Skeleton Animator</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js">
+    </script>
+    <style>
+        :root {
+            --bg: #0a0a14;
+            --panel: #12121f;
+            --border: #2a2a3e;
+            --accent: #ec4899;
+            --accent2: #8b5cf6;
+            --accent3: #06b6d4;
+            --bone-head: #fbbf24;
+            --bone-spine: #fb923c;
+            --bone-left-arm: #60a5fa;
+            --bone-right-arm: #f87171;
+            --bone-left-leg: #34d399;
+            --bone-right-leg: #a78bfa;
+            --bone-finger: #f472b6;
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            overscroll-behavior: none;
+            touch-action: none;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            -webkit-user-select: none;
+            user-select: none;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            background: var(--bg);
+            color: var(--text);
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(20, 20, 35, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 9999px;
+        }
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        .btn-glow {
+            transition: all 0.2s ease;
+        }
+        .btn-glow:hover {
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-glow:active {
+            transform: scale(0.96);
+        }
+        .bone-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        .anim-card {
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: 1px solid var(--border);
+        }
+        .anim-card:hover {
+            border-color: var(--accent);
+            background: rgba(236, 72, 153, 0.1);
+        }
+        .anim-card.active {
+            border-color: var(--accent);
+            background: rgba(236, 72, 153, 0.2);
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
+        }
+        .bone-item {
+            transition: all 0.15s ease;
+            cursor: pointer;
+        }
+        .bone-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .bone-item.selected {
+            background: rgba(236, 72, 153, 0.15);
+            border-left: 3px solid var(--accent);
+        }
+        .slider-accent {
+            accent-color: var(--accent);
+        }
+        .slider-purple {
+            accent-color: var(--accent2);
+        }
+        .slider-cyan {
+            accent-color: var(--accent3);
+        }
+        #glitch-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            opacity: 0;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(236, 72, 153, 0.05) 2px, rgba(236, 72, 153, 0.05) 4px);
+        }
+        #glitch-overlay.active {
+            opacity: 1;
+            animation: glitchPulse 0.4s infinite;
+        }
+        @keyframes glitchPulse {
+            0% {
+                transform: translate(0, 0);
+            }
+            25% {
+                transform: translate(-3px, 2px);
+            }
+            50% {
+                transform: translate(3px, -1px);
+            }
+            75% {
+                transform: translate(-1px, -2px);
+            }
+            100% {
+                transform: translate(0, 0);
+            }
+        }
+        .toast-enter {
+            animation: toastIn 0.3s ease forwards;
+        }
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        .fade-out {
+            opacity: 0 !important;
+            transition: opacity 0.6s ease;
+            pointer-events: none;
+        }
+        .hair-toggle-btn {
+            transition: all 0.2s;
+        }
+        .hair-toggle-btn.on {
+            background: rgba(236, 72, 153, 0.3);
+            border-color: var(--accent);
+            color: #fff;
+        }
+        .hair-toggle-btn.off {
+            background: rgba(30, 30, 50, 0.8);
+            border-color: #444;
+            color: #888;
+        }
+        @media (max-width: 768px) {
+            .hide-mobile {
+                display: none !important;
+            }
+            .mobile-collapse {
+                max-height: 40vh;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ====== 3D CANVAS ====== -->
+    <div id="canvas-container" class="fixed inset-0 z-0"></div>
+
+    <!-- ====== GLITCH OVERLAY ====== -->
+    <div id="glitch-overlay"></div>
+
+    <!-- ====== EMPTY STATE ====== -->
+    <div id="upload-empty-state" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6 transition-opacity duration-700">
+        <div class="max-w-md panel p-8 rounded-3xl space-y-5 text-center">
+            <div class="w-20 h-20 bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/40 rounded-3xl flex items-center justify-center mx-auto text-pink-400 text-3xl animate-bounce">
+                <i class="fa-solid fa-person"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-white tracking-wide">Avatar Forge Pro</h2>
+            <p class="text-sm text-slate-400 leading-relaxed">
+                Upload your custom human avatar (.glb / .vrm).<br>
+                Full visual skeleton editing — elbows, knees, fingers, hair toggles.<br>
+                Smooth animation presets with keyframe control.
+            </p>
+            <label class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-500 hover:from-pink-500 hover:to-purple-400 active:scale-95 text-white font-bold px-7 py-3.5 rounded-2xl shadow-xl cursor-pointer transition-all text-sm">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Upload Avatar</span>
+                <input type="file" id="gltf-upload-hero" accept=".glb,.gltf,.vrm" class="hidden">
+            </label>
+            <p class="text-[10px] text-slate-500">Supports VRoid, ReadyPlayerMe, Mixamo, and custom rigs</p>
+        </div>
+    </div>
+
+    <!-- ====== TOP BAR ====== -->
+    <div class="fixed top-2 left-2 right-2 z-40 flex items-center justify-between gap-2 pointer-events-none" style="top:8px;">
+        <div class="panel px-3.5 py-2 flex items-center gap-2.5 pointer-events-auto">
+            <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse flex-shrink-0"></div>
+            <div>
+                <h1 class="text-[9px] font-bold text-slate-500 tracking-widest uppercase">Avatar Forge Pro</h1>
+                <p id="asset-name" class="text-xs font-bold text-pink-400 truncate max-w-[100px] sm:max-w-[200px]">No Model</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 pointer-events-auto flex-wrap">
+            <button id="btn-toggle-skeleton" class="panel px-2.5 py-2 text-slate-300 btn-glow flex items-center gap-1 text-[10px] font-bold">
+                <i class="fa-solid fa-bone text-emerald-400 text-xs"></i>
+                <span class="hide-mobile">Bones</span>
+            </button>
+            <button id="btn-toggle-hair" class="hair-toggle-btn on panel px-2.5 py-2 btn-glow flex items-center gap-1 text-[10px] font-bold text-pink-300">
+                <i class="fa-solid fa-scissors text-xs"></i>
+                <span class="hide-mobile">Hair</span>
+            </button>
+            <button id="btn-export-model" class="panel px-2.5 py-2 text-emerald-300 btn-glow flex items-center gap-1 text-[10px] font-bold">
+                <i class="fa-solid fa-download text-xs"></i>
+                <span class="hide-mobile">Export</span>
+            </button>
+            <label class="panel px-2.5 py-2 text-sky-300 btn-glow flex items-center gap-1 text-[10px] font-bold cursor-pointer">
+                <i class="fa-solid fa-upload text-xs"></i>
+                <span class="hide-mobile">Load</span>
+                <input type="file" id="gltf-upload" accept=".glb,.gltf,.vrm" class="hidden">
+            </label>
+        </div>
+    </div>
+
+    <!-- ====== LEFT PANEL — ANIMATION PRESETS ====== -->
+    <div class="fixed left-2 z-30 pointer-events-none" style="top:70px; bottom:210px; width:170px; max-width:40vw;">
+        <div class="panel p-2.5 h-full flex flex-col pointer-events-auto overflow-hidden">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-bold text-slate-400 tracking-wider"><i class="fa-solid fa-film mr-1 text-purple-400"></i>ANIMATIONS</span>
+                <button id="btn-stop-anim" class="text-rose-400 hover:text-rose-300 text-[10px] px-1.5 py-0.5 rounded-lg bg-rose-500/10"><i class="fa-solid fa-stop"></i></button>
+            </div>
+            <div id="anim-preset-list" class="flex-1 overflow-y-auto space-y-1.5 pr-0.5"></div>
+            <div class="mt-2 pt-2 border-t border-slate-800 text-[9px] text-slate-500 text-center">
+                <span id="current-anim-label">Idle</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== RIGHT PANEL — BONE HIERARCHY ====== -->
+    <div class="fixed right-2 z-30 pointer-events-none" style="top:70px; bottom:210px; width:190px; max-width:45vw;">
+        <div class="panel p-2.5 h-full flex flex-col pointer-events-auto overflow-hidden">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-bold text-slate-400 tracking-wider"><i class="fa-solid fa-sitemap mr-1 text-emerald-400"></i>SKELETON</span>
+                <div class="flex gap-1">
+                    <button id="btn-expand-bones" class="text-slate-400 hover:text-white text-[9px] px-1 py-0.5 rounded bg-slate-800"><i class="fa-solid fa-plus"></i></button>
+                    <button id="btn-collapse-bones" class="text-slate-400 hover:text-white text-[9px] px-1 py-0.5 rounded bg-slate-800"><i class="fa-solid fa-minus"></i></button>
+                </div>
+            </div>
+            <div id="bone-hierarchy-list" class="flex-1 overflow-y-auto space-y-0.5 pr-0.5 text-[10px]"></div>
+            <div class="mt-2 pt-2 border-t border-slate-800 text-[9px] text-slate-500">
+                <span id="bone-count-label">0 bones</span> · <span id="selected-bone-label" class="text-pink-400">None selected</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ====== BOTTOM DOCK ====== -->
+    <div id="persistent-dock" class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-2xl border-t border-slate-800 shadow-[0_-10px_40px_rgba(0,0,0,0.7)] flex flex-col select-none"
+    style="height:200px;">
+        <!-- Tabs -->
+        <div class="grid grid-cols-5 bg-slate-950/80 border-b border-slate-800 p-1 text-[10px] font-bold text-center flex-shrink-0">
+            <button onclick="switchTab('tab-pose')" id="btn-tab-pose" class="py-1.5 rounded-xl text-pink-400 bg-slate-800 transition-all"><i class="fa-solid fa-child-reaching mr-1"></i>Pose</button>
+            <button onclick="switchTab('tab-anim')" id="btn-tab-anim" class="py-1.5 rounded-xl text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-clapperboard mr-1"></i>Timeline</button>
+            <button onclick="switchTab('tab-materials')" id="btn-tab-materials" class="py-1.5 rounded-xl text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-palette mr-1"></i>Material</button>
+            <button onclick="switchTab('tab-parts')" id="btn-tab-parts" class="py-1.5 rounded-xl text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-shirt mr-1"></i>Parts</button>
+            <button onclick="switchTab('tab-effects')" id="btn-tab-effects" class="py-1.5 rounded-xl text-slate-400 hover:text-white transition-all"><i class="fa-solid fa-wand-sparkles mr-1"></i>FX</button>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto p-3 text-xs space-y-2">
+
+            <!-- POSE TAB -->
+            <div id="tab-pose" class="space-y-2">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <label class="text-slate-400 text-[10px] whitespace-nowrap">Joint:</label>
+                    <select id="pose-bone-select" class="flex-1 min-w-[80px] bg-slate-950 border border-slate-700 rounded-xl px-2 py-1.5 text-white font-medium text-[11px]">
+                        <option value="spine">Spine / Torso</option>
+                        <option value="head">Head / Neck</option>
+                        <option value="rightArm">Right Upper Arm</option>
+                        <option value="leftArm">Left Upper Arm</option>
+                        <option value="rightElbow">Right Elbow</option>
+                        <option value="leftElbow">Left Elbow</option>
+                        <option value="rightWrist">Right Wrist</option>
+                        <option value="leftWrist">Left Wrist</option>
+                        <option value="rightFingers">Right Fingers</option>
+                        <option value="leftFingers">Left Fingers</option>
+                        <option value="rightLeg">Right Upper Leg</option>
+                        <option value="leftLeg">Left Upper Leg</option>
+                        <option value="rightKnee">Right Knee</option>
+                        <option value="leftKnee">Left Knee</option>
+                        <option value="rightAnkle">Right Ankle</option>
+                        <option value="leftAnkle">Left Ankle</option>
+                    </select>
+                    <button onclick="resetSelectedBone()" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded-lg text-slate-300 text-[10px]"><i class="fa-solid fa-rotate-left"></i></button>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-[9px] text-slate-400"><span>Pitch</span><span id="val-pose-x" class="text-pink-400 font-bold">0°</span></div>
+                        <input type="range" id="slider-pose-x" min="-3.14" max="3.14" step="0.02" value="0" class="w-full slider-accent cursor-pointer">
+                    </div>
+                    <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-[9px] text-slate-400"><span>Yaw</span><span id="val-pose-y" class="text-purple-400 font-bold">0°</span></div>
+                        <input type="range" id="slider-pose-y" min="-3.14" max="3.14" step="0.02" value="0" class="w-full slider-purple cursor-pointer">
+                    </div>
+                    <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-[9px] text-slate-400"><span>Roll</span><span id="val-pose-z" class="text-sky-400 font-bold">0°</span></div>
+                        <input type="range" id="slider-pose-z" min="-3.14" max="3.14" step="0.02" value="0" class="w-full slider-cyan cursor-pointer">
+                    </div>
+                </div>
+                <div class="text-[9px] text-slate-500 italic">Tip: Click bones in 3D view to select them directly</div>
+            </div>
+
+            <!-- TIMELINE TAB -->
+            <div id="tab-anim" class="space-y-2 hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-300 font-bold"><i class="fa-solid fa-key text-rose-500 mr-1"></i> Keyframe Recorder</span>
+                    <span id="keyframe-count" class="text-pink-400 font-mono text-[10px]">0 Frames</span>
+                </div>
+                <div class="flex gap-2 flex-wrap">
+                    <button id="btn-record-key" class="flex-1 min-w-[70px] bg-pink-600 hover:bg-pink-500 active:scale-95 text-white font-bold py-1.5 rounded-xl text-[10px]">
+                        <i class="fa-solid fa-circle-dot mr-1"></i>Record
+                    </button>
+                    <button id="btn-play-anim" class="flex-1 min-w-[70px] bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold py-1.5 rounded-xl text-[10px]">
+                        <i class="fa-solid fa-play mr-1"></i>Play
+                    </button>
+                    <button id="btn-export-anim" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded-xl font-bold text-slate-300 text-[10px]">
+                        <i class="fa-solid fa-file-export"></i>
+                    </button>
+                    <button id="btn-clear-anim" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded-xl font-bold text-slate-300 text-[10px]">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+                <div id="keyframe-list" class="bg-slate-950/60 p-2 rounded-xl border border-slate-800 max-h-14 overflow-y-auto font-mono text-[9px] text-slate-400">
+                    No keyframes yet. Pose your avatar and hit Record.
+                </div>
+            </div>
+
+            <!-- MATERIALS TAB -->
+            <div id="tab-materials" class="space-y-2 hidden">
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] text-slate-400">Texture:</span>
+                    <label class="flex-1 bg-slate-800 hover:bg-slate-700 cursor-pointer px-2 py-1 rounded-lg text-center text-[10px] text-sky-300 border border-sky-500/30">
+                        <i class="fa-solid fa-image mr-1"></i>Upload PNG
+                        <input type="file" id="texture-upload" accept=".png,.jpg,.jpeg,.webp" class="hidden">
+                    </label>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span class="text-slate-300 text-[10px] font-medium">Base Color</span>
+                    <input type="color" id="mat-color-1" value="#f5f5f5" class="w-8 h-8 rounded-lg border-0 cursor-pointer bg-transparent">
+                    <div class="flex-1"></div>
+                    <span class="text-slate-400 text-[9px]" id="mat-color-hex">#f5f5f5</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-[9px] text-slate-400"><span>Roughness</span><span id="val-roughness" class="text-amber-400 font-bold">0.4</span></div>
+                        <input type="range" id="mat-roughness" min="0" max="1" step="0.01" value="0.4" class="w-full cursor-pointer">
+                    </div>
+                    <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800">
+                        <div class="flex justify-between text-[9px] text-slate-400"><span>Metal</span><span id="val-metalness" class="text-purple-400 font-bold">0.05</span></div>
+                        <input type="range" id="mat-metalness" min="0" max="1" step="0.01" value="0.05" class="w-full cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+            <!-- PARTS TAB -->
+            <div id="tab-parts" class="space-y-2 hidden">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-300 font-bold"><i class="fa-solid fa-shirt text-pink-400 mr-1"></i> Avatar Parts</span>
+                    <span id="asset-part-count" class="text-pink-400 font-mono text-[10px]">0</span>
+                </div>
+                <div id="asset-parts-list" class="space-y-1 max-h-16 overflow-y-auto">
+                    <div class="text-slate-500 italic">Upload a model to see hair, clothing, and body parts</div>
+                </div>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button onclick="togglePartVisibility('all')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-300 font-bold text-[9px]">Show All</button>
+                    <button onclick="togglePartVisibility('hair')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-300 font-bold text-[9px]">Toggle Hair</button>
+                    <button onclick="togglePartVisibility('clothing')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-300 font-bold text-[9px]">Toggle Clothes</button>
+                </div>
+            </div>
+
+            <!-- EFFECTS TAB -->
+            <div id="tab-effects" class="space-y-2 hidden">
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyEffectPreset('cyberglitch')" class="bg-pink-600/30 hover:bg-pink-600/50 border border-pink-500/50 p-2 rounded-xl text-pink-300 font-bold text-[10px] transition-all">
+                        <i class="fa-solid fa-bolt mr-1"></i>CyberGlitch
+                    </button>
+                    <button onclick="applyEffectPreset('ghost')" class="bg-purple-600/30 hover:bg-purple-600/50 border border-purple-500/50 p-2 rounded-xl text-purple-300 font-bold text-[10px] transition-all">
+                        <i class="fa-solid fa-ghost mr-1"></i>Ghost
+                    </button>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyEffectPreset('holo')" class="bg-sky-600/30 hover:bg-sky-600/50 border border-sky-500/50 p-2 rounded-xl text-sky-300 font-bold text-[10px] transition-all">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Holographic
+                    </button>
+                    <button onclick="applyEffectPreset('normal')" class="bg-slate-600/30 hover:bg-slate-600/50 border border-slate-500/50 p-2 rounded-xl text-slate-300 font-bold text-[10px] transition-all">
+                        <i class="fa-solid fa-rotate-left mr-1"></i>Reset
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ====== TOAST ====== -->
+    <div id="toast-container" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-xl px-4 py-2 rounded-full border border-slate-700 text-xs text-slate-200 opacity-0 transition-all duration-300 pointer-events-none shadow-2xl toast-enter">
+        Ready
+    </div>
+
+    <script>
+        // ============================================================
+        //  AVATAR FORGE PRO — Complete Visual Skeleton Animator
+        // ============================================================
+
+        // ---------- CORE STATE ----------
+        let scene, camera, renderer, character;
+        let clock = new THREE.Clock();
+        let charPos = new THREE.Vector3(0, 0, 0);
+        let charVel = new THREE.Vector3(0, 0, 0);
+        let cameraAngleX = 0.3;
+        let cameraAngleY = 0.35;
+        let cameraDistance = 4.5;
+        let showSkeletonMode = false;
+        let showHair = true;
+        let currentAnimPreset = 'idle';
+        let customAnimPlaying = false;
+        let animPlaybackTime = 0;
+        let recordedKeyframes = [];
+        let selectedBoneKey = null;
+        let currentEffect = 'normal';
+        let glitchInterval = null;
+        let skeletonHelper = null;
+        let boneVisualNodes = [];
+        let boneVisualLines = [];
+        let primaryMaterials = [];
+        let allDetectedBones = [];
+        let springBones = [];
+        let assetParts = { hair: [], clothing: [], body: [], accessories: [], other: [] };
+        let hiddenParts = new Set();
+        let isDraggingBone = false;
+        let dragBoneKey = null;
+        let dragStartMouse = { x: 0, y: 0 };
+        let dragStartRotation = { x: 0, y: 0, z: 0 };
+        let joystickActive = false;
+        let joystickCenter = { x: 0, y: 0 };
+        let joystickVector = { x: 0, y: 0 };
+        let isSwiping = false;
+        let prevTouchPos = { x: 0, y: 0 };
+        let isDucking = false;
+
+        // Bone mapping
+        const boneGroups = {
+            head: { label: 'Head', color: '#fbbf24', bones: [] },
+            neck: { label: 'Neck', color: '#fbbf24', bones: [] },
+            chest: { label: 'Chest', color: '#fb923c', bones: [] },
+            spine: { label: 'Spine', color: '#fb923c', bones: [] },
+            hips: { label: 'Hips', color: '#fb923c', bones: [] },
+            rightArm: { label: 'Right Upper Arm', color: '#f87171', bones: [] },
+            rightElbow: { label: 'Right Elbow', color: '#f87171', bones: [] },
+            rightWrist: { label: 'Right Wrist', color: '#f87171', bones: [] },
+            rightFingers: { label: 'Right Fingers', color: '#f472b6', bones: [] },
+            leftArm: { label: 'Left Upper Arm', color: '#60a5fa', bones: [] },
+            leftElbow: { label: 'Left Elbow', color: '#60a5fa', bones: [] },
+            leftWrist: { label: 'Left Wrist', color: '#60a5fa', bones: [] },
+            leftFingers: { label: 'Left Fingers', color: '#f472b6', bones: [] },
+            rightLeg: { label: 'Right Upper Leg', color: '#a78bfa', bones: [] },
+            rightKnee: { label: 'Right Knee', color: '#a78bfa', bones: [] },
+            rightAnkle: { label: 'Right Ankle', color: '#a78bfa', bones: [] },
+            leftLeg: { label: 'Left Upper Leg', color: '#34d399', bones: [] },
+            leftKnee: { label: 'Left Knee', color: '#34d399', bones: [] },
+            leftAnkle: { label: 'Left Ankle', color: '#34d399', bones: [] },
+        };
+
+        const skeletonBones = {};
+        Object.keys(boneGroups).forEach(k => skeletonBones[k] = null);
+
+        // ---------- ANIMATION PRESETS ----------
+        const animationPresets = [
+            { id: 'idle', name: 'Idle', icon: '🧘', desc: 'Gentle breathing' },
+            { id: 'walk', name: 'Walk', icon: '🚶', desc: 'Arm + leg swing' },
+            { id: 'run', name: 'Run', icon: '🏃', desc: 'Fast stride cycle' },
+            { id: 'wave', name: 'Wave', icon: '👋', desc: 'Right arm wave' },
+            { id: 'dance', name: 'Dance', icon: '💃', desc: 'Rhythmic groove' },
+            { id: 'jump', name: 'Jump', icon: '🦘', desc: 'Crouch + leap' },
+            { id: 'bow', name: 'Bow', icon: '🙇', desc: 'Forward bend' },
+            { id: 'sit', name: 'Sit', icon: '🪑', desc: 'Folded legs' },
+            { id: 'punch', name: 'Punch', icon: '👊', desc: 'Arm extension' },
+            { id: 'kick', name: 'Kick', icon: '🦵', desc: 'Leg extension' },
+            { id: 'ghost', name: 'Ghost Float', icon: '👻', desc: 'Hovering sway' },
+            { id: 'glitch', name: 'Glitch', icon: '⚡', desc: 'Robotic jerks' },
+        ];
+
+        // ---------- INIT ----------
+        function initGame() {
+            const container = document.getElementById('canvas-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0a14);
+            scene.fog = new THREE.FogExp2(0x0a0a14, 0.03);
+
+            camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputEncoding = THREE.sRGBEncoding;
+            container.appendChild(renderer.domElement);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 1.0);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xfff5ee, 1.8);
+            dirLight.position.set(15, 25, 15);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 100;
+            dirLight.shadow.camera.left = -20;
+            dirLight.shadow.camera.right = 20;
+            dirLight.shadow.camera.top = 20;
+            dirLight.shadow.camera.bottom = -20;
+            dirLight.shadow.bias = -0.0001;
+            scene.add(dirLight);
+            const fillLight = new THREE.DirectionalLight(0x8899cc, 0.6);
+            fillLight.position.set(-8, 10, -8);
+            scene.add(fillLight);
+
+            createEnvironment();
+            setupControls();
+            setupBoneInteraction();
+            setupAnimPresetUI();
+            setupTextureUpload();
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function createEnvironment() {
+            const grid = new THREE.GridHelper(80, 40, 0xec4899, 0x1a1a2e);
+            grid.position.y = -0.01;
+            scene.add(grid);
+            const floorGeo = new THREE.PlaneGeometry(80, 80);
+            const floorMat = new THREE.MeshStandardMaterial({ color: 0x0d0d1a, roughness: 0.9, metalness: 0.0 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Ambient glow rings
+            for (let i = 0; i < 5; i++) {
+                const ringGeo = new THREE.TorusGeometry(3 + i * 3, 0.05, 8, 60);
+                const ringMat = new THREE.MeshBasicMaterial({
+                    color: i % 2 === 0 ? 0xec4899 : 0x8b5cf6,
+                    transparent: true,
+                    opacity: 0.15 - i * 0.02,
+                });
+                const ring = new THREE.Mesh(ringGeo, ringMat);
+                ring.rotation.x = -Math.PI / 2;
+                ring.position.y = 0.02 + i * 0.01;
+                scene.add(ring);
+            }
+        }
+
+        // ---------- MODEL LOADING ----------
+        function loadGLTFModel(fileUrl, fileName) {
+            const loader = new THREE.GLTFLoader();
+            const dracoLoader = new THREE.DRACOLoader();
+            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.4.1/');
+            loader.setDRACOLoader(dracoLoader);
+
+            loader.load(fileUrl, (gltf) => {
+                if (character) {
+                    scene.remove(character);
+                    clearBoneVisuals();
+                    if (skeletonHelper) { scene.remove(skeletonHelper);
+                        skeletonHelper = null; }
+                    stopGlitchEffect();
+                }
+                character = gltf.scene;
+                character.scale.set(1.4, 1.4, 1.4);
+                character.position.copy(charPos);
+                character.traverse(child => {
+                    if (child.isMesh) {
+                        child.castShadow = true;
+                        child.receiveShadow = true;
+                        child.userData.visible = true;
+                        if (child.material) {
+                            const mats = Array.isArray(child.material) ? child.material : [child.material];
+                            primaryMaterials.push(...mats);
+                            mats.forEach(m => { m.roughness = 0.4;
+                                m.metalness = 0.05;
+                                m.needsUpdate = true; });
+                        }
+                        const name = (child.name || '').toLowerCase();
+                        if (name.includes('hair') || name.includes('beard') || name.includes('fur')) assetParts.hair.push(
+                        child);
+                        else if (name.includes('skirt') || name.includes('shirt') || name.includes('pant') || name.includes(
+                                'dress') || name.includes('jacket') || name.includes('cloth') || name.includes('coat') ||
+                            name.includes('outfit')) assetParts.clothing.push(child);
+                        else if (name.includes('body') || name.includes('skin') || name.includes('face') || name.includes(
+                                'head') || name.includes('torso')) assetParts.body.push(child);
+                        else if (name.includes('accessor') || name.includes('glass') || name.includes('hat') || name.includes(
+                                'earring') || name.includes('necklace') || name.includes('ring')) assetParts.accessories.push(
+                            child);
+                        else assetParts.other.push(child);
+                    }
+                    if (child.isBone || (child.type === 'Bone') || child.name.toLowerCase().includes('bone') || child.name
+                        .toLowerCase().includes('bip') || child.name.toLowerCase().includes('joint')) {
+                        allDetectedBones.push(child);
+                        mapBoneToGroup(child);
+                    }
+                    if (child.name && (child.name.toLowerCase().includes('hair') || child.name.toLowerCase().includes(
+                            'skirt') || child.name.toLowerCase().includes('cloth'))) {
+                        springBones.push({ bone: child, baseRotation: child.rotation.clone() });
+                    }
+                });
+
+                if (allDetectedBones.length < 5) generateFullAutoRig();
+
+                scene.add(character);
+                if (showSkeletonMode) {
+                    skeletonHelper = new THREE.SkeletonHelper(character);
+                    scene.add(skeletonHelper);
+                }
+                buildBoneVisuals();
+                updateBoneHierarchyUI();
+                updateAssetPartsUI();
+                applyHairVisibility();
+
+                const emptyState = document.getElementById('upload-empty-state');
+                if (emptyState) { emptyState.classList.add('fade-out');
+                    setTimeout(() => emptyState.style.display = 'none', 700); }
+
+                document.getElementById('status-dot').className =
+                    'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0';
+                document.getElementById('asset-name').innerText = fileName;
+                showToast(`Loaded "${fileName}" — ${allDetectedBones.length} bones detected`);
+            }, undefined, (err) => {
+                console.error('Load error:', err);
+                showToast('Failed to load file. Check format.');
+            });
+        }
+
+        function mapBoneToGroup(bone) {
+            const bn = bone.name.toLowerCase();
+            const assign = (key) => { if (!skeletonBones[key]) skeletonBones[key] = bone; };
+            if (bn.includes('head')) assign('head');
+            else if (bn.includes('neck')) assign('neck');
+            else if (bn.includes('chest') || bn.includes('upperbody') || bn.includes('spine2') || bn.includes('spine_2'))
+                assign('chest');
+            else if (bn.includes('spine') || bn.includes('hips') || bn.includes('pelvis')) { assign('spine'); if (bn
+                    .includes('hip') || bn.includes('pelvis')) assign('hips'); }
+            else if (bn.includes('shoulder.r') || bn.includes('upperarm_r') || bn.includes('arm_r') || bn.includes(
+                'r_arm') || bn.includes('rightarm') || bn.includes('j_bip_r_upperarm')) assign('rightArm');
+            else if (bn.includes('shoulder.l') || bn.includes('upperarm_l') || bn.includes('arm_l') || bn.includes(
+                'l_arm') || bn.includes('leftarm') || bn.includes('j_bip_l_upperarm')) assign('leftArm');
+            else if (bn.includes('forearm_r') || bn.includes('elbow_r') || bn.includes('lowerarm_r') || bn.includes(
+                    'r_forearm') || bn.includes('j_bip_r_lowerarm')) assign('rightElbow');
+            else if (bn.includes('forearm_l') || bn.includes('elbow_l') || bn.includes('lowerarm_l') || bn.includes(
+                    'l_forearm') || bn.includes('j_bip_l_lowerarm')) assign('leftElbow');
+            else if (bn.includes('hand_r') || bn.includes('wrist_r') || bn.includes('r_hand') || bn.includes('j_bip_r_hand'))
+                assign('rightWrist');
+            else if (bn.includes('hand_l') || bn.includes('wrist_l') || bn.includes('l_hand') || bn.includes('j_bip_l_hand'))
+                assign('leftWrist');
+            else if (bn.includes('finger') || bn.includes('thumb') || bn.includes('index') || bn.includes('middle') || bn
+                .includes('ring') || bn.includes('pinky')) {
+                if (bn.includes('r') || bn.includes('right')) assign('rightFingers');
+                else assign('leftFingers');
+            } else if (bn.includes('upleg_r') || bn.includes('thigh_r') || bn.includes('leg_r') || bn.includes('r_leg') ||
+                bn.includes('rightleg') || bn.includes('j_bip_r_upperleg')) assign('rightLeg');
+            else if (bn.includes('upleg_l') || bn.includes('thigh_l') || bn.includes('leg_l') || bn.includes('l_leg') || bn
+                .includes('leftleg') || bn.includes('j_bip_l_upperleg')) assign('leftLeg');
+            else if (bn.includes('knee_r') || bn.includes('shin_r') || bn.includes('lowerleg_r') || bn.includes(
+                    'r_shin') || bn.includes('j_bip_r_lowerleg')) assign('rightKnee');
+            else if (bn.includes('knee_l') || bn.includes('shin_l') || bn.includes('lowerleg_l') || bn.includes(
+                    'l_shin') || bn.includes('j_bip_l_lowerleg')) assign('leftKnee');
+            else if (bn.includes('ankle_r') || bn.includes('foot_r') || bn.includes('r_foot') || bn.includes('j_bip_r_foot'))
+                assign('rightAnkle');
+            else if (bn.includes('ankle_l') || bn.includes('foot_l') || bn.includes('l_foot') || bn.includes('j_bip_l_foot'))
+                assign('leftAnkle');
+        }
+
+        function generateFullAutoRig() {
+            const hips = new THREE.Bone();
+            hips.name = 'AutoRig_Hips';
+            hips.position.set(0, 0.6, 0);
+            const spine = new THREE.Bone();
+            spine.name = 'AutoRig_Spine';
+            spine.position.set(0, 0.2, 0);
+            hips.add(spine);
+            const chest = new THREE.Bone();
+            chest.name = 'AutoRig_Chest';
+            chest.position.set(0, 0.25, 0);
+            spine.add(chest);
+            const neck = new THREE.Bone();
+            neck.name = 'AutoRig_Neck';
+            neck.position.set(0, 0.2, 0);
+            chest.add(neck);
+            const head = new THREE.Bone();
+            head.name = 'AutoRig_Head';
+            head.position.set(0, 0.18, 0);
+            neck.add(head);
+            const rArm = new THREE.Bone();
+            rArm.name = 'AutoRig_RightArm';
+            rArm.position.set(0.3, 0.45, 0);
+            chest.add(rArm);
+            const lArm = new THREE.Bone();
+            lArm.name = 'AutoRig_LeftArm';
+            lArm.position.set(-0.3, 0.45, 0);
+            chest.add(lArm);
+            const rElbow = new THREE.Bone();
+            rElbow.name = 'AutoRig_RightElbow';
+            rElbow.position.set(0, -0.25, 0);
+            rArm.add(rElbow);
+            const lElbow = new THREE.Bone();
+            lElbow.name = 'AutoRig_LeftElbow';
+            lElbow.position.set(0, -0.25, 0);
+            lArm.add(lElbow);
+            const rWrist = new THREE.Bone();
+            rWrist.name = 'AutoRig_RightWrist';
+            rWrist.position.set(0, -0.2, 0);
+            rElbow.add(rWrist);
+            const lWrist = new THREE.Bone();
+            lWrist.name = 'AutoRig_LeftWrist';
+            lWrist.position.set(0, -0.2, 0);
+            lElbow.add(lWrist);
+            const rFingers = new THREE.Bone();
+            rFingers.name = 'AutoRig_RightFingers';
+            rFingers.position.set(0, -0.12, 0);
+            rWrist.add(rFingers);
+            const lFingers = new THREE.Bone();
+            lFingers.name = 'AutoRig_LeftFingers';
+            lFingers.position.set(0, -0.12, 0);
+            lWrist.add(lFingers);
+            const rLeg = new THREE.Bone();
+            rLeg.name = 'AutoRig_RightLeg';
+            rLeg.position.set(0.15, -0.05, 0);
+            hips.add(rLeg);
+            const lLeg = new THREE.Bone();
+            lLeg.name = 'AutoRig_LeftLeg';
+            lLeg.position.set(-0.15, -0.05, 0);
+            hips.add(lLeg);
+            const rKnee = new THREE.Bone();
+            rKnee.name = 'AutoRig_RightKnee';
+            rKnee.position.set(0, -0.35, 0);
+            rLeg.add(rKnee);
+            const lKnee = new THREE.Bone();
+            lKnee.name = 'AutoRig_LeftKnee';
+            lKnee.position.set(0, -0.35, 0);
+            lLeg.add(lKnee);
+            const rAnkle = new THREE.Bone();
+            rAnkle.name = 'AutoRig_RightAnkle';
+            rAnkle.position.set(0, -0.3, 0);
+            rKnee.add(rAnkle);
+            const lAnkle = new THREE.Bone();
+            lAnkle.name = 'AutoRig_LeftAnkle';
+            lAnkle.position.set(0, -0.3, 0);
+            lKnee.add(lAnkle);
+
+            character.add(hips);
+            const map = {
+                hips,
+                spine,
+                chest,
+                neck,
+                head,
+                rightArm: rArm,
+                leftArm: lArm,
+                rightElbow: rElbow,
+                leftElbow: lElbow,
+                rightWrist: rWrist,
+                leftWrist: lWrist,
+                rightFingers: rFingers,
+                leftFingers: lFingers,
+                rightLeg: rLeg,
+                leftLeg: lLeg,
+                rightKnee: rKnee,
+                leftKnee: lKnee,
+                rightAnkle: rAnkle,
+                leftAnkle: lAnkle
+            };
+            Object.assign(skeletonBones, map);
+            allDetectedBones = Object.values(map);
+            if (showSkeletonMode) {
+                if (skeletonHelper) scene.remove(skeletonHelper);
+                skeletonHelper = new THREE.SkeletonHelper(character);
+                scene.add(skeletonHelper);
+            }
+        }
+
+        // ---------- VISUAL BONE SYSTEM ----------
+        function buildBoneVisuals() {
+            clearBoneVisuals();
+            const boneGroupsList = Object.keys(skeletonBones);
+            boneGroupsList.forEach(key => {
+                const bone = skeletonBones[key];
+                if (!bone) return;
+                const colorStr = boneGroups[key]?.color || '#ffffff';
+                const sphereGeo = new THREE.SphereGeometry(0.035, 12, 12);
+                const sphereMat = new THREE.MeshStandardMaterial({
+                    color: new THREE.Color(colorStr),
+                    roughness: 0.3,
+                    metalness: 0.3,
+                    emissive: new THREE.Color(colorStr),
+                    emissiveIntensity: 0.4,
+                });
+                const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+                sphere.userData.boneKey = key;
+                sphere.userData.isBoneNode = true;
+                sphere.renderOrder = 10;
+                sphere.visible = showSkeletonMode;
+                scene.add(sphere);
+                boneVisualNodes.push(sphere);
+            });
+            // Connect lines
+            const connections = [
+                ['hips', 'spine'],
+                ['spine', 'chest'],
+                ['chest', 'neck'],
+                ['neck', 'head'],
+                ['chest', 'rightArm'],
+                ['chest', 'leftArm'],
+                ['rightArm', 'rightElbow'],
+                ['leftArm', 'leftElbow'],
+                ['rightElbow', 'rightWrist'],
+                ['leftElbow', 'leftWrist'],
+                ['rightWrist', 'rightFingers'],
+                ['leftWrist', 'leftFingers'],
+                ['hips', 'rightLeg'],
+                ['hips', 'leftLeg'],
+                ['rightLeg', 'rightKnee'],
+                ['leftLeg', 'leftKnee'],
+                ['rightKnee', 'rightAnkle'],
+                ['leftKnee', 'leftAnkle'],
+            ];
+            connections.forEach(([a, b]) => {
+                const ba = skeletonBones[a];
+                const bb = skeletonBones[b];
+                if (!ba || !bb) return;
+                const lineGeo = new THREE.BufferGeometry();
+                const positions = new Float32Array(6);
+                lineGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                const lineMat = new THREE.LineBasicMaterial({
+                    color: boneGroups[a]?.color || '#888888',
+                    transparent: true,
+                    opacity: 0.7,
+                    depthTest: true,
+                });
+                const line = new THREE.Line(lineGeo, lineMat);
+                line.userData.boneA = a;
+                line.userData.boneB = b;
+                line.userData.isBoneLine = true;
+                line.renderOrder = 9;
+                line.visible = showSkeletonMode;
+                scene.add(line);
+                boneVisualLines.push(line);
+            });
+        }
+
+        function updateBoneVisualPositions() {
+            if (!character) return;
+            boneVisualNodes.forEach(sphere => {
+                const key = sphere.userData.boneKey;
+                const bone = skeletonBones[key];
+                if (!bone) { sphere.visible = false; return; }
+                const worldPos = new THREE.Vector3();
+                bone.getWorldPosition(worldPos);
+                sphere.position.copy(worldPos);
+                sphere.visible = showSkeletonMode;
+                if (selectedBoneKey === key) {
+                    sphere.material.emissiveIntensity = 1.2;
+                    sphere.scale.setScalar(2.2);
+                } else {
+                    sphere.material.emissiveIntensity = 0.4;
+                    sphere.scale.setScalar(1.0);
+                }
+            });
+            boneVisualLines.forEach(line => {
+                const boneA = skeletonBones[line.userData.boneA];
+                const boneB = skeletonBones[line.userData.boneB];
+                if (!boneA || !boneB) { line.visible = false; return; }
+                const posA = new THREE.Vector3();
+                const posB = new THREE.Vector3();
+                boneA.getWorldPosition(posA);
+                boneB.getWorldPosition(posB);
+                const attr = line.geometry.attributes.position;
+                attr.array[0] = posA.x;
+                attr.array[1] = posA.y;
+                attr.array[2] = posA.z;
+                attr.array[3] = posB.x;
+                attr.array[4] = posB.y;
+                attr.array[5] = posB.z;
+                attr.needsUpdate = true;
+                line.geometry.computeBoundingSphere();
+                line.visible = showSkeletonMode;
+            });
+        }
+
+        function clearBoneVisuals() {
+            boneVisualNodes.forEach(n => scene.remove(n));
+            boneVisualLines.forEach(l => scene.remove(l));
+            boneVisualNodes = [];
+            boneVisualLines = [];
+        }
+
+        // ---------- BONE INTERACTION (RAYCASTING) ----------
+        const raycaster = new THREE.Raycaster();
+        const mouseNDC = new THREE.Vector2();
+
+        function setupBoneInteraction() {
+            const canvas = renderer.domElement;
+            canvas.addEventListener('pointerdown', (e) => {
+                if (e.target.closest('.panel') || e.target.closest('button') || e.target.closest('select') || e
+                    .target.closest('label') || e.target.closest('#persistent-dock') || e.target.closest(
+                        '#upload-empty-state')) return;
+                const rect = canvas.getBoundingClientRect();
+                mouseNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouseNDC, camera);
+                const intersects = raycaster.intersectObjects(boneVisualNodes.filter(n => n.visible));
+                if (intersects.length > 0) {
+                    const hit = intersects[0].object;
+                    const key = hit.userData.boneKey;
+                    if (key && skeletonBones[key]) {
+                        selectedBoneKey = key;
+                        updatePoseSlidersForBone(key);
+                        updateBoneHierarchyUI();
+                        document.getElementById('selected-bone-label').textContent =
+                            `${boneGroups[key]?.label || key}`;
+                        showToast(`Selected: ${boneGroups[key]?.label || key}`);
+                        isDraggingBone = true;
+                        dragBoneKey = key;
+                        dragStartMouse.x = e.clientX;
+                        dragStartMouse.y = e.clientY;
+                        const bone = skeletonBones[key];
+                        dragStartRotation = { x: bone.rotation.x, y: bone.rotation.y, z: bone.rotation.z };
+                        canvas.style.cursor = 'grabbing';
+                    }
+                } else {
+                    selectedBoneKey = null;
+                    document.getElementById('selected-bone-label').textContent = 'None selected';
+                    updateBoneHierarchyUI();
+                }
+            });
+
+            canvas.addEventListener('pointermove', (e) => {
+                if (isDraggingBone && dragBoneKey && skeletonBones[dragBoneKey]) {
+                    const dx = e.clientX - dragStartMouse.x;
+                    const dy = e.clientY - dragStartMouse.y;
+                    const sensitivity = 0.008;
+                    const bone = skeletonBones[dragBoneKey];
+                    bone.rotation.y = dragStartRotation.y + dx * sensitivity;
+                    bone.rotation.x = dragStartRotation.x + dy * sensitivity;
+                    if (skeletonHelper) skeletonHelper.update();
+                    updatePoseSlidersForBone(dragBoneKey);
+                }
+                // Also update raycast cursor
+                const canvas = renderer.domElement;
+                const rect = canvas.getBoundingClientRect();
+                mouseNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouseNDC, camera);
+                const intersects = raycaster.intersectObjects(boneVisualNodes.filter(n => n.visible));
+                canvas.style.cursor = intersects.length > 0 ? 'pointer' : 'default';
+            });
+
+            canvas.addEventListener('pointerup', () => {
+                isDraggingBone = false;
+                dragBoneKey = null;
+                canvas.style.cursor = 'default';
+            });
+        }
+
+        function updatePoseSlidersForBone(key) {
+            const bone = skeletonBones[key];
+            if (!bone) return;
+            document.getElementById('slider-pose-x').value = bone.rotation.x;
+            document.getElementById('slider-pose-y').value = bone.rotation.y;
+            document.getElementById('slider-pose-z').value = bone.rotation.z;
+            updatePoseLabels();
+            const select = document.getElementById('pose-bone-select');
+            if (select.value !== key) select.value = key;
+        }
+
+        function resetSelectedBone() {
+            if (!selectedBoneKey || !skeletonBones[selectedBoneKey]) return;
+            skeletonBones[selectedBoneKey].rotation.set(0, 0, 0);
+            updatePoseSlidersForBone(selectedBoneKey);
+            if (skeletonHelper) skeletonHelper.update();
+            showToast(`Reset ${boneGroups[selectedBoneKey]?.label || 'bone'}`);
+        }
+
+        // ---------- ANIMATION SYSTEM ----------
+        function setupAnimPresetUI() {
+            const listEl = document.getElementById('anim-preset-list');
+            listEl.innerHTML = '';
+            animationPresets.forEach(preset => {
+                const div = document.createElement('div');
+                div.className =
+                    `anim-card p-2 rounded-xl flex items-center gap-2 ${preset.id === currentAnimPreset ? 'active' : ''}`;
+                div.innerHTML = `
+              <span class="text-lg">${preset.icon}</span>
+              <div class="flex-1 min-w-0">
+                <div class="text-[10px] font-bold text-slate-200 truncate">${preset.name}</div>
+                <div class="text-[8px] text-slate-500 truncate">${preset.desc}</div>
+              </div>
+              ${preset.id === currentAnimPreset ? '<i class="fa-solid fa-circle-check text-pink-400 text-xs"></i>' : ''}
+            `;
+                div.onclick = () => selectAnimPreset(preset.id);
+                listEl.appendChild(div);
+            });
+        }
+
+        function selectAnimPreset(id) {
+            currentAnimPreset = id;
+            customAnimPlaying = false;
+            animPlaybackTime = 0;
+            document.getElementById('current-anim-label').textContent =
+                animationPresets.find(p => p.id === id)?.name || id;
+            setupAnimPresetUI();
+            // Reset keyframe playback
+            document.getElementById('btn-play-anim').innerHTML = '<i class="fa-solid fa-play mr-1"></i>Play';
+            showToast(`Animation: ${animationPresets.find(p => p.id === id)?.name || id}`);
+            // Apply glitch effect automatically
+            if (id === 'glitch') applyEffectPreset('cyberglitch');
+            else if (id === 'ghost') applyEffectPreset('ghost');
+            else if (currentEffect !== 'normal') applyEffectPreset('normal');
+        }
+
+        function getAnimPose(time, presetId) {
+            const t = time;
+            const pose = {};
+            const set = (key, rx, ry, rz) => pose[key] = { rx, ry, rz };
+
+            switch (presetId) {
+                case 'idle':
+                    set('chest', Math.sin(t * 1.5) * 0.04, 0, 0);
+                    set('head', Math.sin(t * 1.2 + 0.5) * 0.05, Math.cos(t * 0.8) * 0.04, 0);
+                    set('rightArm', 0.05, 0, Math.sin(t * 1.3) * 0.08);
+                    set('leftArm', 0.05, 0, -Math.sin(t * 1.3) * 0.08);
+                    set('rightElbow', -0.15, 0, 0);
+                    set('leftElbow', -0.15, 0, 0);
+                    set('spine', 0.02, 0, 0);
+                    break;
+                case 'walk':
+                    const sw = Math.sin(t * 4);
+                    set('rightArm', sw * 0.5, 0, 0.06);
+                    set('leftArm', -sw * 0.5, 0, -0.06);
+                    set('rightElbow', -0.3 - sw * 0.15, 0, 0);
+                    set('leftElbow', -0.3 + sw * 0.15, 0, 0);
+                    set('rightLeg', -sw * 0.7, 0, 0);
+                    set('leftLeg', sw * 0.7, 0, 0);
+                    set('rightKnee', 0.4 + sw * 0.2, 0, 0);
+                    set('leftKnee', 0.4 - sw * 0.2, 0, 0);
+                    set('rightAnkle', sw * 0.15, 0, 0);
+                    set('leftAnkle', -sw * 0.15, 0, 0);
+                    set('chest', Math.abs(sw) * 0.08, 0, 0);
+                    set('head', Math.abs(sw) * 0.05, 0, 0);
+                    break;
+                case 'run':
+                    const sr = Math.sin(t * 6.5);
+                    set('rightArm', sr * 0.8, 0, 0.1);
+                    set('leftArm', -sr * 0.8, 0, -0.1);
+                    set('rightElbow', -0.6 - sr * 0.2, 0, 0);
+                    set('leftElbow', -0.6 + sr * 0.2, 0, 0);
+                    set('rightLeg', -sr * 1.0, 0, 0);
+                    set('leftLeg', sr * 1.0, 0, 0);
+                    set('rightKnee', 0.7 + sr * 0.3, 0, 0);
+                    set('leftKnee', 0.7 - sr * 0.3, 0, 0);
+                    set('rightAnkle', sr * 0.25, 0, 0);
+                    set('leftAnkle', -sr * 0.25, 0, 0);
+                    set('chest', Math.abs(sr) * 0.15, 0, 0.05);
+                    set('head', Math.abs(sr) * 0.08, 0, 0);
+                    break;
+                case 'wave':
+                    set('rightArm', -1.2, 0, Math.sin(t * 5) * 0.5 - 0.6);
+                    set('rightElbow', -0.3, 0, 0);
+                    set('rightWrist', 0, 0, Math.sin(t * 5) * 0.5);
+                    set('leftArm', 0.1, 0, -0.05);
+                    set('leftElbow', -0.2, 0, 0);
+                    set('head', 0, Math.sin(t * 3) * 0.15, 0);
+                    set('chest', 0, Math.sin(t * 3) * 0.06, 0);
+                    break;
+                case 'dance':
+                    set('rightArm', Math.sin(t * 5) * 0.7, 0, Math.cos(t * 4) * 0.5);
+                    set('leftArm', -Math.sin(t * 5) * 0.7, 0, -Math.cos(t * 4) * 0.5);
+                    set('rightElbow', -0.5, 0, 0);
+                    set('leftElbow', -0.5, 0, 0);
+                    set('rightLeg', Math.sin(t * 4) * 0.3, 0, 0);
+                    set('leftLeg', -Math.sin(t * 4) * 0.3, 0, 0);
+                    set('chest', Math.sin(t * 6) * 0.15, Math.cos(t * 5) * 0.1, Math.sin(t * 4) * 0.1);
+                    set('head', Math.sin(t * 5) * 0.1, Math.cos(t * 4) * 0.15, 0);
+                    set('spine', 0, Math.sin(t * 4) * 0.1, 0);
+                    set('hips', 0, Math.cos(t * 5) * 0.08, 0);
+                    break;
+                case 'jump':
+                    const jp = Math.max(0, Math.sin(t * 3));
+                    set('rightArm', -0.8 + jp * 1.2, 0, 0.3);
+                    set('leftArm', -0.8 + jp * 1.2, 0, -0.3);
+                    set('rightLeg', -0.4 + jp * 0.5, 0, 0);
+                    set('leftLeg', -0.4 + jp * 0.5, 0, 0);
+                    set('rightKnee', 0.6 - jp * 0.5, 0, 0);
+                    set('leftKnee', 0.6 - jp * 0.5, 0, 0);
+                    set('chest', 0.2 - jp * 0.3, 0, 0);
+                    set('head', 0.15 - jp * 0.2, 0, 0);
+                    break;
+                case 'bow':
+                    const bt = Math.min(t, Math.PI);
+                    set('spine', bt * 0.5, 0, 0);
+                    set('chest', bt * 0.4, 0, 0);
+                    set('head', bt * 0.3, 0, 0);
+                    set('rightArm', 0, 0, -0.3);
+                    set('leftArm', 0, 0, 0.3);
+                    set('rightElbow', -0.4, 0, 0);
+                    set('leftElbow', -0.4, 0, 0);
+                    break;
+                case 'sit':
+                    const st = Math.min(t, Math.PI);
+                    set('rightLeg', st * 0.5, 0, 0);
+                    set('leftLeg', st * 0.5, 0, 0);
+                    set('rightKnee', -st * 1.0, 0, 0);
+                    set('leftKnee', -st * 1.0, 0, 0);
+                    set('spine', -st * 0.15, 0, 0);
+                    set('chest', -st * 0.1, 0, 0);
+                    set('rightArm', -st * 0.2, 0, 0);
+                    set('leftArm', -st * 0.2, 0, 0);
+                    break;
+                case 'punch':
+                    const pt = Math.sin(t * 4);
+                    set('rightArm', -0.1, 0, -1.2 + Math.max(0, pt) * 0.8);
+                    set('rightElbow', -0.1, 0, 0);
+                    set('leftArm', 0.1, 0, 0.15);
+                    set('leftElbow', -0.3, 0, 0);
+                    set('chest', Math.max(0, pt) * 0.2, Math.max(0, pt) * 0.3, 0);
+                    set('head', Math.max(0, pt) * 0.1, 0, 0);
+                    set('hips', 0, Math.max(0, pt) * 0.15, 0);
+                    break;
+                case 'kick':
+                    const kt = Math.sin(t * 3.5);
+                    set('rightLeg', -0.3, 0, Math.max(0, kt) * 0.9);
+                    set('rightKnee', 0.2 + Math.max(0, kt) * 0.5, 0, 0);
+                    set('leftLeg', 0.1, 0, 0);
+                    set('leftKnee', 0.1, 0, 0);
+                    set('chest', Math.max(0, kt) * 0.15, Math.max(0, kt) * 0.2, 0);
+                    set('rightArm', Math.max(0, kt) * 0.3, 0, 0.2);
+                    set('leftArm', Math.max(0, kt) * 0.3, 0, -0.2);
+                    set('hips', Math.max(0, kt) * 0.1, 0, 0);
+                    break;
+                case 'ghost':
+                    const gt = t * 2;
+                    set('rightArm', Math.sin(gt) * 0.4, 0, Math.cos(gt) * 0.35);
+                    set('leftArm', -Math.sin(gt) * 0.4, 0, -Math.cos(gt) * 0.35);
+                    set('rightElbow', -0.3 + Math.sin(gt * 1.5) * 0.2, 0, 0);
+                    set('leftElbow', -0.3 - Math.sin(gt * 1.5) * 0.2, 0, 0);
+                    set('rightLeg', Math.sin(gt * 0.8) * 0.2, 0, 0);
+                    set('leftLeg', -Math.sin(gt * 0.8) * 0.2, 0, 0);
+                    set('chest', Math.sin(gt * 0.7) * 0.1, Math.cos(gt * 0.9) * 0.08, 0);
+                    set('head', Math.sin(gt * 1.1) * 0.08, 0, Math.cos(gt * 0.8) * 0.05);
+                    set('spine', Math.sin(gt * 0.5) * 0.05, 0, 0);
+                    set('hips', 0, Math.sin(gt * 0.6) * 0.04, 0);
+                    break;
+                case 'glitch':
+                    const gl = Math.floor(t * 8) / 8;
+                    const rnd = (seed) => Math.sin(gl * 100 + seed) * 0.4;
+                    set('rightArm', rnd(1), rnd(2), rnd(3));
+                    set('leftArm', rnd(4), rnd(5), rnd(6));
+                    set('rightElbow', rnd(7) * 0.5, 0, 0);
+                    set('leftElbow', rnd(8) * 0.5, 0, 0);
+                    set('rightLeg', rnd(9) * 0.3, 0, 0);
+                    set('leftLeg', rnd(10) * 0.3, 0, 0);
+                    set('chest', rnd(11) * 0.2, rnd(12) * 0.2, 0);
+                    set('head', rnd(13) * 0.3, rnd(14) * 0.3, 0);
+                    set('spine', rnd(15) * 0.15, 0, 0);
+                    set('hips', 0, rnd(16) * 0.1, 0);
+                    break;
+                default:
+                    break;
+            }
+            return pose;
+        }
+
+        function applyPose(pose, blendFactor = 1.0) {
+            Object.keys(pose).forEach(key => {
+                const bone = skeletonBones[key];
+                if (!bone) return;
+                const target = pose[key];
+                if (blendFactor >= 1) {
+                    bone.rotation.set(target.rx, target.ry, target.rz);
+                } else {
+                    bone.rotation.x += (target.rx - bone.rotation.x) * blendFactor;
+                    bone.rotation.y += (target.ry - bone.rotation.y) * blendFactor;
+                    bone.rotation.z += (target.rz - bone.rotation.z) * blendFactor;
+                }
+            });
+            if (skeletonHelper) skeletonHelper.update();
+        }
+
+        // ---------- KEYFRAME SYSTEM ----------
+        function recordFullPose() {
+            if (!character) { showToast('Load a model first!'); return; }
+            const pose = {};
+            Object.keys(skeletonBones).forEach(key => {
+                const bone = skeletonBones[key];
+                if (bone) pose[key] = { rx: bone.rotation.x, ry: bone.rotation.y, rz: bone.rotation.z };
+            });
+            recordedKeyframes.push({ time: recordedKeyframes.length * 0.5, pose });
+            document.getElementById('keyframe-count').textContent = `${recordedKeyframes.length} Frames`;
+            const listEl = document.getElementById('keyframe-list');
+            if (recordedKeyframes.length === 1) listEl.innerHTML = '';
+            const div = document.createElement('div');
+            div.className = 'text-pink-300 font-mono text-[9px] py-0.5';
+            div.textContent = `Frame #${recordedKeyframes.length} — Full pose`;
+            listEl.appendChild(div);
+            listEl.scrollTop = listEl.scrollHeight;
+            showToast(`Recorded frame #${recordedKeyframes.length}`);
+        }
+
+        function playRecordedAnimation() {
+            if (recordedKeyframes.length === 0) { showToast('Record frames first!'); return; }
+            customAnimPlaying = !customAnimPlaying;
+            animPlaybackTime = 0;
+            const btn = document.getElementById('btn-play-anim');
+            if (customAnimPlaying) {
+                btn.innerHTML = '<i class="fa-solid fa-pause mr-1"></i>Pause';
+                btn.className =
+                    'flex-1 min-w-[70px] bg-orange-500 hover:bg-orange-400 active:scale-95 text-white font-bold py-1.5 rounded-xl text-[10px]';
+                showToast('Playing custom animation...');
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-play mr-1"></i>Play';
+                btn.className =
+                    'flex-1 min-w-[70px] bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold py-1.5 rounded-xl text-[10px]';
+                showToast('Paused');
+            }
+        }
+
+        function exportAnimationData() {
+            if (recordedKeyframes.length === 0) { showToast('No animation to export!'); return; }
+            const json = JSON.stringify(recordedKeyframes, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'animation_sequence.json';
+            link.click();
+            showToast('Animation exported as JSON');
+        }
+
+        function clearAnimationData() {
+            recordedKeyframes = [];
+            document.getElementById('keyframe-count').textContent = '0 Frames';
+            document.getElementById('keyframe-list').textContent = 'No keyframes yet. Pose your avatar and hit Record.';
+            showToast('Animation cleared');
+        }
+
+        // ---------- HAIR TOGGLE ----------
+        function applyHairVisibility() {
+            character?.traverse(child => {
+                if (!child.isMesh) return;
+                const name = (child.name || '').toLowerCase();
+                if (name.includes('hair') || name.includes('beard') || name.includes('fur')) {
+                    child.visible = showHair;
+                }
+            });
+            const btn = document.getElementById('btn-toggle-hair');
+            if (showHair) {
+                btn.className =
+                    'hair-toggle-btn on panel px-2.5 py-2 btn-glow flex items-center gap-1 text-[10px] font-bold text-pink-300';
+            } else {
+                btn.className =
+                    'hair-toggle-btn off panel px-2.5 py-2 btn-glow flex items-center gap-1 text-[10px] font-bold';
+            }
+        }
+
+        // ---------- PART VISIBILITY ----------
+        function togglePartVisibility(type) {
+            character?.traverse(child => {
+                if (!child.isMesh) return;
+                const name = (child.name || '').toLowerCase();
+                let shouldToggle = false;
+                if (type === 'hair' && (name.includes('hair') || name.includes('beard') || name.includes('fur')))
+                    shouldToggle = true;
+                if (type === 'clothing' && (name.includes('skirt') || name.includes('shirt') || name.includes('pant') ||
+                        name.includes('dress') || name.includes('jacket') || name.includes('cloth'))) shouldToggle =
+                    true;
+                if (shouldToggle) {
+                    child.visible = !child.visible;
+                }
+                if (type === 'all') child.visible = true;
+            });
+            updateAssetPartsUI();
+            showToast(`${type} visibility toggled`);
+        }
+
+        // ---------- EFFECTS ----------
+        function applyEffectPreset(effect) {
+            if (primaryMaterials.length === 0) { showToast('No materials to apply effect!'); return; }
+            stopGlitchEffect();
+            currentEffect = effect;
+            primaryMaterials.forEach(mat => {
+                mat.transparent = false;
+                mat.opacity = 1;
+                mat.emissive = mat.emissive || new THREE.Color(0x000000);
+                mat.emissive.set(0x000000);
+                mat.emissiveIntensity = 0;
+                mat.wireframe = false;
+                switch (effect) {
+                    case 'cyberglitch':
+                        mat.color.set(0xec4899);
+                        mat.roughness = 0.1;
+                        mat.metalness = 0.9;
+                        mat.emissive.set(0xec4899);
+                        mat.emissiveIntensity = 0.35;
+                        startGlitchEffect();
+                        break;
+                    case 'ghost':
+                        mat.color.set(0xa78bfa);
+                        mat.roughness = 0.25;
+                        mat.metalness = 0.1;
+                        mat.transparent = true;
+                        mat.opacity = 0.55;
+                        mat.emissive.set(0xa78bfa);
+                        mat.emissiveIntensity = 0.6;
+                        break;
+                    case 'holo':
+                        mat.color.set(0x22d3ee);
+                        mat.roughness = 0.05;
+                        mat.metalness = 0.85;
+                        mat.transparent = true;
+                        mat.opacity = 0.7;
+                        mat.emissive.set(0x22d3ee);
+                        mat.emissiveIntensity = 0.9;
+                        break;
+                    case 'normal':
+                        mat.color.set(0xf5f5f5);
+                        mat.roughness = 0.4;
+                        mat.metalness = 0.05;
+                        mat.transparent = false;
+                        mat.opacity = 1;
+                        mat.emissive.set(0x000000);
+                        mat.emissiveIntensity = 0;
+                        break;
+                }
+                mat.needsUpdate = true;
+            });
+            showToast(`${effect} effect applied!`);
+        }
+
+        function startGlitchEffect() {
+            const overlay = document.getElementById('glitch-overlay');
+            overlay.classList.add('active');
+            glitchInterval = setInterval(() => {
+                if (character) {
+                    character.position.x = charPos.x + (Math.random() - 0.5) * 0.04;
+                    character.position.z = charPos.z + (Math.random() - 0.5) * 0.04;
+                    setTimeout(() => {
+                        if (character) { character.position.x = charPos.x;
+                            character.position.z = charPos.z; }
+                    }, 60);
+                }
+            }, 180);
+        }
+
+        function stopGlitchEffect() {
+            document.getElementById('glitch-overlay').classList.remove('active');
+            if (glitchInterval) { clearInterval(glitchInterval);
+                glitchInterval = null; }
+        }
+
+        // ---------- TEXTURE UPLOAD ----------
+        function setupTextureUpload() {
+            document.getElementById('texture-upload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const textureLoader = new THREE.TextureLoader();
+                textureLoader.load(URL.createObjectURL(file), (texture) => {
+                    primaryMaterials.forEach(mat => {
+                        mat.map = texture;
+                        mat.color.set(0xffffff);
+                        mat.needsUpdate = true;
+                    });
+                    showToast(`Texture applied: ${file.name}`);
+                }, undefined, () => showToast('Failed to load texture'));
+            });
+        }
+
+        // ---------- UI HELPERS ----------
+        function switchTab(tabId) {
+            const tabs = ['tab-pose', 'tab-anim', 'tab-materials', 'tab-parts', 'tab-effects'];
+            tabs.forEach(id => document.getElementById(id).classList.add('hidden'));
+            tabs.forEach(id => {
+                const btn = document.getElementById('btn-' + id);
+                btn.className = 'py-1.5 rounded-xl text-slate-400 hover:text-white transition-all';
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById('btn-' + tabId).className =
+                'py-1.5 rounded-xl text-pink-400 bg-slate-800 transition-all';
+        }
+
+        function updateBoneHierarchyUI() {
+            const listEl = document.getElementById('bone-hierarchy-list');
+            const totalBones = Object.values(skeletonBones).filter(b => b).length;
+            document.getElementById('bone-count-label').textContent = `${totalBones} mapped bones`;
+            if (totalBones === 0) {
+                listEl.innerHTML = '<div class="text-slate-500 italic text-[10px]">No bones mapped yet</div>';
+                return;
+            }
+            listEl.innerHTML = '';
+            Object.keys(boneGroups).forEach(key => {
+                const bone = skeletonBones[key];
+                if (!bone) return;
+                const group = boneGroups[key];
+                const isSelected = selectedBoneKey === key;
+                const div = document.createElement('div');
+                div.className =
+                    `bone-item flex items-center gap-1.5 px-2 py-1 rounded-lg border border-transparent ${isSelected ? 'selected' : ''}`;
+                div.innerHTML = `
+              <span class="bone-dot" style="background:${group.color};box-shadow:0 0 6px ${group.color}"></span>
+              <span class="flex-1 truncate text-slate-300 font-medium">${group.label}</span>
+              <span class="text-[8px] ${isSelected ? 'text-pink-400' : 'text-emerald-400'}">${isSelected ? '●' : '✓'}</span>
+            `;
+                div.onclick = () => {
+                    selectedBoneKey = isSelected ? null : key;
+                    if (selectedBoneKey) updatePoseSlidersForBone(key);
+                    document.getElementById('selected-bone-label').textContent = selectedBoneKey ?
+                        group.label : 'None selected';
+                    updateBoneHierarchyUI();
+                    updateBoneVisualPositions();
+                };
+                listEl.appendChild(div);
+            });
+        }
+
+        function updateAssetPartsUI() {
+            const listEl = document.getElementById('asset-parts-list');
+            const total = Object.values(assetParts).flat().length;
+            document.getElementById('asset-part-count').textContent = `${total}`;
+            if (total === 0) {
+                listEl.innerHTML = '<div class="text-slate-500 italic text-[10px]">No distinct parts detected.</div>';
+                return;
+            }
+            listEl.innerHTML = '';
+            const categories = [
+                { key: 'hair', label: '💇 Hair', color: 'text-purple-300' },
+                { key: 'clothing', label: '👕 Clothing', color: 'text-pink-300' },
+                { key: 'body', label: '🧍 Body', color: 'text-emerald-300' },
+                { key: 'accessories', label: '💎 Accessories', color: 'text-amber-300' },
+                { key: 'other', label: '📦 Other', color: 'text-slate-400' },
+            ];
+            categories.forEach(cat => {
+                assetParts[cat.key].forEach((part, idx) => {
+                    const div = document.createElement('div');
+                    div.className =
+                        'asset-card bg-slate-950/60 border border-slate-700 p-1.5 rounded-lg flex justify-between items-center cursor-pointer hover:border-pink-500/50';
+                    div.innerHTML = `
+                <span class="${cat.color} text-[9px] font-medium truncate">${part.name || `${cat.label} ${idx+1}`}</span>
+                <span class="text-[9px] ${part.visible ? 'text-emerald-400' : 'text-slate-500'}">${part.visible ? '👁' : '🚫'}</span>
+              `;
+                    div.onclick = () => {
+                        part.visible = !part.visible;
+                        updateAssetPartsUI();
+                    };
+                    listEl.appendChild(div);
+                });
+            });
+        }
+
+        function updatePoseLabels() {
+            const rx = parseFloat(document.getElementById('slider-pose-x').value);
+            const ry = parseFloat(document.getElementById('slider-pose-y').value);
+            const rz = parseFloat(document.getElementById('slider-pose-z').value);
+            document.getElementById('val-pose-x').textContent = (rx * (180 / Math.PI)).toFixed(1) + '°';
+            document.getElementById('val-pose-y').textContent = (ry * (180 / Math.PI)).toFixed(1) + '°';
+            document.getElementById('val-pose-z').textContent = (rz * (180 / Math.PI)).toFixed(1) + '°';
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-container');
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            toast.classList.remove('toast-enter');
+            void toast.offsetWidth;
+            toast.classList.add('toast-enter');
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => { toast.style.opacity = '0'; }, 2200);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // ---------- EXPORT ----------
+        function exportModel() {
+            if (!character) { showToast('No model to export!'); return; }
+            const exporter = new THREE.GLTFExporter();
+            exporter.parse(character, (result) => {
+                const blob = new Blob([result], { type: 'application/octet-stream' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'edited_avatar.glb';
+                link.click();
+                showToast('Model exported as GLB!');
+            }, (err) => { console.error(err);
+                showToast('Export failed'); }, { binary: true });
+        }
+
+        // ---------- SETUP CONTROLS ----------
+        function setupControls() {
+            // Skeleton toggle
+            document.getElementById('btn-toggle-skeleton').addEventListener('click', () => {
+                showSkeletonMode = !showSkeletonMode;
+                const btn = document.getElementById('btn-toggle-skeleton');
+                if (showSkeletonMode) {
+                    btn.className =
+                        'panel px-2.5 py-2 btn-glow flex items-center gap-1 text-[10px] font-bold text-emerald-300 border-emerald-500/50';
+                    if (character && !skeletonHelper) {
+                        skeletonHelper = new THREE.SkeletonHelper(character);
+                        scene.add(skeletonHelper);
+                    }
+                    boneVisualNodes.forEach(n => n.visible = true);
+                    boneVisualLines.forEach(l => l.visible = true);
+                    showToast('Skeleton overlay: ON');
+                } else {
+                    btn.className =
+                        'panel px-2.5 py-2 btn-glow flex items-center gap-1 text-[10px] font-bold text-slate-300';
+                    if (skeletonHelper) { scene.remove(skeletonHelper);
+                        skeletonHelper = null; }
+                    boneVisualNodes.forEach(n => n.visible = false);
+                    boneVisualLines.forEach(l => l.visible = false);
+                    showToast('Skeleton overlay: OFF');
+                }
+            });
+
+            // Hair toggle
+            document.getElementById('btn-toggle-hair').addEventListener('click', () => {
+                showHair = !showHair;
+                applyHairVisibility();
+                showToast(showHair ? 'Hair: ON' : 'Hair: OFF');
+            });
+
+            // Export
+            document.getElementById('btn-export-model').addEventListener('click', exportModel);
+
+            // Keyframe buttons
+            document.getElementById('btn-record-key').addEventListener('click', recordFullPose);
+            document.getElementById('btn-play-anim').addEventListener('click', playRecordedAnimation);
+            document.getElementById('btn-export-anim').addEventListener('click', exportAnimationData);
+            document.getElementById('btn-clear-anim').addEventListener('click', clearAnimationData);
+
+            // Pose sliders
+            const updatePoseFromSliders = () => {
+                const key = document.getElementById('pose-bone-select').value;
+                const bone = skeletonBones[key];
+                if (!bone) return;
+                bone.rotation.set(
+                    parseFloat(document.getElementById('slider-pose-x').value),
+                    parseFloat(document.getElementById('slider-pose-y').value),
+                    parseFloat(document.getElementById('slider-pose-z').value)
+                );
+                updatePoseLabels();
+                if (skeletonHelper) skeletonHelper.update();
+                if (selectedBoneKey === key) updateBoneVisualPositions();
+            };
+            ['slider-pose-x', 'slider-pose-y', 'slider-pose-z'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updatePoseFromSliders);
+            });
+            document.getElementById('pose-bone-select').addEventListener('change', () => {
+                const key = document.getElementById('pose-bone-select').value;
+                const bone = skeletonBones[key];
+                if (bone) updatePoseSlidersForBone(key);
+            });
+
+            // Material controls
+            document.getElementById('mat-color-1').addEventListener('input', (e) => {
+                primaryMaterials.forEach(m => m.color.set(e.target.value));
+                document.getElementById('mat-color-hex').textContent = e.target.value;
+            });
+            document.getElementById('mat-roughness').addEventListener('input', (e) => {
+                const v = parseFloat(e.target.value);
+                primaryMaterials.forEach(m => m.roughness = v);
+                document.getElementById('val-roughness').textContent = v.toFixed(2);
+            });
+            document.getElementById('mat-metalness').addEventListener('input', (e) => {
+                const v = parseFloat(e.target.value);
+                primaryMaterials.forEach(m => m.metalness = v);
+                document.getElementById('val-metalness').textContent = v.toFixed(2);
+            });
+
+            // Stop anim button
+            document.getElementById('btn-stop-anim').addEventListener('click', () => {
+                customAnimPlaying = false;
+                currentAnimPreset = 'idle';
+                document.getElementById('current-anim-label').textContent = 'Idle';
+                document.getElementById('btn-play-anim').innerHTML = '<i class="fa-solid fa-play mr-1"></i>Play';
+                document.getElementById('btn-play-anim').className =
+                    'flex-1 min-w-[70px] bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold py-1.5 rounded-xl text-[10px]';
+                setupAnimPresetUI();
+                showToast('Animation stopped');
+            });
+
+            // Expand/collapse bones
+            document.getElementById('btn-expand-bones').addEventListener('click', () => {
+                document.getElementById('bone-hierarchy-list').style.maxHeight = 'none';
+            });
+            document.getElementById('btn-collapse-bones').addEventListener('click', () => {
+                document.getElementById('bone-hierarchy-list').style.maxHeight = '150px';
+            });
+
+            // File uploads
+            const handleUpload = (e) => {
+                const file = e.target.files[0];
+                if (file) loadGLTFModel(URL.createObjectURL(file), file.name);
+            };
+            document.getElementById('gltf-upload').addEventListener('change', handleUpload);
+            document.getElementById('gltf-upload-hero').addEventListener('change', handleUpload);
+
+            // Camera swipe
+            const canvasContainer = document.getElementById('canvas-container');
+            canvasContainer.addEventListener('touchstart', (e) => {
+                if (e.target.closest('.panel') || e.target.closest('button') || e.target.closest('select') || e
+                    .target.closest('label') || e.target.closest('#persistent-dock')) return;
+                isSwiping = true;
+                prevTouchPos.x = e.touches[0].clientX;
+                prevTouchPos.y = e.touches[0].clientY;
+            }, { passive: true });
+            canvasContainer.addEventListener('touchmove', (e) => {
+                if (!isSwiping) return;
+                const t = e.touches[0];
+                cameraAngleX -= (t.clientX - prevTouchPos.x) * 0.006;
+                cameraAngleY = Math.max(0.05, Math.min(1.5, cameraAngleY - (t.clientY - prevTouchPos.y) * 0.006));
+                prevTouchPos.x = t.clientX;
+                prevTouchPos.y = t.clientY;
+            }, { passive: true });
+            canvasContainer.addEventListener('touchend', () => { isSwiping = false; }, { passive: true });
+
+            // Mouse drag camera
+            let mouseDown = false;
+            let lastMousePos = { x: 0, y: 0 };
+            canvasContainer.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.panel') || e.target.closest('button') || e.target.closest('select') || e
+                    .target.closest('label')) return;
+                mouseDown = true;
+                lastMousePos.x = e.clientX;
+                lastMousePos.y = e.clientY;
+                canvasContainer.style.cursor = 'grabbing';
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (!mouseDown) return;
+                cameraAngleX -= (e.clientX - lastMousePos.x) * 0.006;
+                cameraAngleY = Math.max(0.05, Math.min(1.5, cameraAngleY - (e.clientY - lastMousePos.y) * 0.006));
+                lastMousePos.x = e.clientX;
+                lastMousePos.y = e.clientY;
+            });
+            window.addEventListener('mouseup', () => {
+                mouseDown = false;
+                canvasContainer.style.cursor = 'default';
+            });
+        }
+
+        // ---------- MAIN LOOP ----------
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const time = Date.now() * 0.001;
+
+            // Custom animation playback
+            if (customAnimPlaying && recordedKeyframes.length > 0) {
+                animPlaybackTime += delta;
+                const frameIndex = Math.floor(animPlaybackTime * 2) % recordedKeyframes.length;
+                const frame = recordedKeyframes[frameIndex];
+                if (frame?.pose) {
+                    Object.keys(frame.pose).forEach(key => {
+                        const bone = skeletonBones[key];
+                        if (bone) {
+                            bone.rotation.set(frame.pose[key].rx, frame.pose[key].ry, frame.pose[key].rz);
+                        }
+                    });
+                    if (skeletonHelper) skeletonHelper.update();
+                }
+            } else if (character && !customAnimPlaying) {
+                // Preset animation
+                const pose = getAnimPose(time, currentAnimPreset);
+                applyPose(pose, 0.2); // Smooth blend factor
+            }
+
+            // Character physics
+            if (character) {
+                if (charPos.y > 0 || charVel.y !== 0) {
+                    charPos.y += charVel.y;
+                    charVel.y -= 0.018;
+                    if (charPos.y <= 0) { charPos.y = 0;
+                        charVel.y = 0; }
+                }
+                character.position.copy(charPos);
+
+                // Spring bones for hair/cloth
+                springBones.forEach((item, idx) => {
+                    const springTime = time + idx * 0.7;
+                    const targetX = (item.baseRotation?.x ?? -0.3) + Math.sin(springTime * 2.5) * 0.08;
+                    const targetZ = (item.baseRotation?.z ?? 0) + Math.cos(springTime * 2.0) * 0.08;
+                    item.bone.rotation.x += (targetX - item.bone.rotation.x) * 0.08;
+                    item.bone.rotation.z += (targetZ - item.bone.rotation.z) * 0.08;
+                });
+
+                if (skeletonHelper) skeletonHelper.update();
+                updateBoneVisualPositions();
+            }
+
+            // Camera follow
+            if (character) {
+                const cx = charPos.x + Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+                const cy = charPos.y + Math.sin(cameraAngleY) * cameraDistance + 0.7;
+                const cz = charPos.z + Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+                camera.position.lerp(new THREE.Vector3(cx, cy, cz), 0.12);
+                camera.lookAt(charPos.x, charPos.y + 0.7, charPos.z);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // ---------- BOOT ----------
+        window.onload = function() {
+            initGame();
+            updateBoneHierarchyUI();
+            updateAssetPartsUI();
+            updatePoseLabels();
+        };
+    </script>
+</body>
+</html>
