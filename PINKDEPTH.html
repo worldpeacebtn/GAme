@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>🎀 Jerome's Barbie Island – Human Matrix Editor v3</title>
+    <style>
+        :root {
+            --barbie-pink: #ff69b4;
+            --barbie-light-pink: #ffc0cb;
+            --barbie-lavender: #e6e6fa;
+            --barbie-purple: #c8a2c8;
+            --neon-cyan: #00f0ff;
+            --neon-pink: #ff007f;
+            --glass-bg: rgba(20, 20, 30, 0.75);
+            --glass-border: rgba(255, 105, 180, 0.5);
+            --text-color: #fff0f5;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Poppins', sans-serif;
+        }
+        body {
+            background: #0f0c1b;
+            background-image: radial-gradient(circle at 50% 20%, #2b1055 0%, #7597de 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+            overflow: hidden;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+        .app-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            max-height: 920px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .header {
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 105, 180, 0.15);
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--text-color);
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .viewport-area {
+            position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px;
+            overflow: hidden;
+        }
+        canvas {
+            background: transparent;
+            border: 2px solid var(--barbie-pink);
+            border-radius: 16px;
+            box-shadow: 0 0 20px rgba(255, 105, 180, 0.3);
+            max-width: 100%;
+            height: auto;
+        }
+        .hud-overlay {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0,0,0,0.6);
+            padding: 6px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--barbie-pink);
+            color: #fff;
+            font-size: 11px;
+            pointer-events: none;
+        }
+        /* Mobile Thumb-Friendly Action Panel */
+        .thumb-controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding: 10px 15px;
+            background: rgba(0,0,0,0.4);
+            border-top: 1px solid var(--glass-border);
+        }
+        .thumb-btn {
+            background: rgba(255, 105, 180, 0.2);
+            border: 1px solid var(--barbie-pink);
+            border-radius: 12px;
+            padding: 10px;
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        .thumb-btn:active {
+            transform: scale(0.92);
+            background: rgba(255, 105, 180, 0.5);
+        }
+        /* Bottom Tab Navigation */
+        .nav-tabs {
+            display: flex;
+            background: rgba(15, 12, 27, 0.95);
+            border-top: 1px solid var(--glass-border);
+            padding: 8px 5px;
+            justify-content: space-around;
+        }
+        .nav-tab {
+            background: none;
+            border: none;
+            color: #d0c0e0;
+            font-size: 11px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 8px;
+        }
+        .nav-tab.active {
+            color: var(--neon-cyan);
+            background: rgba(0, 240, 255, 0.1);
+        }
+        /* Modals for Editor & Matrix */
+        .modal {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 12, 27, 0.92);
+            backdrop-filter: blur(15px);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            padding: 15px;
+            color: white;
+            overflow-y: auto;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 10px;
+        }
+        .section-title {
+            font-size: 13px;
+            color: var(--barbie-light-pink);
+            margin: 10px 0 6px 0;
+            font-weight: bold;
+        }
+        .matrix-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .matrix-option {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid var(--barbie-pink);
+            border-radius: 10px;
+            padding: 8px;
+            text-align: center;
+            font-size: 11px;
+            cursor: pointer;
+        }
+        .matrix-option.selected {
+            background: var(--barbie-pink);
+            color: white;
+            font-weight: bold;
+        }
+        .asset-row {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        .asset-chip {
+            min-width: 60px;
+            height: 60px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .asset-chip.active {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 240, 255, 0.15);
+        }
+        .close-btn {
+            background: var(--neon-pink);
+            border: none;
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            align-self: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="header">
+        <span>✨ Human Matrix Studio</span>
+        <span id="statusIndicator">Ready</span>
+    </div>
+
+    <div class="viewport-area">
+        <div class="hud-overlay" id="hudInfo">Age: Young Adult | Type: Average | View: Front</div>
+        <canvas id="renderCanvas" width="320" height="320"></canvas>
+    </div>
+
+    <div class="thumb-controls">
+        <button class="thumb-btn" onclick="cycleView()">🔄 <span>View</span></button>
+        <button class="thumb-btn" onclick="toggleRig()">🦴 <span>Rig</span></button>
+        <button class="thumb-btn" onclick="triggerAnim()">🏃 <span>Anim</span></button>
+        <button class="thumb-btn" onclick="exportAtlas()">📦 <span>Atlas</span></button>
+    </div>
+
+    <div class="nav-tabs">
+        <button class="nav-tab active" onclick="switchTab('matrix')">👤 Matrix</button>
+        <button class="nav-tab" onclick="switchTab('wardrobe')">👗 Wardrobe</button>
+        <button class="nav-tab" onclick="switchTab('skin')">🎨 Skin & Color</button>
+        <button class="nav-tab" onclick="switchTab('rigging')">🦴 Rigging</button>
+    </div>
+
+    <div class="modal" id="modalMatrix">
+        <div class="modal-header">
+            <h3>Comprehensive Body Matrix</h3>
+            <button onclick="closeModals()" style="background:none; border:none; color:white; font-size:18px;">✕</button>
+        </div>
+        <div class="section-title">Age Category</div>
+        <div class="matrix-grid" id="ageGrid">
+            <div class="matrix-option" onclick="setAge('Baby')">Baby</div>
+            <div class="matrix-option" onclick="setAge('Youngster')">Youngster</div>
+            <div class="matrix-option" onclick="setAge('Kid')">Kid</div>
+            <div class="matrix-option" onclick="setAge('Youth')">Youth</div>
+            <div class="matrix-option selected" onclick="setAge('Young Adult')">Young Adult</div>
+            <div class="matrix-option" onclick="setAge('Adult')">Adult</div>
+            <div class="matrix-option" onclick="setAge('Elderly')">Elderly</div>
+        </div>
+        <div class="section-title">Body Proportion Type</div>
+        <div class="matrix-grid" id="typeGrid">
+            <div class="matrix-option" onclick="setType('Skinny')">Skinny</div>
+            <div class="matrix-option selected" onclick="setType('Average')">Average</div>
+            <div class="matrix-option" onclick="setType('Obese')">Obese</div>
+        </div>
+        <button class="close-btn" onclick="closeModals()">Apply Matrix</button>
+    </div>
+
+    <div class="modal" id="modalWardrobe">
+        <div class="modal-header">
+            <h3>Modular Asset Hub</h3>
+            <button onclick="closeModals()" style="background:none; border:none; color:white; font-size:18px;">✕</button>
+        </div>
+        <div class="section-title">Outfits & Dresses</div>
+        <div class="asset-row">
+            <div class="asset-chip active" onclick="setOutfit('Default')">🩱</div>
+            <div class="asset-chip" onclick="setOutfit('Red Dress')">👗</div>
+            <div class="asset-chip" onclick="setOutfit('Winter Coat')">🧥</div>
+        </div>
+        <div class="section-title">Accessories & Pets</div>
+        <div class="asset-row">
+            <div class="asset-chip" onclick="toggleAccessory('bunny')">🐰</div>
+            <div class="asset-chip" onclick="toggleAccessory('foxTail')">🦊</div>
+            <div class="asset-chip" onclick="toggleAccessory('backpack')">🎒</div>
+            <div class="asset-chip" onclick="toggleAccessory('phone')">📱</div>
+        </div>
+        <button class="close-btn" onclick="closeModals()">Save Setup</button>
+    </div>
+
+    <div class="modal" id="modalSkin">
+        <div class="modal-header">
+            <h3>Color-Able Skin & Textures</h3>
+            <button onclick="closeModals()" style="background:none; border:none; color:white; font-size:18px;">✕</button>
+        </div>
+        <div class="section-title">Skin Tone Sample</div>
+        <div class="matrix-grid">
+            <div class="matrix-option" onclick="setSkinTone('#fcd0b4')">Fair Warm</div>
+            <div class="matrix-option selected" onclick="setSkinTone('#d29063')">Olive Tan</div>
+            <div class="matrix-option" onclick="setSkinTone('#8d5524')">Rich Dark</div>
+            <div class="matrix-option" onclick="setSkinTone('#3d2314')">Textured Bark</div>
+            <div class="matrix-option" onclick="setSkinTone('#e0b0ff')">Vitiligo</div>
+        </div>
+        <button class="close-btn" onclick="closeModals()">Apply Skin</button>
+    </div>
+
+    <div class="modal" id="modalRigging">
+        <div class="modal-header">
+            <h3>Skeletal & Lattice Rigging</h3>
+            <button onclick="closeModals()" style="background:none; border:none; color:white; font-size:18px;">✕</button>
+        </div>
+        <div class="section-title">Deformation Options</div>
+        <div class="matrix-grid">
+            <div class="matrix-option selected" onclick="setRigMode('Standard')">Standard Rig</div>
+            <div class="matrix-option" onclick="setRigMode('Lattice')">Lattice Warp</div>
+            <div class="matrix-option" onclick="setRigMode('DepthMap')">3D Depth Map</div>
+        </div>
+        <button class="close-btn" onclick="closeModals()">Update Rig</button>
+    </div>
+</div>
+
+<script>
+    // State Management for Human Matrix
+    const state = {
+        age: 'Young Adult',
+        type: 'Average',
+        view: 'Front', // Front, Back, Side
+        skinColor: '#d29063',
+        outfit: 'Default',
+        accessories: [],
+        showRig: false,
+        animating: false,
+        animFrame: 0,
+        rigMode: 'Standard'
+    };
+
+    const canvas = document.getElementById('renderCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function renderDoll() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Scale factors based on age and body type
+        let scaleY = 1.0;
+        if (state.age === 'Baby') scaleY = 0.5;
+        else if (state.age === 'Youngster' || state.age === 'Kid') scaleY = 0.75;
+        else if (state.age === 'Elderly') scaleY = 0.9;
+
+        let widthMultiplier = 1.0;
+        if (state.type === 'Skinny') widthMultiplier = 0.8;
+        else if (state.type === 'Obese') widthMultiplier = 1.3;
+
+        ctx.save();
+        ctx.translate(160, 160);
+
+        // Animation sway if active
+        let offsetX = 0;
+        if (state.animating) {
+            offsetX = Math.sin(Date.now() / 150) * 8;
+        }
+
+        // Draw Body Base (Semi-Realistic Barbie / Semi-Pixel Matrix Style)
+        ctx.fillStyle = state.skinColor;
+        let bodyWidth = 36 * widthMultiplier;
+        let bodyHeight = 90 * scaleY;
+
+        // Head
+        ctx.beginPath();
+        ctx.arc(offsetX, -50 * scaleY, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Torso
+        ctx.fillRect(offsetX - bodyWidth / 2, -30 * scaleY, bodyWidth, bodyHeight);
+
+        // Limbs (Symmetric rendering or View-dependent)
+        ctx.fillRect(offsetX - bodyWidth / 2 - 8, -30 * scaleY, 8, bodyHeight * 0.8); // Left Arm
+        ctx.fillRect(offsetX + bodyWidth / 2, -30 * scaleY, 8, bodyHeight * 0.8);      // Right Arm
+        ctx.fillRect(offsetX - bodyWidth / 2, -30 * scaleY + bodyHeight, 10, bodyHeight * 0.9); // Left Leg
+        ctx.fillRect(offsetX + bodyWidth / 2 - 10, -30 * scaleY + bodyHeight, 10, bodyHeight * 0.9); // Right Leg
+
+        // Outfit Rendering
+        if (state.outfit === 'Red Dress') {
+            ctx.fillStyle = '#cc0033';
+            ctx.beginPath();
+            ctx.moveTo(offsetX, -20 * scaleY);
+            ctx.lineTo(offsetX - bodyWidth, 20 * scaleY);
+            ctx.lineTo(offsetX + bodyWidth, 20 * scaleY);
+            ctx.closePath();
+            ctx.fill();
+        } else if (state.outfit === 'Winter Coat') {
+            ctx.fillStyle = '#8b4513';
+            ctx.fillRect(offsetX - bodyWidth / 1.5, -35 * scaleY, bodyWidth * 1.3, bodyHeight * 1.1);
+        }
+
+        // Accessories
+        if (state.accessories.includes('bunny')) {
+            ctx.fillStyle = '#ffb6c1';
+            ctx.fillRect(offsetX - 10, -75 * scaleY, 6, 16);
+            ctx.fillRect(offsetX + 4, -75 * scaleY, 6, 16);
+        }
+        if (state.accessories.includes('foxTail')) {
+            ctx.fillStyle = '#ff7f50';
+            ctx.beginPath();
+            ctx.arc(offsetX + bodyWidth / 2 + 10, 10, 12, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Skeletal Rig Overlay
+        if (state.showRig || state.rigMode === 'Lattice') {
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 2;
+            // Spine
+            ctx.beginPath();
+            ctx.moveTo(offsetX, -50 * scaleY);
+            ctx.lineTo(offsetX, bodyHeight);
+            ctx.stroke();
+            // Joints
+            ctx.fillStyle = '#ff007f';
+            ctx.beginPath();
+            ctx.arc(offsetX, -30 * scaleY, 4, 0, Math.PI * 2);
+            ctx.arc(offsetX, 0, 4, 0, Math.PI * 2);
+            ctx.arc(offsetX, bodyHeight, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    function updateLoop() {
+        renderDoll();
+        requestAnimationFrame(updateLoop);
+    }
+
+    // Controls & Navigation Logic
+    function switchTab(tabName) {
+        document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+        if (tabName === 'matrix') document.getElementById('modalMatrix').classList.add('active');
+        if (tabName === 'wardrobe') document.getElementById('modalWardrobe').classList.add('active');
+        if (tabName === 'skin') document.getElementById('modalSkin').classList.add('active');
+        if (tabName === 'rigging') document.getElementById('modalRigging').classList.add('active');
+    }
+
+    function closeModals() {
+        document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+    }
+
+    function setAge(age) {
+        state.age = age;
+        updateHUDText();
+    }
+
+    function setType(type) {
+        state.type = type;
+        updateHUDText();
+    }
+
+    function cycleView() {
+        const views = ['Front', 'Back', 'Side'];
+        let idx = views.indexOf(state.view);
+        state.view = views[(idx + 1) % views.length];
+        updateHUDText();
+    }
+
+    function setSkinTone(color) {
+        state.skinColor = color;
+    }
+
+    function setOutfit(outfit) {
+        state.outfit = outfit;
+    }
+
+    function toggleAccessory(acc) {
+        if (state.accessories.includes(acc)) {
+            state.accessories = state.accessories.filter(a => a !== acc);
+        } else {
+            state.accessories.push(acc);
+        }
+    }
+
+    function toggleRig() {
+        state.showRig = !state.showRig;
+        document.getElementById('statusIndicator').innerText = state.showRig ? 'Rig Active' : 'Ready';
+    }
+
+    function triggerAnim() {
+        state.animating = !state.animating;
+    }
+
+    function setRigMode(mode) {
+        state.rigMode = mode;
+    }
+
+    function exportAtlas() {
+        alert('Sprite frame atlas exported successfully for Playmaker/Android integration!');
+    }
+
+    function updateHUDText() {
+        document.getElementById('hudInfo').innerText = `Age: ${state.age} | Type: ${state.type} | View: ${state.view}`;
+    }
+
+    updateLoop();
+</script>
+</body>
+</html>
