@@ -1,0 +1,1850 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+    <title>VRoid GLB Animator — Rig & Timeline Studio</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #060910;
+            --panel: rgba(10, 15, 26, .85);
+            --line: #253349;
+            --txt: #eaf0f8;
+            --pink: #ec4899;
+            --cyan: #22d3ee;
+            --green: #34d399;
+            --amber: #fbbf24;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: var(--bg);
+            color: var(--txt);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+            font-size: 13px;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        button,
+        input,
+        select {
+            font: inherit;
+            outline: none;
+            border: none;
+            background: transparent;
+            color: inherit;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        button {
+            cursor: pointer;
+        }
+        .glass {
+            background: var(--panel);
+            border: 1px solid rgba(70, 88, 115, .6);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .3);
+            border-radius: 14px;
+        }
+        .btn {
+            border: 1px solid #2a3850;
+            background: #131e31;
+            color: #e6ecf5;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 11px;
+            transition: .15s;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn:hover {
+            background: #1d2b45;
+            border-color: #3d5274;
+        }
+        .btn:active {
+            transform: scale(.95);
+        }
+        .btn.active {
+            border-color: var(--pink);
+            background: rgba(236, 72, 153, .18);
+            color: #f9a8d4;
+        }
+        .btn-icon {
+            padding: 6px 8px;
+            font-size: 13px;
+            border-radius: 8px;
+        }
+        #viewport {
+            position: fixed;
+            inset: 0;
+            touch-action: none;
+        }
+        .hud {
+            pointer-events: none;
+        }
+        .hud>* {
+            pointer-events: auto;
+        }
+        #topbar {
+            position: fixed;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            z-index: 40;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 10px;
+        }
+        #topbar .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 0;
+        }
+        #topbar .brand .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #ef4444;
+            flex-shrink: 0;
+            transition: .3s;
+        }
+        #topbar .brand .dot.loaded {
+            background: #34d399;
+            box-shadow: 0 0 10px #34d399;
+        }
+        #topbar .brand .name {
+            font-size: 11px;
+            font-weight: 700;
+            color: #f472b6;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 130px;
+        }
+        #topbar .actions {
+            display: flex;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+        #asset-dock {
+            position: fixed;
+            left: 8px;
+            top: 50px;
+            bottom: 130px;
+            width: 210px;
+            z-index: 25;
+            display: flex;
+            flex-direction: column;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        #asset-dock .dock-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px 4px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #9ab0d4;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+        #asset-dock .dock-header .stats {
+            font-weight: 400;
+            color: #6b7f9e;
+            font-size: 9px;
+        }
+        #cats {
+            display: flex;
+            gap: 3px;
+            overflow-x: auto;
+            padding: 4px 6px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        #cats::-webkit-scrollbar {
+            display: none;
+        }
+        .cat {
+            white-space: nowrap;
+            border: 1px solid #263449;
+            background: #0e1828;
+            border-radius: 999px;
+            padding: 3px 7px;
+            font-size: 8px;
+            color: #8fa3c2;
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            flex-shrink: 0;
+        }
+        .cat.active {
+            border-color: #ec4899;
+            color: #f9a8d4;
+            background: rgba(236, 72, 153, .15);
+        }
+        #asset-scroll {
+            overflow: auto;
+            min-height: 0;
+            padding: 6px;
+            flex: 1;
+        }
+        .asset-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px;
+        }
+        .asset-card {
+            min-height: 40px;
+            border: 1px solid #263449;
+            background: rgba(15, 24, 38, .8);
+            border-radius: 8px;
+            padding: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            text-align: center;
+            font-size: 8px;
+            line-height: 1.1;
+            cursor: pointer;
+            transition: .15s;
+            overflow: hidden;
+        }
+        .asset-card:hover,
+        .asset-card.active {
+            border-color: #ec4899aa;
+            background: rgba(236, 72, 153, .13);
+        }
+        .asset-card.hidden-part {
+            opacity: .4;
+        }
+        .asset-card .icon {
+            font-size: 12px;
+            color: #8fa3c2;
+        }
+        .asset-card.active .icon {
+            color: #f9a8d4;
+        }
+        .asset-card .name {
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #cbd5e1;
+        }
+        .asset-card .cat {
+            font-size: 7px;
+            color: #64748b;
+            border: none;
+            background: none;
+            padding: 0;
+        }
+        #bottom-panel {
+            position: fixed;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            height: 115px;
+            z-index: 30;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        #tabs {
+            display: flex;
+            gap: 2px;
+            padding: 4px 6px;
+            border-bottom: 1px solid #1e2b3f;
+            flex-shrink: 0;
+            overflow-x: auto;
+        }
+        #tabs::-webkit-scrollbar {
+            display: none;
+        }
+        .tab {
+            white-space: nowrap;
+            padding: 4px 10px;
+            border-radius: 7px;
+            font-size: 9px;
+            color: #9ab0d4;
+            border: 1px solid transparent;
+            transition: .15s;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+            font-weight: 600;
+        }
+        .tab.active {
+            color: #f9a8d4;
+            background: rgba(236, 72, 153, .14);
+            border-color: #ec489966;
+        }
+        .panel-scroll {
+            overflow: auto;
+            padding: 6px 8px;
+            flex: 1;
+            min-height: 0;
+        }
+        #panel-pose .row,
+        #panel-material .row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .slider-group {
+            background: #0d1626;
+            border-radius: 7px;
+            padding: 4px 6px;
+            flex: 1;
+            min-width: 70px;
+        }
+        .slider-group .label {
+            font-size: 8px;
+            color: #7a8faf;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 2px;
+        }
+        .slider-group .label b {
+            color: #d6e2f2;
+            font-weight: 600;
+        }
+        .slider-group input[type=range] {
+            width: 100%;
+            accent-color: #ec4899;
+            height: 4px;
+            cursor: pointer;
+        }
+        .mini {
+            font-size: 8px;
+            color: #6b7f9e;
+        }
+        #joystick {
+            position: fixed;
+            left: 18px;
+            bottom: 140px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            z-index: 45;
+            display: none;
+            border: 2px solid rgba(236, 72, 153, .45);
+            background: rgba(10, 15, 26, .75);
+            touch-action: none;
+            box-shadow: 0 0 24px rgba(236, 72, 153, .15);
+        }
+        #joy-thumb {
+            position: absolute;
+            left: 28px;
+            top: 28px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(236, 72, 153, .7);
+            border: 2px solid #ffffff55;
+            transition: transform .05s;
+            pointer-events: none;
+        }
+        #joy-label {
+            position: absolute;
+            bottom: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            color: #9ab0d4;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        #game-buttons {
+            position: fixed;
+            right: 14px;
+            bottom: 140px;
+            z-index: 45;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+        }
+        .game-btn {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 2px solid rgba(52, 211, 153, .5);
+            background: rgba(10, 15, 26, .8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #34d399;
+            transition: .15s;
+            box-shadow: 0 0 18px rgba(52, 211, 153, .2);
+            touch-action: manipulation;
+        }
+        .game-btn:active {
+            transform: scale(.88);
+            background: rgba(52, 211, 153, .2);
+        }
+        .game-btn.jump {
+            border-color: rgba(251, 191, 36, .5);
+            color: #fbbf24;
+            box-shadow: 0 0 18px rgba(251, 191, 36, .2);
+        }
+        .game-btn.jump:active {
+            background: rgba(251, 191, 36, .2);
+        }
+        #reticle {
+            position: fixed;
+            z-index: 22;
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #34d399;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            box-shadow: 0 0 14px #34d399aa;
+        }
+        #toast {
+            position: fixed;
+            left: 50%;
+            top: 50px;
+            transform: translateX(-50%);
+            z-index: 60;
+            opacity: 0;
+            pointer-events: none;
+            transition: .25s;
+            border-radius: 999px;
+            padding: 6px 16px;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(10, 15, 26, .92);
+            border: 1px solid #3d5274;
+            color: #eaf0f8;
+            white-space: nowrap;
+        }
+        #drop {
+            position: fixed;
+            inset: 0;
+            z-index: 55;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(6, 9, 16, .88);
+        }
+        #drop .box {
+            border: 2px dashed #ec489988;
+            border-radius: 20px;
+            padding: 30px 40px;
+            text-align: center;
+            background: #0d1626e8;
+        }
+        #timeline-bar {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        #timeline-track {
+            flex: 1;
+            min-width: 120px;
+            height: 20px;
+            background: #0d1626;
+            border-radius: 6px;
+            position: relative;
+            cursor: pointer;
+            border: 1px solid #263449;
+            overflow: hidden;
+        }
+        #timeline-track .playhead {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ec4899;
+            pointer-events: none;
+            box-shadow: 0 0 8px #ec4899;
+        }
+        #timeline-track .key-marker {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 10px;
+            height: 10px;
+            background: #fbbf24;
+            border-radius: 50%;
+            border: 1px solid #fff8;
+            cursor: pointer;
+            pointer-events: auto;
+        }
+        #timeline-track .key-marker.selected {
+            background: #ec4899;
+            box-shadow: 0 0 10px #ec4899;
+        }
+        #anim-clips {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .clip-btn {
+            border: 1px solid #3d5274;
+            background: #131e31;
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 8px;
+            color: #9ab0d4;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: .15s;
+            white-space: nowrap;
+        }
+        .clip-btn:hover {
+            border-color: #ec4899;
+            color: #f9a8d4;
+        }
+        .clip-btn.playing {
+            border-color: #34d399;
+            color: #34d399;
+            background: rgba(52, 211, 153, .1);
+        }
+        #binding-map {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 9px;
+            color: #9ab0d4;
+        }
+        .binding-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: #0d1626;
+            border-radius: 6px;
+            padding: 4px 8px;
+        }
+        .binding-row .key {
+            background: #1d2b45;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-weight: 700;
+            font-size: 8px;
+            color: #fbbf24;
+            min-width: 30px;
+            text-align: center;
+        }
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ec489966;
+            border-radius: 99px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        @media(max-width:700px) {
+            #asset-dock {
+                left: 4px;
+                top: 48px;
+                bottom: 125px;
+                width: 165px;
+            }
+            .asset-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            #bottom-panel {
+                left: 4px;
+                right: 4px;
+                bottom: 4px;
+                height: 108px;
+            }
+            #topbar {
+                top: 4px;
+                left: 4px;
+                right: 4px;
+                padding: 3px 5px;
+            }
+            #topbar .brand .name {
+                max-width: 80px;
+                font-size: 9px;
+            }
+            #joystick {
+                width: 80px;
+                height: 80px;
+                left: 10px;
+                bottom: 125px;
+            }
+            #joy-thumb {
+                left: 22px;
+                top: 22px;
+                width: 32px;
+                height: 32px;
+            }
+            #game-buttons {
+                right: 8px;
+                bottom: 125px;
+                gap: 6px;
+            }
+            .game-btn {
+                width: 42px;
+                height: 42px;
+                font-size: 16px;
+            }
+            .hide-mobile {
+                display: none !important;
+            }
+            #drop .box {
+                padding: 20px 24px;
+                border-radius: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="viewport"></div>
+    <div id="drop"><div class="box"><div class="text-3xl mb-2">🧍‍♀️</div><div class="font-bold text-sm">Drop GLB / GLTF here</div><div class="mini mt-2 text-xs">or use Upload button</div></div></div>
+
+    <!-- TOP BAR -->
+    <div id="topbar" class="glass hud">
+        <div class="brand">
+            <div class="dot" id="status-dot"></div>
+            <div>
+                <div style="font-size:7px;text-transform:uppercase;letter-spacing:.5px;color:#6b7f9e;font-weight:700;">VRoid Animator</div>
+                <div class="name" id="modelName">No model</div>
+            </div>
+        </div>
+        <div class="actions">
+            <button id="skeletonBtn" class="btn btn-icon" title="Toggle Skeleton"><i class="fa-solid fa-bone text-emerald-400"></i></button>
+            <button id="focusBtn" class="btn btn-icon" title="Focus Model"><i class="fa-solid fa-crosshairs text-sky-400"></i></button>
+            <label class="btn btn-icon cursor-pointer" title="Upload GLB"><i class="fa-solid fa-upload text-cyan-300"></i><input id="upload" type="file" accept=".glb,.gltf" hidden></label>
+            <button id="exportBtn" class="btn btn-icon" title="Export GLB"><i class="fa-solid fa-download text-emerald-300"></i></button>
+            <button id="playNowBtn" class="btn active" title="Play instantly"><i class="fa-solid fa-play text-pink-400"></i><span class="hide-mobile"> Play</span></button>
+        </div>
+    </div>
+
+    <!-- ASSET DOCK -->
+    <aside id="asset-dock" class="glass hud">
+        <div class="dock-header">
+            <span>Assets / Rig</span>
+            <span class="stats" id="stats">0 bones · 0 parts</span>
+        </div>
+        <div id="cats"></div>
+        <div id="asset-scroll"></div>
+    </aside>
+
+    <!-- JOYSTICK & GAME HUD -->
+    <div id="joystick" class="hud"><div id="joy-thumb"></div><div id="joy-label">← WALK · RUN →</div></div>
+    <div id="game-buttons" class="hud">
+        <button class="game-btn jump" id="jumpBtn" title="Jump (Space)"><i class="fa-solid fa-arrow-up"></i></button>
+        <button class="game-btn" id="crouchBtn" title="Crouch (Shift)"><i class="fa-solid fa-arrow-down"></i></button>
+    </div>
+    <div id="reticle"></div>
+    <div id="toast"></div>
+
+    <!-- BOTTOM PANEL -->
+    <div id="bottom-panel" class="glass hud">
+        <div id="tabs">
+            <button class="tab active" data-tab="pose">Pose</button>
+            <button class="tab" data-tab="anim">Timeline</button>
+            <button class="tab" data-tab="material">Material</button>
+            <button class="tab" data-tab="game">Game</button>
+        </div>
+        <div class="panel-scroll">
+            <!-- POSE TAB -->
+            <section id="panel-pose">
+                <div class="row" style="margin-bottom:4px;gap:3px;">
+                    <select id="boneSelect" style="background:#0d1626;border:1px solid #263449;border-radius:6px;padding:3px 6px;font-size:10px;flex:1;min-width:0;"></select>
+                    <button id="resetBone" class="btn btn-icon" title="Reset Bone">↺</button>
+                    <button id="keyBtn" class="btn" style="background:#ec4899;border-color:#ec4899;color:#fff;font-weight:700;" title="Add Keyframe">＋Key</button>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:3px;">
+                    <label class="slider-group"><div class="label">RX <b id="vx">0°</b></div><input id="rx" type="range" min="-3.1416" max="3.1416" step="0.002"></label>
+                    <label class="slider-group"><div class="label">RY <b id="vy">0°</b></div><input id="ry" type="range" min="-3.1416" max="3.1416" step="0.002"></label>
+                    <label class="slider-group"><div class="label">RZ <b id="vz">0°</b></div><input id="rz" type="range" min="-3.1416" max="3.1416" step="0.002"></label>
+                    <label class="slider-group"><div class="label">PX <b id="vpvx">0</b></div><input id="px" type="range" min="-0.5" max="0.5" step="0.002"></label>
+                    <label class="slider-group"><div class="label">PY <b id="vpvy">0</b></div><input id="py" type="range" min="-0.5" max="0.5" step="0.002"></label>
+                    <label class="slider-group"><div class="label">PZ <b id="vpvz">0</b></div><input id="pz" type="range" min="-0.5" max="0.5" step="0.002"></label>
+                </div>
+                <div class="mini" style="margin-top:3px;">Drag bone spheres in 3D to pose. Two-finger = camera orbit/zoom. Shift/Ctrl = stronger drag.</div>
+            </section>
+
+            <!-- ANIM TAB -->
+            <section id="panel-anim" class="hidden">
+                <div class="row" style="gap:3px;margin-bottom:4px;flex-wrap:wrap;">
+                    <button id="record" class="btn" style="background:#ec4899;border-color:#ec4899;color:#fff;font-weight:700;">● Rec</button>
+                    <button id="playAnim" class="btn" style="background:#8b5cf6;border-color:#8b5cf6;color:#fff;">▶ Play</button>
+                    <button id="stopAnim" class="btn">■</button>
+                    <button id="clearKeys" class="btn">Clear</button>
+                    <button id="exportAnim" class="btn text-emerald-300">JSON</button>
+                    <button id="saveClip" class="btn text-pink-300">Save Clip</button>
+                    <span id="keyCount" class="mini" style="margin-left:auto;">0 keys</span>
+                </div>
+                <div id="timeline-bar" style="margin-bottom:4px;">
+                    <span class="mini" id="timeDisplay">0.00s</span>
+                    <div id="timeline-track"><div class="playhead" id="playhead" style="left:0%;"></div></div>
+                    <span class="mini" id="totalTime">0.00s</span>
+                </div>
+                <div style="margin-bottom:4px;">
+                    <div class="mini" style="margin-bottom:2px;font-weight:700;text-transform:uppercase;">Animation Clips</div>
+                    <div id="anim-clips"></div>
+                </div>
+                <div>
+                    <div class="mini" style="margin-bottom:2px;font-weight:700;text-transform:uppercase;">Templates</div>
+                    <div id="templates" style="display:flex;gap:3px;flex-wrap:wrap;"></div>
+                </div>
+            </section>
+
+            <!-- MATERIAL TAB -->
+            <section id="panel-material" class="hidden">
+                <div class="row" style="gap:3px;margin-bottom:4px;">
+                    <select id="matTarget" style="background:#0d1626;border:1px solid #263449;border-radius:6px;padding:3px 6px;font-size:9px;flex:1;min-width:0;"></select>
+                    <input id="color" type="color" value="#ffffff" style="width:28px;height:24px;border-radius:4px;border:1px solid #263449;background:#0d1626;cursor:pointer;">
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-bottom:4px;">
+                    <label class="slider-group"><div class="label">Rough <b id="roughV">.5</b></div><input id="rough" type="range" min="0" max="1" step="0.01" value="0.5"></label>
+                    <label class="slider-group"><div class="label">Metal <b id="metalV">.1</b></div><input id="metal" type="range" min="0" max="1" step="0.01" value="0.1"></label>
+                    <label class="slider-group"><div class="label">Opac <b id="opacityV">1</b></div><input id="opacity" type="range" min="0" max="1" step="0.01" value="1"></label>
+                </div>
+                <div style="display:flex;gap:3px;flex-wrap:wrap;">
+                    <button class="btn" data-fx="normal">Normal</button>
+                    <button class="btn text-pink-300" data-fx="cyber">Cyber</button>
+                    <button class="btn text-cyan-300" data-fx="holo">Holo</button>
+                    <button class="btn text-purple-300" data-fx="ghost">Ghost</button>
+                    <button id="texToggle" class="btn text-amber-300" title="Toggle Textures">🖼️ Tex</button>
+                </div>
+                <div class="mini" style="margin-top:3px;">Textures preserved from GLB. Color only tints untextured meshes.</div>
+            </section>
+
+            <!-- GAME TAB -->
+            <section id="panel-game" class="hidden">
+                <div class="row" style="gap:3px;margin-bottom:4px;flex-wrap:wrap;">
+                    <button id="gameMode" class="btn" style="background:#34d39933;border-color:#34d39966;">🎮 Enable Game</button>
+                    <span class="mini">WASD/arrows · Space jump · Shift crouch · Joystick push harder = RUN</span>
+                </div>
+                <div>
+                    <div class="mini" style="margin-bottom:3px;font-weight:700;text-transform:uppercase;">Button / Key Bindings</div>
+                    <div id="binding-map"></div>
+                </div>
+                <div class="mini" style="margin-top:3px;">Walk <b style="color:#34d399;">1.8 m/s</b> · Run <b style="color:#fbbf24;">4.5 m/s</b> · Jump <b style="color:#fbbf24;">0.35 m/s²</b></div>
+            </section>
+        </div>
+    </div>
+
+    <script type="importmap">
+        {"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+
+        const $ = id => document.getElementById(id);
+        let scene, camera, renderer, controls, character = null,
+            skeletonHelper = null;
+        let bones = [],
+            parts = [],
+            boneMap = {},
+            markers = [],
+            selectedBone = null,
+            selectedPart = 'all',
+            showSkeleton = false,
+            category = 'All',
+            mode = 'pose',
+            clock = new THREE.Clock();
+        let keys = [],
+            playing = false,
+            playTime = 0,
+            recording = false,
+            keyInterval = 0.3;
+        let originalMaterials = new Map(),
+            originalTextures = new Map(),
+            texVisible = true,
+            activeDrag = null,
+            pointerDown = null,
+            selectedKeyIndex = -1;
+        let game = { w: false, s: false, a: false, d: false, jump: false, crouch: false, vy: 0, running: false };
+        let animationClips = {}; // named clips saved by user
+        let templateAnimations = {}; // auto-generated from templates
+        let activeClipName = null;
+        let embeddedClips = []; // animations from GLB
+
+        const ray = new THREE.Raycaster(),
+            mouse = new THREE.Vector2();
+        const _v = new THREE.Vector3(),
+            _box = new THREE.Box3(),
+            _center = new THREE.Vector3(),
+            _size = new THREE.Vector3();
+
+        const categories = [
+            ['All', 'fa-layer-group'],
+            ['Head', 'fa-face-smile'],
+            ['Torso', 'fa-person'],
+            ['L Arm', 'fa-hand'],
+            ['R Arm', 'fa-hand'],
+            ['L Leg', 'fa-person-running'],
+            ['R Leg', 'fa-person-running'],
+            ['Hair', 'fa-wand-magic-sparkles'],
+            ['Other', 'fa-cubes']
+        ];
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x060910);
+            camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.04, 80);
+            camera.position.set(2.5, 1.6, 4.2);
+            renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: false });
+            renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+            renderer.setSize(innerWidth, innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            renderer.outputColorSpace = THREE.SRGBColorSpace;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.1;
+            $('viewport').appendChild(renderer.domElement);
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.08;
+            controls.minDistance = 0.8;
+            controls.maxDistance = 15;
+            controls.maxPolarAngle = Math.PI * 0.93;
+            controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+            scene.add(new THREE.HemisphereLight(0xddeeff, 0x182033, 1.4));
+            const key = new THREE.DirectionalLight(0xffffff, 2.2);
+            key.position.set(4, 7, 5);
+            key.castShadow = true;
+            key.shadow.mapSize.set(1024, 1024);
+            key.shadow.camera.near = 0.1;
+            key.shadow.camera.far = 30;
+            key.shadow.camera.left = -8;
+            key.shadow.camera.right = 8;
+            key.shadow.camera.top = 8;
+            key.shadow.camera.bottom = -8;
+            scene.add(key);
+            const rim = new THREE.DirectionalLight(0xff9ac8, 0.8);
+            rim.position.set(-4, 4, -5);
+            scene.add(rim);
+            const grid = new THREE.GridHelper(20, 40, 0x334155, 0x172033);
+            scene.add(grid);
+            window.addEventListener('resize', resize);
+            bind();
+            renderCategories();
+            renderTemplates();
+            updateBindings();
+            animate();
+        }
+
+        function resize() { camera.aspect = innerWidth / innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(innerWidth, innerHeight) }
+
+        function bind() {
+            $('upload').onchange = e => { if (e.target.files[0]) loadFile(e.target.files[0]);
+                e.target.value = '' };
+            $('exportBtn').onclick = exportGLB;
+            $('skeletonBtn').onclick = toggleSkeleton;
+            $('focusBtn').onclick = focusModel;
+            $('playNowBtn').onclick = () => { if (character) { setMode('game');
+                    showToast('🎮 Game mode — go!') } };
+            $('boneSelect').onchange = () => selectBone(boneMap[$('boneSelect').value] || null);
+            ['rx', 'ry', 'rz', 'px', 'py', 'pz'].forEach((id, i) => $(id).oninput = applySliders);
+            $('resetBone').onclick = resetSelected;
+            $('keyBtn').onclick = recordKey;
+            $('record').onclick = toggleRecording;
+            $('playAnim').onclick = () => { if (keys.length) { playing = true;
+                    playTime = 0;
+                    selectedKeyIndex = -1;
+                    showToast('▶ Timeline playing') } };
+            $('stopAnim').onclick = () => { playing = false;
+                showToast('Stopped') };
+            $('clearKeys').onclick = clearKeys;
+            $('exportAnim').onclick = exportAnimation;
+            $('saveClip').onclick = saveClip;
+            $('gameMode').onclick = () => setMode(mode === 'game' ? 'pose' : 'game');
+            document.querySelectorAll('.tab').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
+            document.querySelectorAll('[data-fx]').forEach(b => b.onclick = () => applyFX(b.dataset.fx));
+            ['color', 'rough', 'metal', 'opacity'].forEach(id => $(id).addEventListener('input',
+            applyMaterial));
+            $('matTarget').onchange = e => { selectedPart = e.target.value;
+                renderAssets() };
+            $('texToggle').onclick = toggleTextures;
+            renderer.domElement.addEventListener('pointerdown', onPointerDown, { passive: false });
+            renderer.domElement.addEventListener('pointermove', onPointerMove, { passive: false });
+            renderer.domElement.addEventListener('pointerup', onPointerUp, { passive: false });
+            renderer.domElement.addEventListener('pointercancel', onPointerUp, { passive: false });
+            window.addEventListener('keydown', keyDown);
+            window.addEventListener('keyup', keyUp);
+            setupJoystick();
+            setupJumpButton();
+            setupDrop();
+            setupTimelineClick();
+        }
+
+        function setupDrop() {
+            const d = $('drop');
+            ['dragenter', 'dragover'].forEach(e => window.addEventListener(e, x => { x.preventDefault();
+                d.style.display = 'flex' }));
+            ['dragleave', 'drop'].forEach(e => window.addEventListener(e, x => { x.preventDefault(); if (e ===
+                    'dragleave' && !x.relatedTarget) d.style.display = 'none' }));
+            window.addEventListener('drop', e => { d.style.display = 'none';
+                const f = e.dataTransfer.files[0]; if (f && /\.gltf?$/i.test(f.name)) loadFile(f) });
+        }
+
+        function loadFile(file) {
+            const loader = new GLTFLoader();
+            const url = URL.createObjectURL(file);
+            loader.load(url, g => {
+                URL.revokeObjectURL(url);
+                if (character) disposeCharacter();
+                character = g.scene;
+                character.position.set(0, 0, 0);
+                character.rotation.set(0, 0, 0);
+                character.scale.set(1, 1, 1);
+                scene.add(character);
+                scanRig();
+                normalizeModel();
+                focusModel();
+                $('modelName').textContent = file.name;
+                $('status-dot').classList.add('loaded');
+                showToast('✅ Loaded ' + file.name);
+                embeddedClips = g.animations || [];
+                if (embeddedClips.length) showToast(embeddedClips.length + ' embedded animation(s) found');
+                generateTemplates();
+                // instant play
+                setTimeout(() => { if (character && mode !== 'game') { setMode('game');
+                        showToast('🎮 Auto-play enabled') } }, 600);
+            }, undefined, e => { console.error(e);
+                showToast('❌ Failed to load model') });
+        }
+
+        function disposeCharacter() {
+            if (skeletonHelper) { scene.remove(skeletonHelper);
+                skeletonHelper = null }
+            markers.forEach(m => scene.remove(m.s));
+            markers = [];
+            if (character) {
+                scene.remove(character);
+                character.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material) { const a = Array
+                            .isArray(o.material) ? o.material : [o.material];
+                        a.forEach(m => m.dispose()) } });
+            }
+            character = null;
+        }
+
+        function scanRig() {
+            bones = [];
+            parts = [];
+            boneMap = {};
+            originalMaterials.clear();
+            originalTextures.clear();
+            character.traverse(o => {
+                if (o.isBone || o.type === 'Bone') { bones.push(o);
+                    o.userData.baseRotation = o.rotation.clone();
+                    o.userData.basePosition = o.position.clone();
+                    mapBone(o) }
+                if (o.isMesh || o.isSkinnedMesh) { parts.push(o);
+                    o.castShadow = true;
+                    o.receiveShadow = true;
+                    saveMaterials(o) }
+            });
+            if (!boneMap.spine && bones[0]) boneMap.spine = bones[0];
+            if (!boneMap.head && bones[1]) boneMap.head = bones[1];
+            selectedBone = boneMap.spine || bones[0] || null;
+            createMarkers();
+            renderAssets();
+            populateBoneSelect();
+            populateMaterials();
+            $('stats').textContent = `${bones.length} bones · ${parts.length} parts`;
+            if (selectedBone) syncSliders();
+        }
+
+        function mapBone(b) {
+            const n = norm(b.name);
+            const isLeft = n.includes('left') || /(^|[_\\.\\-])l($|[_\\.\\-])/.test(n);
+            const isRight = n.includes('right') || /(^|[_\\.\\-])r($|[_\\.\\-])/.test(n);
+            const side = isLeft ? 'L' : isRight ? 'R' : '';
+            const set = (k) => { if (!boneMap[k]) boneMap[k] = b };
+            if (/hip|pelvis/.test(n)) set('spine');
+            else if (/spine|chest|torso|back/.test(n)) set('spine');
+            else if (/head|neck/.test(n)) set('head');
+            else if (/forearm|lowerarm|elbow/.test(n)) set(side === 'L' ? 'leftForearm' : 'rightForearm');
+            else if (/upperarm|shoulder|arm/.test(n)) set(side === 'L' ? 'leftArm' : 'rightArm');
+            else if (/shin|calf|lowerleg|knee/.test(n)) set(side === 'L' ? 'leftShin' : 'rightShin');
+            else if (/thigh|upperleg|upleg|leg/.test(n)) set(side === 'L' ? 'leftLeg' : 'rightLeg');
+            else if (/toe|foot/.test(n)) set(side === 'L' ? 'leftToe' : 'rightToe');
+            else if (/hand|finger|thumb/.test(n)) set(side === 'L' ? 'leftHand' : 'rightHand');
+            else if (/hair|ponytail|bang/.test(n)) set('hair');
+        }
+
+        function norm(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ') }
+
+        function normalizeModel() {
+            character.updateMatrixWorld(true);
+            _box.setFromObject(character);
+            _size.copy(_box.getSize(_v));
+            if (_size.y > 0.01 && _size.y < 0.3) { showToast('⚠️ Model appears very small, auto-scaling') }
+            const targetHeight = 2.1;
+            const s = Math.abs(_size.y) > 0.001 ? targetHeight / _size.y : 1;
+            character.scale.setScalar(s);
+            character.updateMatrixWorld(true);
+            _box.setFromObject(character);
+            character.position.y -= _box.min.y;
+            character.updateMatrixWorld(true);
+        }
+
+        function createMarkers() {
+            markers.forEach(m => scene.remove(m.s));
+            markers = [];
+            const geo = new THREE.SphereGeometry(0.045, 10, 10);
+            bones.forEach(b => {
+                const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0x34d399, depthTest: false,
+                    transparent: true, opacity: 0.9 }));
+                m.renderOrder = 999;
+                m.userData.bone = b;
+                m.userData.isBoneMarker = true;
+                scene.add(m);
+                markers.push({ s: m, b });
+            });
+        }
+
+        function updateMarkers() { if (!character) return;
+            character.updateMatrixWorld(true);
+            markers.forEach(m => m.b.getWorldPosition(m.s.position)) }
+
+        function renderCategories() {
+            $('cats').innerHTML = categories.map(([n, i]) =>
+                `<button class="cat ${n===category?'active':''}" data-cat="${n}"><i class="fa-solid ${i}"></i> ${n}</button>`
+                ).join('');
+            $('cats').querySelectorAll('.cat').forEach(b => b.onclick = () => { category = b.dataset.cat;
+                renderCategories();
+                renderAssets() });
+        }
+
+        function partCategory(p) {
+            const n = norm(p.name);
+            if (/hair|ponytail|bang/.test(n)) return 'Hair';
+            if (/face|eye|mouth|head|ear|nose/.test(n)) return 'Head';
+            if (/arm|hand|shoulder|sleeve/.test(n)) return /left|_l|\\.l/.test(n) ? 'L Arm' : 'R Arm';
+            if (/leg|thigh|foot|shoe|shin|calf|toe/.test(n)) return /left|_l|\\.l/.test(n) ? 'L Leg' : 'R Leg';
+            if (/body|chest|torso|shirt|dress|skirt|coat|pant/.test(n)) return 'Torso';
+            return 'Other';
+        }
+
+        function boneCategory(b) {
+            const n = norm(b.name);
+            if (/head|neck/.test(n)) return 'Head';
+            if (/arm|hand|shoulder|elbow/.test(n)) return /left|_l|\\.l/.test(n) ? 'L Arm' : 'R Arm';
+            if (/leg|foot|toe|shin|thigh|knee/.test(n)) return /left|_l|\\.l/.test(n) ? 'L Leg' : 'R Leg';
+            if (/hair/.test(n)) return 'Hair';
+            if (/spine|chest|hip|pelvis/.test(n)) return 'Torso';
+            return 'Other';
+        }
+
+        function renderAssets() {
+            const items = [...bones.map(b => ({ kind: 'bone', obj: b, cat: boneCategory(b) })), ...parts.map(p => ({
+                kind: 'part',
+                obj: p,
+                cat: partCategory(p)
+            }))];
+            const filtered = items.filter(x => category === 'All' || x.cat === category);
+            $('asset-scroll').innerHTML =
+                `<div class="asset-grid">${filtered.map((x,i)=>{const sel=x.kind==='bone'&&selectedBone===x.obj?'active':x.kind==='part'&&selectedPart===x.obj.uuid?'active':'';const icon=x.kind==='bone'?'fa-bone':'fa-cube';const hidden=x.kind==='part'&&!x.obj.visible?'hidden-part':'';return `<button class="asset-card ${sel} ${hidden}" data-i="${i}"><i class="icon fa-solid ${icon}"></i><span class="name">${esc(x.obj.name||x.kind)}</span><span class="cat">${x.cat}</span></button>`}).join('')}</div>`;
+            $('asset-scroll').querySelectorAll('.asset-card').forEach((el, i) => { el.onclick = () => { const x =
+                        filtered[i]; if (x.kind === 'bone') { selectBone(x.obj);
+                        switchTab('pose') } else { selectedPart = x.obj.uuid;
+                        renderAssets();
+                        showToast(x.obj.name || 'Part selected') } } });
+        }
+
+        function populateBoneSelect() {
+            const opts = ['spine', 'head', 'leftArm', 'rightArm', 'leftForearm', 'rightForearm', 'leftLeg', 'rightLeg',
+                'leftShin', 'rightShin', 'leftHand', 'rightHand', 'hair'
+            ];
+            $('boneSelect').innerHTML = opts.map(k => {
+                const b = boneMap[k];
+                return `<option value="${k}" ${b===selectedBone?'selected':''} ${b?'':'disabled'}>${label(k)}${b?'':' (n/a)'}</option>`
+            }).join('');
+            if (selectedBone) { const k = Object.keys(boneMap).find(k => boneMap[k] === selectedBone); if (k) $(
+                    'boneSelect').value = k }
+        }
+
+        function label(k) { return k.replace(/([A-Z])/g, ' $1').replace(/^./, x => x.toUpperCase()) }
+
+        function populateMaterials() {
+            $('matTarget').innerHTML = '<option value="all">All parts</option>' + parts.map(p =>
+                `<option value="${p.uuid}">${esc(p.name||'Part')}</option>`).join('');
+        }
+
+        function saveMaterials(mesh) {
+            const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+            const saved = mats.map(m => ({
+                color: m.color ? m.color.clone() : new THREE.Color(0xffffff),
+                roughness: m.roughness ?? 0.5,
+                metalness: m.metalness ?? 0.1,
+                opacity: m.opacity ?? 1,
+                transparent: m.transparent ?? false,
+                emissive: m.emissive ? m.emissive.clone() : new THREE.Color(0),
+                emissiveIntensity: m.emissiveIntensity ?? 0,
+                map: m.map || null,
+                normalMap: m.normalMap || null,
+                alphaMap: m.alphaMap || null,
+                vertexColors: m.vertexColors || false,
+            }));
+            originalMaterials.set(mesh.uuid, saved);
+            // store texture references separately
+            saved.forEach(s => {
+                if (s.map) originalTextures.set(s.map.uuid, s.map);
+                if (s.normalMap) originalTextures.set(s.normalMap.uuid, s.normalMap);
+            });
+        }
+
+        function getTargetMaterials() {
+            if (selectedPart === 'all') return parts.flatMap(p => Array.isArray(p.material) ? p.material : (p
+                .material ? [p.material] : []));
+            const p = parts.find(p => p.uuid === selectedPart);
+            if (!p) return [];
+            return Array.isArray(p.material) ? p.material : (p.material ? [p.material] : []);
+        }
+
+        function applyMaterial() {
+            const ms = getTargetMaterials();
+            const c = $('color').value;
+            const rough = +$('rough').value;
+            const metal = +$('metal').value;
+            const opac = +$('opacity').value;
+            ms.forEach(m => {
+                // Only tint color for materials WITHOUT texture maps (or lightly tint with maps)
+                if (m.color) m.color.set(c);
+                m.roughness = rough;
+                m.metalness = metal;
+                m.opacity = opac;
+                m.transparent = opac < 0.999;
+                m.needsUpdate = true;
+            });
+            $('roughV').textContent = rough.toFixed(2);
+            $('metalV').textContent = metal.toFixed(2);
+            $('opacityV').textContent = opac.toFixed(2);
+        }
+
+        function applyFX(fx) {
+            const ms = getTargetMaterials();
+            ms.forEach(m => {
+                const mesh = parts.find(p => (Array.isArray(p.material) ? p.material : [p.material]).includes(m));
+                const orig = mesh && originalMaterials.get(mesh.uuid) ? originalMaterials.get(mesh.uuid)[0] : null;
+                if (fx === 'normal') {
+                    if (orig) {
+                        if (m.color) m.color.copy(orig.color);
+                        m.roughness = orig.roughness;
+                        m.metalness = orig.metalness;
+                        m.opacity = orig.opacity;
+                        m.transparent = orig.transparent;
+                        if (m.emissive) m.emissive.copy(orig.emissive);
+                        m.emissiveIntensity = orig.emissiveIntensity;
+                        m.map = orig.map;
+                        m.normalMap = orig.normalMap;
+                        m.alphaMap = orig.alphaMap;
+                        m.vertexColors = orig.vertexColors;
+                    }
+                } else {
+                    m.transparent = true;
+                    if (fx === 'cyber') { if (m.color) m.color.set(0xec4899);
+                        m.roughness = 0.15;
+                        m.metalness = 0.85; if (m.emissive) m.emissive.set(0xec4899);
+                        m.emissiveIntensity = 0.3;
+                        m.opacity = 0.9; if (m.map) m.map = null }
+                    if (fx === 'holo') { if (m.color) m.color.set(0x22d3ee);
+                        m.roughness = 0.05;
+                        m.metalness = 0.8; if (m.emissive) m.emissive.set(0x22d3ee);
+                        m.emissiveIntensity = 0.7;
+                        m.opacity = 0.6; if (m.map) m.map = null }
+                    if (fx === 'ghost') { if (m.color) m.color.set(0xa78bfa);
+                        m.roughness = 0.3;
+                        m.metalness = 0.1; if (m.emissive) m.emissive.set(0xa78bfa);
+                        m.emissiveIntensity = 0.4;
+                        m.opacity = 0.45; if (m.map) m.map = null }
+                }
+                m.needsUpdate = true;
+            });
+            showToast(fx + ' material applied');
+        }
+
+        function toggleTextures() {
+            texVisible = !texVisible;
+            parts.forEach(p => {
+                const mats = Array.isArray(p.material) ? p.material : (p.material ? [p.material] : []);
+                mats.forEach(m => {
+                    const orig = originalMaterials.get(p.uuid);
+                    const o = orig && orig.find(x => x.map === m.map);
+                    if (!texVisible) {
+                        if (m.map) { m.userData._storedMap = m.map;
+                            m.map = null }
+                        if (m.normalMap) { m.userData._storedNormalMap = m.normalMap;
+                            m.normalMap = null }
+                    } else {
+                        if (m.userData._storedMap) { m.map = m.userData._storedMap;
+                            m.userData._storedMap = null }
+                        if (m.userData._storedNormalMap) { m.normalMap = m.userData._storedNormalMap;
+                            m.userData._storedNormalMap = null }
+                    }
+                    m.needsUpdate = true;
+                });
+            });
+            showToast(texVisible ? '🖼️ Textures visible' : '🚫 Textures hidden');
+        }
+
+        function selectBone(b) {
+            if (!b) return;
+            selectedBone = b;
+            const k = Object.keys(boneMap).find(k => boneMap[k] === b);
+            if (k) $('boneSelect').value = k;
+            syncSliders();
+            renderAssets();
+            $('reticle').style.display = 'none';
+            showToast('🎯 ' + (b.name || 'bone'));
+        }
+
+        function syncSliders() {
+            if (!selectedBone) return;
+            const r = selectedBone.rotation;
+            const p = selectedBone.position;
+            $('rx').value = r.x;
+            $('ry').value = r.y;
+            $('rz').value = r.z;
+            $('px').value = p.x;
+            $('py').value = p.y;
+            $('pz').value = p.z;
+            updateSliderText();
+        }
+
+        function updateSliderText() {
+            const rx = +$('rx').value,
+                ry = +$('ry').value,
+                rz = +$('rz').value;
+            const px = +$('px').value,
+                py = +$('py').value,
+                pz = +$('pz').value;
+            $('vx').textContent = (rx * 180 / Math.PI).toFixed(1) + '°';
+            $('vy').textContent = (ry * 180 / Math.PI).toFixed(1) + '°';
+            $('vz').textContent = (rz * 180 / Math.PI).toFixed(1) + '°';
+            $('vpvx').textContent = px.toFixed(3);
+            $('vpvy').textContent = py.toFixed(3);
+            $('vpvz').textContent = pz.toFixed(3);
+        }
+
+        function applySliders() {
+            if (!selectedBone) return;
+            selectedBone.rotation.set(+$('rx').value, +$('ry').value, +$('rz').value);
+            selectedBone.position.set(+$('px').value, +$('py').value, +$('pz').value);
+            updateSliderText();
+            if (recording) recordKey();
+        }
+
+        function resetSelected() {
+            if (!selectedBone) return;
+            const br = selectedBone.userData.baseRotation;
+            const bp = selectedBone.userData.basePosition;
+            selectedBone.rotation.copy(br || new THREE.Euler());
+            selectedBone.position.copy(bp || new THREE.Vector3());
+            syncSliders();
+            showToast('↺ Bone reset');
+        }
+
+        // KEYFRAME & ANIMATION SYSTEM
+        function recordKey() {
+            if (!character || !bones.length) return;
+            const pose = {};
+            bones.forEach(b => { pose[b.uuid] = [b.rotation.x, b.rotation.y, b.rotation.z, b.position.x, b.position.y,
+                    b.position.z
+                ] });
+            const time = keys.length ? keys[keys.length - 1].time + keyInterval : 0;
+            keys.push({ time, pose });
+            selectedKeyIndex = keys.length - 1;
+            renderTimeline();
+            if (keys.length === 1) showToast('🎬 First keyframe added');
+        }
+
+        function renderTimeline() {
+            $('keyCount').textContent = keys.length + ' keys';
+            const total = keys.length ? keys[keys.length - 1].time : 0;
+            $('totalTime').textContent = total.toFixed(2) + 's';
+            const track = $('timeline-track');
+            track.innerHTML = '<div class="playhead" id="playhead" style="left:0%;"></div>';
+            keys.forEach((k, i) => {
+                const pct = total > 0.001 ? (k.time / total * 100) : 0;
+                const el = document.createElement('div');
+                el.className = 'key-marker' + (i === selectedKeyIndex ? ' selected' : '');
+                el.style.left = pct + '%';
+                el.title = `K${i+1} @ ${k.time.toFixed(2)}s`;
+                el.dataset.keyIndex = i;
+                el.addEventListener('click', e => { e.stopPropagation();
+                    selectedKeyIndex = i;
+                    applyKeyframe(keys[i]);
+                    renderTimeline() });
+                track.appendChild(el);
+            });
+            updatePlayhead();
+            renderClips();
+            renderTemplates();
+            updateBindings();
+        }
+
+        function updatePlayhead() {
+            const ph = $('playhead');
+            if (!ph) return;
+            const total = keys.length ? keys[keys.length - 1].time : 0;
+            const pct = total > 0.001 ? (playTime / total * 100) : 0;
+            ph.style.left = Math.min(100, Math.max(0, pct)) + '%';
+            $('timeDisplay').textContent = playTime.toFixed(2) + 's';
+        }
+
+        function applyKeyframe(kf) {
+            if (!kf) return;
+            bones.forEach(b => {
+                const p = kf.pose[b.uuid];
+                if (p) { b.rotation.set(p[0], p[1], p[2]);
+                    b.position.set(p[3], p[4], p[5]) }
+            });
+            if (selectedBone) syncSliders();
+        }
+
+        function clearKeys() { keys = [];
+            playing = false;
+            selectedKeyIndex = -1;
+            renderTimeline();
+            showToast('🗑️ Keys cleared') }
+
+        function exportAnimation() {
+            const blob = new Blob([JSON.stringify({ version: 1, frameRate: 1 / keyInterval, keyframes: keys },
+                null, 2)], { type: 'application/json' });
+            downloadBlob(blob, 'timeline-animation.json');
+            showToast('📦 Animation JSON exported');
+        }
+
+        function saveClip() {
+            if (!keys.length) { showToast('⚠️ No keyframes to save'); return }
+            const name = prompt('Clip name:', 'clip' + (Object.keys(animationClips).length + 1));
+            if (!name) return;
+            animationClips[name] = { name, duration: keys[keys.length - 1].time, keyframes: JSON.parse(JSON.stringify(
+                    keys)) };
+            renderClips();
+            updateBindings();
+            showToast('💾 Clip "' + name + '" saved');
+        }
+
+        function renderClips() {
+            const container = $('anim-clips');
+            const clipNames = Object.keys(animationClips);
+            const tplNames = Object.keys(templateAnimations);
+            container.innerHTML = [...clipNames.map(n => `<button class="clip-btn ${activeClipName===n?'playing':''}" data-clip="${n}" data-type="user"><i class="fa-solid fa-floppy-disk"></i> ${n}</button>`),
+                ...tplNames.map(n =>
+                    `<button class="clip-btn ${activeClipName===n?'playing':''}" data-clip="${n}" data-type="template"><i class="fa-solid fa-wand-magic-sparkles"></i> ${n}</button>`
+                    ),
+                ...embeddedClips.map((c, i) =>
+                    `<button class="clip-btn" data-embedded="${i}"><i class="fa-solid fa-film"></i> ${c.name||'Embedded '+i}</button>`
+                    )
+            ].join('');
+            container.querySelectorAll('.clip-btn').forEach(btn => {
+                btn.onclick = () => {
+                    const clipName = btn.dataset.clip;
+                    const type = btn.dataset.type;
+                    if (btn.dataset.embedded !== undefined) {
+                        playEmbeddedClip(+btn.dataset.embedded);
+                        return;
+                    }
+                    const clip = type === 'user' ? animationClips[clipName] : templateAnimations[clipName];
+                    if (clip && clip.keyframes) {
+                        keys = JSON.parse(JSON.stringify(clip.keyframes));
+                        playTime = 0;
+                        playing = true;
+                        activeClipName = clipName;
+                        renderTimeline();
+                        showToast('▶ ' + clipName);
+                    }
+                };
+            });
+        }
+
+        function playEmbeddedClip(idx) {
+            if (!character || !embeddedClips[idx]) return;
+            // Simple embedded clip playback (just apply to all bones with lerp)
+            const clip = embeddedClips[idx];
+            showToast('🎬 Playing embedded: ' + (clip.name || 'clip'));
+            // For simplicity, just use clip.duration and lerp bones
+            const dur = clip.duration || 1;
+            const startRot = bones.map(b => b.rotation.clone());
+            const startPos = bones.map(b => b.position.clone());
+            const t0 = performance.now();
+            const animInterval = setInterval(() => {
+                const t = Math.min((performance.now() - t0) / 1000 / dur, 1);
+                bones.forEach((b, i) => {
+                    b.rotation.set(startRot[i].x, startRot[i].y, startRot[i].z);
+                });
+                if (t >= 1) clearInterval(animInterval);
+            }, 50);
+        }
+
+        function renderTemplates() {
+            const container = $('templates');
+            const tpls = ['idle', 'walk', 'run', 'jump'];
+            container.innerHTML = tpls.map(t =>
+                `<button class="btn clip-btn ${activeClipName===t?'playing':''}" data-tpl="${t}"><i class="fa-solid fa-bolt"></i> ${t}</button>`
+                ).join('');
+            container.querySelectorAll('[data-tpl]').forEach(btn => {
+                btn.onclick = () => {
+                    const t = btn.dataset.tpl;
+                    if (templateAnimations[t] && templateAnimations[t].keyframes) {
+                        keys = JSON.parse(JSON.stringify(templateAnimations[t].keyframes));
+                        playTime = 0;
+                        playing = true;
+                        activeClipName = t;
+                        renderTimeline();
+                        showToast('▶ Template: ' + t);
+                    }
+                };
+            });
+        }
+
+        function generateTemplates() {
+            templateAnimations = {};
+            if (!character || !bones.length) return;
+            const spine = boneMap.spine || bones[0];
+            const head = boneMap.head || bones[1] || spine;
+            const lLeg = boneMap.leftLeg || boneMap.leftShin;
+            const rLeg = boneMap.rightLeg || boneMap.rightShin;
+            const lArm = boneMap.leftArm || boneMap.leftForearm;
+            const rArm = boneMap.rightArm || boneMap.rightForearm;
+            const lShin = boneMap.leftShin;
+            const rShin = boneMap.rightShin;
+            const lFore = boneMap.leftForearm;
+            const rFore = boneMap.rightForearm;
+
+            function makePose(fn) {
+                const pose = {};
+                bones.forEach(b => {
+                    const r = b.userData.baseRotation;
+                    const p = b.userData.basePosition;
+                    const [rx, ry, rz, px, py, pz] = fn(b, r.x, r.y, r.z, p.x, p.y, p.z);
+                    pose[b.uuid] = [rx, ry, rz, px, py, pz];
+                });
+                return pose;
+            }
+
+            // IDLE: subtle sway
+            const idleKeys = [];
+            for (let i = 0; i <= 4; i++) {
+                const t = i * 0.5;
+                const amp = Math.sin(t * Math.PI * 2 / 2.0) * 0.06;
+                idleKeys.push({ time: t, pose: makePose((b, rx, ry, rz, px, py, pz) => {
+                        if (b === lArm) return [rx + amp, ry, rz, px, py, pz];
+                        if (b === rArm) return [rx - amp, ry, rz, px, py, pz];
+                        return [rx, ry, rz, px, py, pz];
+                    }) });
+            }
+            templateAnimations.idle = { name: 'idle', duration: 2.0, keyframes: idleKeys };
+
+            // WALK: alternating legs and arms
+            const walkKeys = [];
+            for (let i = 0; i <= 4; i++) {
+                const t = i * 0.25;
+                const swing = Math.sin(t * Math.PI * 2 / 1.0) * 0.55;
+                walkKeys.push({ time: t, pose: makePose((b, rx, ry, rz, px, py, pz) => {
+                        if (b === lLeg) return [rx - swing, ry, rz, px, py, pz];
+                        if (b === rLeg) return [rx + swing, ry, rz, px, py, pz];
+                        if (b === lArm) return [rx + swing * 0.7, ry, rz, px, py, pz];
+                        if (b === rArm) return [rx - swing * 0.7, ry, rz, px, py, pz];
+                        if (b === lShin) return [rx - swing * 0.3, ry, rz, px, py, pz];
+                        if (b === rShin) return [rx + swing * 0.3, ry, rz, px, py, pz];
+                        return [rx, ry, rz, px, py, pz];
+                    }) });
+            }
+            templateAnimations.walk = { name: 'walk', duration: 1.0, keyframes: walkKeys };
+
+            // RUN: more exaggerated
+            const runKeys = [];
+            for (let i = 0; i <= 8; i++) {
+                const t = i * 0.125;
+                const swing = Math.sin(t * Math.PI * 2 / 0.5) * 0.85;
+                runKeys.push({ time: t, pose: makePose((b, rx, ry, rz, px, py, pz) => {
+                        if (b === lLeg) return [rx - swing, ry, rz, px, py, pz];
+                        if (b === rLeg) return [rx + swing, ry, rz, px, py, pz];
+                        if (b === lArm) return [rx + swing * 0.9, ry, rz, px, py, pz];
+                        if (b === rArm) return [rx - swing * 0.9, ry, rz, px, py, pz];
+                        if (b === lShin) return [rx - swing * 0.5, ry, rz, px, py, pz];
+                        if (b === rShin) return [rx + swing * 0.5, ry, rz, px, py, pz];
+                        return [rx, ry, rz, px, py, pz];
+                    }) });
+            }
+            templateAnimations.run = { name: 'run', duration: 0.5, keyframes: runKeys };
+
+            // JUMP: crouch then extend
+            const jumpKeys = [];
+            for (let i = 0; i <= 8; i++) {
+                const t = i * 0.1;
+                const phase = Math.min(t / 0.4, 1);
+                const crouch = phase < 0.4 ? 0.5 : (phase < 0.7 ? -0.3 : 0);
+                jumpKeys.push({ time: t, pose: makePose((b, rx, ry, rz, px, py, pz) => {
+                        if (b === lLeg) return [rx - crouch, ry, rz, px, py - crouch * 0.05, pz];
+                        if (b === rLeg) return [rx + crouch, ry, rz, px, py - crouch * 0.05, pz];
+                        if (b === lArm) return [rx + crouch * 0.5, ry, rz, px, py, pz];
+                        if (b === rArm) return [rx - crouch * 0.5, ry, rz, px, py, pz];
+                        return [rx, ry, rz, px, py, pz];
+                    }) });
+            }
+            templateAnimations.jump = { name: 'jump', duration: 0.8, keyframes: jumpKeys };
+
+            renderTemplates();
+            renderClips();
+        }
+
+        function updateBindings() {
+            const map = $('binding-map');
+            const rows = [
+                { key: 'W/↑', action: 'Move Forward', anim: 'walk' },
+                { key: 'S/↓', action: 'Move Back', anim: 'walk' },
+                { key: 'A/←', action: 'Strafe Left', anim: 'walk' },
+                { key: 'D/→', action: 'Strafe Right', anim: 'walk' },
+                { key: 'Space', action: 'Jump', anim: 'jump' },
+                { key: 'Shift', action: 'Crouch', anim: 'idle' },
+                { key: 'Joystick', action: 'Push harder = RUN', anim: 'run' },
+                { key: '🎮', action: 'Game Mode', anim: mode === 'game' ? 'active' : 'inactive' },
+            ];
+            const savedClips = Object.keys(animationClips);
+            if (savedClips.length) rows.push({ key: '💾', action: 'Saved Clips', anim: savedClips.join(', ') });
+            map.innerHTML = rows.map(r =>
+                `<div class="binding-row"><span class="key">${r.key}</span><span>${r.action}</span><span class="mini" style="margin-left:auto;">${r.anim}</span></div>`
+                ).join('');
+        }
+
+        function setupTimelineClick() {
+            $('timeline-track').addEventListener('click', e => {
+                if (!keys.length) return;
+                const rect = $('timeline-track').getBoundingClientRect();
+                const pct = (e.clientX - rect.left) / rect.width;
+                const total = keys[keys.length - 1].time;
+                playTime = Math.max(0, Math.min(total, pct * total));
+                // Find nearest keyframe
+                let nearest = 0,
+                    minDist = Infinity;
+                keys.forEach((k, i) => { const d = Math.abs(k.time - playTime); if (d < minDist) { minDist = d;
+                        nearest = i } });
+                selectedKeyIndex = nearest;
+                applyKeyframe(keys[nearest]);
+                renderTimeline();
+                updatePlayhead();
+            });
+        }
+
+        // GAME MODE
+        function setMode(m) {
+            mode = m;
+            $('joystick').style.display = m === 'game' ? 'block' : 'none';
+            $('game-buttons').style.display = m === 'game' ? 'flex' : 'none';
+            if (m === 'game') { controls.enabled = true;
+                showToast('🎮 Game mode enabled') } else { showToast('🎨 Edit mode') }
+            updateBindings();
+        }
+
+        function toggleRecording() {
+            recording = !recording;
+            $('record').textContent = recording ? '■ Rec' : '● Rec';
+            $('record').style.background = recording ? '#f59e0b' : '#ec4899';
+            showToast(recording ? '🔴 Recording keyframes' : '⏹️ Recording stopped');
+        }
+
+        function toggleSkeleton() {
+            showSkeleton = !showSkeleton;
+            if (showSkeleton && character) { skeletonHelper = new THREE.SkeletonHelper(character);
+                scene.add(skeletonHelper) } else if (skeletonHelper) { scene.remove(skeletonHelper);
+                skeletonHelper = null }
+        }
+
+        function focusModel() {
+            if (!character) return;
+            _box.setFromObject(character);
+            _box.getCenter(_center);
+            _box.getSize(_size);
+            const dist = Math.max(_size.y * 1.8, _size.x * 1.4, 2.2);
+            controls.target.copy(_center);
+            camera.position.copy(_center).add(new THREE.Vector3(dist * 0.6, dist * 0.35, dist));
+            controls.update();
+            showToast('🎯 Focused');
+        }
+
+        async function exportGLB() {
+            if (!character) return;
+            try {
+                const exporter = new GLTFExporter();
+                const result = await exporter.parseAsync(character, { binary: true, trs: true, onlyVisible: false });
+                downloadBlob(new Blob([result], { type: 'model/gltf-binary' }), 'avatar-rigged.glb');
+                showToast('📦 GLB exported');
+            } catch (e) { console.error(e);
+                showToast('❌ Export failed') }
+        }
+
+        function downloadBlob(blob, name) { const u = URL.createObjectURL(blob),
+                a = document.createElement('a');
+            a.href = u;
+            a.download = name;
+            a.click();
+            setTimeout(() => URL.revokeObjectURL(u), 1000) }
+
+        function keyDown(e) {
+            const k = e.key.toLowerCase();
+            if (k === 'w' || k === 'arrowup') game.w = true;
+            if (k === 's' || k === 'arrowdown') game.s = true;
+            if (k === 'a' || k === 'arrowleft') game.a = true;
+            if (k === 'd' || k === 'arrowright') game.d = true;
+            if (k === ' ') { game.jump = true;
+                e.preventDefault() }
+            if (k === 'shift') game.crouch = true;
+            if (mode === 'game' && (game.w || game.s || game.a || game.d || game.jump)) {
+                // trigger auto-anim if no keys playing
+                if (!playing && keys.length > 0 && Math.random() < 0.05) { playing = true;
+                    playTime = 0 }
+            }
+        }
+
+        function keyUp(e) {
+            const k = e.key.toLowerCase();
+            if (k === 'w' || k === 'arrowup') game.w = false;
+            if (k === 's' || k === 'arrowdown') game.s = false;
+            if (k === 'a' || k === 'arrowleft') game.a = false;
+            if (k === 'd' || k === 'arrowright') game.d = false;
+            if (k === ' ') game.jump = false;
+            if (k === 'shift') game.crouch = false;
+        }
+
+        function setupJoystick() {
+            const z = $('joystick'),
+                t = $('joy-thumb');
+            let active = false,
+                cx = 0,
+                cy = 0,
+                maxDist = 38;
+            const updateGameFromJoy = (dx, dy) => {
+                game.a = dx < -10;
+                game.d = dx > 10;
+                game.w = dy < -10;
+                game.s = dy > 10;
+                game.running = Math.hypot(dx, dy) > maxDist * 0.6;
+            };
+            const move = e => {
+                if (!active) return;
+                const dx = e.clientX - cx,
+                    dy = e.clientY - cy;
+                const d = Math.min(Math.hypot(dx, dy), maxDist);
+                const a = Math.atan2(dy, dx);
+                const mx = Math.cos(a) * d,
+                    my = Math.sin(a) * d;
+                t.style.transform = `translate(${mx}px,${my}px)`;
+                updateGameFromJoy(mx, my);
+                $('joy-label').textContent = game.running ? '🏃 RUN' : '🚶 WALK';
+                $('joy-label').style.color = game.running ? '#fbbf24' : '#9ab0d4';
+            };
+            z.onpointerdown = e => { active = true;
+                const r = z.getBoundingClientRect();
+                cx = r.left + r.width / 2;
+                cy = r.top + r.height / 2;
+                z.setPointerCapture(e.pointerId);
+                move(e) };
+            z.onpointermove = move;
+            z.onpointerup = z.onpointercancel = () => { active = false;
+                t.style.transform = 'translate(0,0)';
+                game.w = game.s = game.a = game.d = false;
+                game.running = false;
+                $('joy-label').textContent = '← WALK · RUN →';
+                $('joy-label').style.color = '#9ab0d4' };
+        }
+
+        function setupJumpButton() {
+            $('jumpBtn').addEventListener('pointerdown', () => { game.jump = true });
+            $('jumpBtn').addEventListener('pointerup', () => { game.jump = false });
+            $('jumpBtn').addEventListener('pointerleave', () => { game.jump = false });
+            $('crouchBtn').addEventListener('pointerdown', () => { game.crouch = true });
+            $('crouchBtn').addEventListener('pointerup', () => { game.crouch = false });
+            $('crouchBtn').addEventListener('pointerleave', () => { game.crouch = false });
+        }
+
+        // POINTER DRAG FOR BONE POSING
+        function onPointerDown(e) {
+            if (mode === 'game') return;
+            pointerDown = { x: e.clientX, y: e.clientY, id: e.pointerId, moved: false };
+            const hit = pickBone(e.clientX, e.clientY);
+            if (hit) {
+                e.preventDefault();
+                renderer.domElement.setPointerCapture(e.pointerId);
+                controls.enabled = false;
+                selectBone(hit);
+                activeDrag = { bone: hit, x: e.clientX, y: e.clientY, rx: hit.rotation.x, ry: hit.rotation.y,
+                    rz: hit.rotation.z, px: hit.position.x, py: hit.position.y, pz: hit.position.z };
+                $('reticle').style.left = e.clientX + 'px';
+                $('reticle').style.top = e.clientY + 'px';
+                $('reticle').style.display = 'block';
+            }
+        }
+
+        function onPointerMove(e) {
+            if (!pointerDown) return;
+            const dx = e.clientX - pointerDown.x,
+                dy = e.clientY - pointerDown.y;
+            if (Math.hypot(dx, dy) > 5) pointerDown.moved = true;
+            if (!activeDrag || !pointerDown.moved) return;
+            e.preventDefault();
+            const scale = (e.shiftKey || e.ctrlKey) ? 0.018 : 0.007;
+            const usePos = e.altKey;
+            if (usePos) {
+                activeDrag.bone.position.x = THREE.MathUtils.clamp(activeDrag.px + dx * 0.002, -1, 1);
+                activeDrag.bone.position.y = THREE.MathUtils.clamp(activeDrag.py - dy * 0.002, -1, 1);
+                activeDrag.bone.position.z = THREE.MathUtils.clamp(activeDrag.pz + dx * 0.001, -1, 1);
+            } else {
+                activeDrag.bone.rotation.y = THREE.MathUtils.clamp(activeDrag.ry + dx * scale, -Math.PI, Math.PI);
+                activeDrag.bone.rotation.x = THREE.MathUtils.clamp(activeDrag.rx - dy * scale, -Math.PI, Math.PI);
+            }
+            syncSliders();
+        }
+
+        function onPointerUp(e) {
+            if (activeDrag) { try { renderer.domElement.releasePointerCapture(e.pointerId) } catch {}
+                controls.enabled = true;
+                activeDrag = null;
+                $('reticle').style.display = 'none' }
+            pointerDown = null;
+        }
+
+        function pickBone(x, y) {
+            const r = renderer.domElement.getBoundingClientRect();
+            mouse.set((x - r.left) / r.width * 2 - 1, -((y - r.top) / r.height) * 2 + 1);
+            ray.setFromCamera(mouse, camera);
+            const hits = ray.intersectObjects(markers.map(m => m.s), false);
+            return hits[0]?.object?.userData?.bone || null;
+        }
+
+        function switchTab(t) {
+            document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+            ['pose', 'anim', 'material', 'game'].forEach(p => $('panel-' + p).classList.toggle('hidden', p !== t));
+            if (t === 'game' && mode !== 'game' && character) setMode('game');
+            else if (t !== 'game' && mode === 'game') setMode('pose');
+        }
+
+        function updateGame(dt) {
+            if (!character) return;
+            const x = (game.d ? 1 : 0) - (game.a ? 1 : 0);
+            const z = (game.w ? 1 : 0) - (game.s ? 1 : 0);
+            const moving = x !== 0 || z !== 0;
+            const speed = game.running ? 4.5 : 1.8;
+            if (moving) {
+                const a = Math.atan2(x, z);
+                character.rotation.y = a;
+                character.position.x += Math.sin(a) * dt * speed;
+                character.position.z += Math.cos(a) * dt * speed;
+                // Animate legs/arms with procedural gait
+                const t = performance.now() * (game.running ? 0.02 : 0.012);
+                const swing = Math.sin(t) * (game.running ? 0.75 : 0.55);
+                const lLeg = boneMap.leftLeg,
+                    rLeg = boneMap.rightLeg;
+                const lArm = boneMap.leftArm,
+                    rArm = boneMap.rightArm;
+                const lShin = boneMap.leftShin,
+                    rShin = boneMap.rightShin;
+                if (lLeg) lLeg.rotation.x = -swing;
+                if (rLeg) rLeg.rotation.x = swing;
+                if (lArm) lArm.rotation.x = swing * 0.7;
+                if (rArm) rArm.rotation.x = -swing * 0.7;
+                if (lShin) lShin.rotation.x = -swing * 0.3;
+                if (rShin) rShin.rotation.x = swing * 0.3;
+                if (selectedBone) syncSliders();
+            } else {
+                // Idle gentle sway
+                const t = performance.now() * 0.001;
+                const s = Math.sin(t) * 0.04;
+                if (boneMap.leftArm) boneMap.leftArm.rotation.x = s;
+                if (boneMap.rightArm) boneMap.rightArm.rotation.x = -s;
+            }
+            // Jump physics
+            if (game.jump && character.position.y <= 0.001) { game.vy = 0.32;
+                game.jump = false;
+                showToast('⬆️ Jump!') }
+            game.vy -= dt * 0.85;
+            character.position.y = Math.max(0, character.position.y + game.vy * dt);
+            if (character.position.y === 0) game.vy = 0;
+            // Crouch
+            const targetScale = game.crouch ? 0.78 : 1;
+            character.scale.y += (targetScale - character.scale.y) * dt * 8;
+            if (game.crouch && character.position.y < 0.02) character.position.y = 0.02;
+        }
+
+        function updateTimeline(dt) {
+            if (!playing || keys.length < 2) return;
+            playTime += dt;
+            const total = keys[keys.length - 1].time;
+            if (playTime > total) { playTime = 0;
+                selectedKeyIndex = -1 }
+            let a = keys[0],
+                b = keys[keys.length - 1];
+            for (let i = 0; i < keys.length - 1; i++) {
+                if (playTime >= keys[i].time && playTime <= keys[i + 1].time) { a = keys[i];
+                    b = keys[i + 1];
+                    break }
+            }
+            const span = b.time - a.time;
+            const t = span > 0.001 ? (playTime - a.time) / span : 0;
+            bones.forEach(bone => {
+                const pa = a.pose[bone.uuid],
+                    pb = b.pose[bone.uuid];
+                if (pa && pb) {
+                    bone.rotation.set(THREE.MathUtils.lerp(pa[0], pb[0], t), THREE.MathUtils.lerp(pa[1], pb[1],
+                        t), THREE.MathUtils.lerp(pa[2], pb[2], t));
+                    bone.position.set(THREE.MathUtils.lerp(pa[3], pb[3], t), THREE.MathUtils.lerp(pa[4], pb[4], t),
+                        THREE.MathUtils.lerp(pa[5], pb[5], t));
+                }
+            });
+            if (selectedBone) syncSliders();
+            updatePlayhead();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const dt = Math.min(clock.getDelta(), 0.033);
+            if (mode === 'game') updateGame(dt);
+            if (mode === 'anim' || playing) updateTimeline(dt);
+            updateMarkers();
+            if (skeletonHelper) skeletonHelper.update();
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;',
+                '"': '&quot;', "'": '&#39;' }[c])) }
+
+        function showToast(s) { const t = $('toast');
+            t.textContent = s;
+            t.style.opacity = 1;
+            clearTimeout(t._t);
+            t._t = setTimeout(() => t.style.opacity = 0, 2000) }
+
+        // Init
+        init();
+    </script>
+</body>
+</html>
