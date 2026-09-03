@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CYBERDOLL // SCHRANK v2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #07070f;
+            --bg-glass: rgba(10, 10, 20, 0.45);
+            --bg-panel: rgba(12, 8, 22, 0.65);
+            --bg-hover: rgba(255, 0, 110, 0.1);
+            --border-glow: rgba(255, 0, 110, 0.3);
+            --border-cyan: rgba(0, 229, 255, 0.3);
+            --neon-pink: #ff006e;
+            --neon-pink-soft: #ff2d95;
+            --neon-cyan: #00e5ff;
+            --neon-cyan-soft: #64f4ff;
+            --neon-purple: #8338ec;
+            --text-primary: #f0f0ff;
+            --text-secondary: #b8b8d0;
+            --text-muted: #7a7a9a;
+            --danger: #ff3355;
+            --success: #00ff88;
+            --font-display: 'Orbitron', monospace;
+            --font-body: 'Rajdhani', sans-serif;
+            --panel-radius: 20px;
+            --tab-height: 56px;
+            --topbar-height: 44px;
+            --transition-speed: 0.25s;
+            --glow-pink: 0 0 16px rgba(255, 0, 110, 0.4);
+            --glow-cyan: 0 0 16px rgba(0, 229, 255, 0.4);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+            touch-action: none;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255, 0, 110, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+            animation: gridPulse 3s ease-in-out infinite;
+        }
+        @keyframes gridPulse {
+            0%,
+            100% {
+                opacity: 0.6;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+        #topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--topbar-height);
+            background: transparent;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            border-bottom: 1px solid rgba(255, 0, 110, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+            z-index: 100;
+            pointer-events: auto;
+        }
+        #topbar .logo {
+            font-family: var(--font-display);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-cyan));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            white-space: nowrap;
+            text-shadow: none;
+        }
+        #topbar .logo span {
+            font-size: 7px;
+            letter-spacing: 3px;
+            display: block;
+            -webkit-text-fill-color: var(--text-muted);
+            font-weight: 400;
+            opacity: 0.7;
+        }
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 0, 110, 0.25);
+            background: rgba(10, 10, 20, 0.4);
+            color: var(--neon-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all var(--transition-speed);
+            position: relative;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        .btn-icon:hover,
+        .btn-icon:active {
+            background: rgba(255, 0, 110, 0.15);
+            border-color: var(--neon-pink);
+        }
+        .btn-icon .badge {
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            background: var(--neon-pink);
+            color: #fff;
+            font-size: 7px;
+            border-radius: 50%;
+            width: 13px;
+            height: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-family: var(--font-display);
+            border: 1px solid rgba(0, 0, 0, 0.5);
+        }
+        #viewport-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1;
+            cursor: grab;
+            touch-action: none;
+        }
+        #viewport-container:active {
+            cursor: grabbing;
+        }
+        #viewport-container canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        #char-name-overlay {
+            position: fixed;
+            top: calc(var(--topbar-height) + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            font-family: var(--font-display);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: rgba(0, 229, 255, 0.7);
+            text-shadow: none;
+            background: rgba(7, 7, 15, 0.4);
+            padding: 3px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            pointer-events: none;
+            transition: opacity 0.3s;
+            text-transform: uppercase;
+            backdrop-filter: blur(2px);
+        }
+        #loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(7, 7, 15, 0.9);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            transition: opacity 0.4s;
+        }
+        #loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loader-ring {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: var(--neon-pink);
+            border-right-color: var(--neon-cyan);
+            animation: spin 0.7s linear infinite;
+            position: relative;
+        }
+        .loader-ring::after {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-bottom-color: var(--neon-purple);
+            animation: spin 0.5s linear infinite reverse;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        #loading-overlay .load-text {
+            font-family: var(--font-display);
+            font-size: 10px;
+            letter-spacing: 3px;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+        }
+        #tabbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--tab-height);
+            background: rgba(7, 7, 15, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-top: 1px solid rgba(255, 0, 110, 0.15);
+            display: flex;
+            align-items: stretch;
+            z-index: 100;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            pointer-events: auto;
+        }
+        .tab-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1px;
+            background: none;
+            border: none;
+            color: rgba(180, 180, 210, 0.6);
+            font-family: var(--font-body);
+            font-size: 8px;
+            font-weight: 500;
+            letter-spacing: 0.4px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            position: relative;
+            text-transform: uppercase;
+            padding: 3px 0;
+            border-top: 2px solid transparent;
+        }
+        .tab-btn .tab-icon {
+            font-size: 17px;
+            line-height: 1;
+            transition: all var(--transition-speed);
+            opacity: 0.8;
+        }
+        .tab-btn.active {
+            color: var(--neon-cyan);
+            border-top-color: rgba(0, 229, 255, 0.6);
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+        }
+        .tab-btn.active .tab-icon {
+            transform: scale(1.1);
+            opacity: 1;
+            filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.5));
+        }
+        #panel-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.2);
+            z-index: 150;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--transition-speed);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+        }
+        #panel-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #bottom-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-height: 60vh;
+            background: rgba(12, 8, 22, 0.75);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-top: 1px solid rgba(255, 0, 110, 0.2);
+            border-radius: 16px 16px 0 0;
+            z-index: 200;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -4px 30px rgba(255, 0, 110, 0.1);
+            overflow: hidden;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+        #bottom-panel.open {
+            transform: translateY(0);
+        }
+        .panel-drag-handle {
+            width: 36px;
+            height: 3px;
+            background: rgba(255, 0, 110, 0.3);
+            border-radius: 2px;
+            margin: 6px auto 3px;
+            cursor: grab;
+            flex-shrink: 0;
+        }
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 14px 6px;
+            border-bottom: 1px solid rgba(255, 0, 110, 0.1);
+            flex-shrink: 0;
+        }
+        .panel-title {
+            font-family: var(--font-display);
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--neon-pink-soft);
+            text-transform: uppercase;
+        }
+        .panel-close {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 0, 110, 0.2);
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 8px 12px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .panel-content::-webkit-scrollbar {
+            display: none;
+        }
+        .char-grid {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 6px 2px;
+            scroll-snap-type: x mandatory;
+        }
+        .char-card {
+            flex: 0 0 72px;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 6px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 0, 110, 0.18);
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .char-card:hover,
+        .char-card.active {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 229, 255, 0.05);
+        }
+        .char-card .char-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(131, 56, 236, 0.5), rgba(255, 0, 110, 0.5));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .char-card .char-name {
+            font-size: 7px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            color: var(--text-secondary);
+            text-align: center;
+            max-width: 60px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-transform: uppercase;
+        }
+        .char-card .delete-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            font-size: 7px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .char-card:hover .delete-btn {
+            opacity: 1;
+        }
+        .part-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+            gap: 6px;
+            padding: 4px 0;
+        }
+        .part-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 5px 3px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 52px;
+            justify-content: center;
+        }
+        .part-card:hover,
+        .part-card.active {
+            border-color: var(--neon-pink);
+            background: rgba(255, 0, 110, 0.06);
+        }
+        .part-card .part-icon {
+            font-size: 16px;
+        }
+        .part-card .part-name {
+            font-size: 6px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            line-height: 1.1;
+        }
+        .part-card .part-source {
+            font-size: 5px;
+            color: var(--text-muted);
+        }
+        .cat-pills {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 4px;
+            overflow-x: auto;
+            padding: 4px 0;
+            scrollbar-width: none;
+        }
+        .cat-pills::-webkit-scrollbar {
+            display: none;
+        }
+        .cat-pill {
+            flex: 0 0 auto;
+            padding: 4px 10px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 0, 110, 0.2);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+            font-size: 8px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .cat-pill.active {
+            background: rgba(255, 0, 110, 0.5);
+            color: #fff;
+            border-color: var(--neon-pink);
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 0;
+        }
+        .slider-row label {
+            font-size: 8px;
+            color: var(--text-secondary);
+            min-width: 40px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .slider-row input[type="range"] {
+            flex: 1;
+            height: 3px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            outline: none;
+        }
+        .slider-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--neon-pink);
+            cursor: pointer;
+            border: 1px solid #fff;
+        }
+        .slider-row .val-display {
+            font-size: 7px;
+            color: var(--text-muted);
+            min-width: 26px;
+            text-align: right;
+        }
+        .anim-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 229, 255, 0.1);
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 3px;
+        }
+        .anim-row:hover,
+        .anim-row.active {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 229, 255, 0.05);
+        }
+        .anim-row .anim-name {
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .anim-row .anim-play-btn {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 1px solid var(--neon-cyan);
+            background: none;
+            color: var(--neon-cyan);
+            cursor: pointer;
+            font-size: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .bone-tree {
+            font-size: 9px;
+            line-height: 1.4;
+            color: var(--text-secondary);
+            padding-left: 0;
+            list-style: none;
+        }
+        .bone-tree ul {
+            list-style: none;
+            padding-left: 12px;
+            border-left: 1px solid rgba(255, 0, 110, 0.2);
+            margin-left: 3px;
+        }
+        .bone-tree li {
+            padding: 1px 3px;
+            cursor: default;
+            transition: color 0.2s;
+            font-size: 8px;
+        }
+        .bone-tree li:hover {
+            color: var(--neon-cyan);
+        }
+        .transform-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 4px 0;
+        }
+        .tf-btn {
+            padding: 3px 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 0, 110, 0.25);
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+            font-size: 7px;
+            cursor: pointer;
+            transition: all 0.15s;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .tf-btn.active {
+            background: rgba(255, 0, 110, 0.4);
+            color: #fff;
+            border-color: var(--neon-pink);
+        }
+        #toast {
+            position: fixed;
+            bottom: calc(var(--tab-height) + 16px);
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(12, 8, 22, 0.7);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            border-radius: 10px;
+            padding: 6px 14px;
+            font-size: 9px;
+            font-weight: 500;
+            color: var(--text-primary);
+            z-index: 500;
+            transition: transform 0.3s;
+            box-shadow: var(--glow-cyan);
+            backdrop-filter: blur(8px);
+            pointer-events: none;
+            text-align: center;
+            max-width: 80vw;
+            letter-spacing: 0.3px;
+        }
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        .upload-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 16px;
+            border: 1.5px dashed rgba(255, 0, 110, 0.25);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .upload-zone:hover {
+            border-color: rgba(0, 229, 255, 0.4);
+            background: rgba(0, 229, 255, 0.04);
+        }
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 20px 12px;
+            text-align: center;
+        }
+        .empty-state .empty-icon {
+            font-size: 30px;
+            opacity: 0.6;
+        }
+        .empty-state .empty-text {
+            font-size: 10px;
+            color: var(--text-muted);
+            max-width: 220px;
+            line-height: 1.4;
+        }
+        #file-input {
+            display: none;
+        }
+        @media (max-width: 380px) {
+            :root {
+                --tab-height: 48px;
+                --topbar-height: 38px;
+            }
+            .tab-btn {
+                font-size: 6px;
+            }
+            .tab-btn .tab-icon {
+                font-size: 14px;
+            }
+            #topbar .logo {
+                font-size: 10px;
+            }
+        }
+        @media (min-width: 768px) {
+            :root {
+                --tab-height: 62px;
+                --topbar-height: 50px;
+            }
+            .tab-btn {
+                font-size: 9px;
+            }
+            .tab-btn .tab-icon {
+                font-size: 20px;
+            }
+            .part-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+            .char-card {
+                flex: 0 0 90px;
+            }
+            .char-card .char-avatar {
+                width: 50px;
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loading-overlay">
+        <div class="loader-ring"></div>
+        <div class="load-text">INITIALIZING</div>
+    </div>
+    <div id="topbar">
+        <div class="logo">CYBERDOLL<span>// SCHRANK v2</span></div>
+        <div style="display:flex;gap:4px;">
+            <button class="btn-icon" id="btn-upload" title="Upload GLB">📁<span class="badge" id="upload-badge" style="display:none;">0</span></button>
+            <button class="btn-icon" id="btn-export" title="Export GLB">💾</button>
+            <button class="btn-icon" id="btn-layout" title="Toggle Layout">🔲</button>
+        </div>
+    </div>
+    <div id="char-name-overlay">NO CHARACTER</div>
+    <div id="viewport-container"></div>
+    <div id="tabbar">
+        <button class="tab-btn active" data-tab="chars"><span class="tab-icon">👤</span><span>Chars</span></button>
+        <button class="tab-btn" data-tab="library"><span class="tab-icon">🗂️</span><span>Library</span></button>
+        <button class="tab-btn" data-tab="transform"><span class="tab-icon">⚙️</span><span>Transform</span></button>
+        <button class="tab-btn" data-tab="textures"><span class="tab-icon">🎨</span><span>Tex</span></button>
+        <button class="tab-btn" data-tab="anims"><span class="tab-icon">🎬</span><span>Anim</span></button>
+        <button class="tab-btn" data-tab="bones"><span class="tab-icon">🦴</span><span>Bones</span></button>
+    </div>
+    <div id="panel-overlay"></div>
+    <div id="bottom-panel">
+        <div class="panel-drag-handle" id="panel-drag-handle"></div>
+        <div class="panel-header">
+            <span class="panel-title" id="panel-title">CHARS</span>
+            <button class="panel-close" id="panel-close">✕</button>
+        </div>
+        <div class="panel-content" id="panel-content"></div>
+    </div>
+    <div id="toast"></div>
+    <input type="file" id="file-input" accept=".glb,.gltf" multiple>
+
+    <script type="importmap">
+        {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+        // State
+        const state = {
+            characters: [],
+            activeCharId: null,
+            selectedPart: null,
+            activeTab: 'chars',
+            panelOpen: false,
+            animationMixer: null,
+            animationAction: null,
+            animationPlaying: false,
+            charLayout: 'single',
+            charOffsets: {},
+            transformMode: 'position',
+            transformAxis: 'x',
+        };
+
+        // Three setup
+        const container = document.getElementById('viewport-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x07070f);
+        scene.fog = new THREE.Fog(0x07070f, 6, 20);
+        const camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.05, 100);
+        camera.position.set(0, 1.5, 4);
+        camera.lookAt(0, 1.1, 0);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.1;
+        container.appendChild(renderer.domElement);
+
+        // Lighting
+        const ambient = new THREE.AmbientLight(0x1a1a2e, 1.0);
+        scene.add(ambient);
+        const keyLight = new THREE.DirectionalLight(0xffccee, 2.2);
+        keyLight.position.set(2, 3, 3);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.width = 1024;
+        keyLight.shadow.mapSize.height = 1024;
+        scene.add(keyLight);
+        const rimLight = new THREE.DirectionalLight(0x00e5ff, 3.0);
+        rimLight.position.set(-2, 1, -2);
+        scene.add(rimLight);
+        const fillLight = new THREE.DirectionalLight(0x8338ec, 1.5);
+        fillLight.position.set(0, 0.5, 2);
+        scene.add(fillLight);
+        const glowLight = new THREE.PointLight(0xff006e, 1.5, 6);
+        glowLight.position.set(0, 0, 0.5);
+        scene.add(glowLight);
+        const gridHelper = new THREE.GridHelper(12, 50, 0x1a1a3a, 0x0a0a1a);
+        gridHelper.position.y = -0.8;
+        scene.add(gridHelper);
+
+        // Particles
+        const particlesGeo = new THREE.BufferGeometry();
+        const pCount = 150;
+        const pPos = new Float32Array(pCount * 3);
+        for (let i = 0; i < pCount * 3; i++) pPos[i] = (Math.random() - 0.5) * 14;
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const particlesMat = new THREE.PointsMaterial({ color: 0x00e5ff, size: 0.012, transparent: true, opacity: 0.4,
+            blending: THREE.AdditiveBlending, depthWrite: false });
+        const particles = new THREE.Points(particlesGeo, particlesMat);
+        scene.add(particles);
+
+        const characterGroup = new THREE.Group();
+        characterGroup.name = 'characterGroup';
+        scene.add(characterGroup);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 1.1, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.06;
+        controls.minDistance = 0.8;
+        controls.maxDistance = 15;
+        controls.maxPolarAngle = Math.PI * 0.85;
+        controls.minPolarAngle = Math.PI * 0.15;
+        controls.update();
+
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+        let pointerDown = false;
+        let pointerMoved = false;
+        let swipeStart = { x: 0, y: 0 };
+        let swipeActive = false;
+
+        // Loaders
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/');
+        const gltfLoader = new GLTFLoader();
+        gltfLoader.setDRACOLoader(dracoLoader);
+
+        // Part categorization
+        const CAT_ICONS = { body: '🧍', head: '👤', hair: '💇', eyes: '👁️', mouth: '👄', ears: '👂', nose: '👃', arms: '💪',
+            hands: '✋', legs: '🦵', feet: '🦶', top: '👕', bottom: '👖', dress: '👗', shoes: '👟', socks: '🧦',
+            underwear: '🩲', gloves: '🧤', hats: '🎩', accessories: '💍', other: '📦' };
+        const CAT_KEYWORDS = {
+            body: ['body', 'skin', 'torso', 'chest', 'waist', 'hip', 'pelvis', 'belly', 'core', 'abdomen', 'trunk'],
+            head: ['head', 'face', 'skull', 'neck', 'jaw', 'chin', 'forehead', 'cheek', 'cranium', 'temple'],
+            hair: ['hair', 'fringe', 'bangs', 'ponytail', 'braid', 'strand', 'curl', 'lock', 'mane', 'quiff',
+                'sideburn', 'weave', 'toupee', 'wig', 'bob', 'bun'
+            ],
+            eyes: ['eye', 'brow', 'lash', 'pupil', 'iris', 'cornea', 'sclera', 'eyeball', 'eyelid', 'eyelash', 'orbit'],
+            mouth: ['mouth', 'lip', 'teeth', 'tooth', 'tongue', 'gum', 'oral', 'dental', 'incisor', 'molar', 'canine'],
+            ears: ['ear', 'lobe', 'auricle', 'eardrum', 'cochlea'],
+            nose: ['nose', 'nostril', 'bridge', 'septum', 'nasal'],
+            arms: ['arm', 'elbow', 'wrist', 'shoulder', 'forearm', 'upperarm', 'bicep', 'tricep', 'clavicle',
+                'scapula', 'humerus', 'radius', 'ulna'
+            ],
+            hands: ['hand', 'palm', 'finger', 'thumb', 'knuckle', 'fingertip', 'phalanx', 'metacarpal'],
+            legs: ['leg', 'ankle', 'knee', 'thigh', 'calf', 'shin', 'femur', 'tibia', 'fibula', 'patella', 'quad',
+                'hamstring'
+            ],
+            feet: ['foot', 'feet', 'toe', 'heel', 'sole', 'ankle', 'metatarsal', 'tarsal'],
+            top: ['top', 'shirt', 'jacket', 'coat', 'blouse', 'sweater', 'vest', 'hoodie', 'cardigan', 'tee', 'tank',
+                'crop', 'jersey', 'pullover', 'knitwear', 'blazer', 'anorak'
+            ],
+            bottom: ['bottom', 'pants', 'skirt', 'shorts', 'jeans', 'trousers', 'slacks', 'culottes', 'capri',
+                'legging', 'chino', 'denim', 'sweatpant'
+            ],
+            dress: ['dress', 'gown', 'robe', 'frock', 'sundress', 'kimono', 'sarong', 'tunic', 'kaftan'],
+            shoes: ['shoe', 'boot', 'sneaker', 'heel', 'sandal', 'loafer', 'pump', 'flat', 'slipper', 'flipflop',
+                'trainer', 'mule', 'clog', 'espadrille'
+            ],
+            socks: ['sock', 'stocking', 'legging', 'tight', 'hosiery', 'nylon', 'kneesock', 'anklet', 'tights'],
+            underwear: ['underwear', 'bra', 'panty', 'brief', 'boxer', 'thong', 'lingerie', 'slip', 'undershirt',
+                'underpant', 'camisole', 'jockstrap'
+            ],
+            gloves: ['glove', 'mitten', 'gauntlet', 'fingerless', 'mitt'],
+            hats: ['hat', 'cap', 'beanie', 'hood', 'beret', 'fedora', 'helmet', 'crown', 'tiara', 'visor', 'beanie',
+                'headband', 'bonnet', 'toque'
+            ],
+            accessories: ['accessory', 'jewelry', 'necklace', 'earring', 'ring', 'bracelet', 'scarf', 'collar', 'tie',
+                'bow', 'belt', 'watch', 'glasses', 'choker', 'chain', 'pin', 'brooch', 'pendant', 'amulet', 'medallion',
+                'anklet', 'cufflink', 'bangle'
+            ],
+        };
+
+        function categorize(name, pos) {
+            const n = (name || '').toLowerCase();
+            for (const [cat, kws] of Object.entries(CAT_KEYWORDS)) {
+                for (const kw of kws) { if (n.includes(kw)) return cat; }
+            }
+            if (pos) {
+                const y = pos.y;
+                if (y > 1.7) return 'hats';
+                if (y > 1.5) return 'hair';
+                if (y > 1.3) return 'head';
+                if (y > 1.15) return 'eyes';
+                if (y > 0.9) return 'top';
+                if (y > 0.55) return 'bottom';
+                if (y > 0.3) return 'legs';
+                if (y > 0.05) return 'feet';
+                if (y > -0.2) return 'shoes';
+            }
+            return 'other';
+        }
+
+        // Character management
+        function genId() { return 'c_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5); }
+
+        function parseChar(gltf, fileName, id) {
+            const parts = {};
+            const bones = [];
+            const animations = [];
+            const allMeshes = [];
+            gltf.scene.traverse(n => { if (n.isMesh || n.isSkinnedMesh) allMeshes.push(n); });
+            const groups = new Map();
+            for (const mesh of allMeshes) {
+                let parentName = mesh.parent ? mesh.parent.name : '';
+                const combined = `${mesh.name || ''} ${parentName || ''}`.toLowerCase();
+                const wPos = new THREE.Box3().setFromObject(mesh).getCenter(new THREE.Vector3());
+                let cat = categorize(combined, wPos);
+                if (mesh.parent && mesh.parent.name && mesh.parent.name.length > 0) {
+                    const pc = categorize(mesh.parent.name, null);
+                    if (pc !== 'other') cat = pc;
+                }
+                if (!groups.has(cat)) groups.set(cat, { id: `${id}_${cat}`, name: cat, category: cat, meshes: [],
+                    sourceCharId: id, sourceCharName: fileName });
+                const g = groups.get(cat);
+                g.meshes.push(mesh);
+                if (mesh.material) {
+                    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                    for (const m of mats) { if (!g.materials) g.materials = [];
+                        g.materials.push(m); }
+                }
+            }
+            for (const [cat, g] of groups) { if (g.meshes.length) { g.materials = Array.from(new Set(g.materials || []));
+                    parts[cat] = g; } }
+            const boneSet = new Set();
+            gltf.scene.traverse(n => { if (n.isBone || n.type === 'Bone') boneSet.add(n); });
+            for (const b of boneSet) bones.push({ name: b.name, parent: b.parent && b.parent.isBone ? b.parent.name : null });
+            bones.sort((a, b) => (a.parent ? 1 : 0) - (b.parent ? 1 : 0));
+            if (gltf.animations) for (const clip of gltf.animations) animations.push({ name: clip.name ||
+                    'anim_' + animations.length, duration: clip.duration || 0, clip });
+            return { id, name: fileName.replace(/\.(glb|gltf)$/i, ''), fileName, gltf, parts, bones, animations,
+                meshCount: allMeshes.length, offset: new THREE.Vector3(0, 0, 0) };
+        }
+
+        function addCharacter(gltf, fileName) {
+            const id = genId();
+            const cd = parseChar(gltf, fileName, id);
+            state.characters.push(cd);
+            state.charOffsets[id] = { x: 0, y: 0, z: 0 };
+            state.activeCharId = id;
+            updateBadge();
+            return cd;
+        }
+
+        function removeCharacter(id) {
+            const idx = state.characters.findIndex(c => c.id === id);
+            if (idx === -1) return;
+            const c = state.characters[idx];
+            if (c.gltf?.scene) characterGroup.remove(c.gltf.scene);
+            state.characters.splice(idx, 1);
+            delete state.charOffsets[id];
+            if (state.activeCharId === id) state.activeCharId = state.characters.length ? state.characters[0].id : null;
+            if (state.selectedPart?.charId === id) state.selectedPart = null;
+            updateBadge();
+            updateScene();
+            renderPanel();
+        }
+
+        function getActiveChar() { return state.characters.find(c => c.id === state.activeCharId) || null; }
+
+        function updateBadge() { const b = document.getElementById('upload-badge'); if (state.characters.length) { b.style
+                    .display = 'flex';
+                b.textContent = state.characters.length } else b.style.display = 'none'; }
+
+        function updateScene() {
+            while (characterGroup.children.length) characterGroup.remove(characterGroup.children[0]);
+            if (state.animationMixer) { state.animationMixer.stopAllAction();
+                state.animationMixer = null;
+                state.animationAction = null;
+                state.animationPlaying = false; }
+            const active = getActiveChar();
+            if (active?.gltf?.scene) {
+                characterGroup.add(active.gltf.scene);
+                const off = state.charOffsets[active.id] || { x: 0, y: 0, z: 0 };
+                active.gltf.scene.position.set(off.x, off.y, off.z);
+                active.gltf.scene.rotation.set(0, 0, 0);
+                active.gltf.scene.scale.set(1, 1, 1);
+                if (active.animations.length) state.animationMixer = new THREE.AnimationMixer(active.gltf.scene);
+                document.getElementById('char-name-overlay').textContent = active.name.toUpperCase();
+            } else { document.getElementById('char-name-overlay').textContent = 'NO CHARACTER'; }
+            // Show other characters if layout is side-by-side
+            if (state.charLayout === 'multi') {
+                let idx = 0;
+                for (const c of state.characters) {
+                    if (c.id === active?.id) continue;
+                    if (c.gltf?.scene) {
+                        characterGroup.add(c.gltf.scene);
+                        const off = state.charOffsets[c.id] || { x: 0, y: 0, z: 0 };
+                        c.gltf.scene.position.set(off.x + (idx + 1) * 1.8, off.y, off.z);
+                        c.gltf.scene.scale.set(1, 1, 1);
+                        idx++;
+                    }
+                }
+            }
+            state.selectedPart = null;
+        }
+
+        // Part selection
+        function selectPartByMesh(mesh) {
+            const ac = getActiveChar();
+            if (!ac) return;
+            for (const [cat, part] of Object.entries(ac.parts)) {
+                if (part.meshes.includes(mesh)) {
+                    state.selectedPart = { charId: ac.id, partId: part.id, partName: cat, meshes: part.meshes,
+                        category: cat };
+                    showToast(`Selected: ${cat.toUpperCase()}`);
+                    if (state.panelOpen) renderPanel();
+                    return;
+                }
+            }
+        }
+
+        // Part swapping (from library)
+        function swapPartFromLibrary(srcCharId, srcCat) {
+            const ac = getActiveChar();
+            if (!ac || !ac.parts[srcCat]) return;
+            const sc = state.characters.find(c => c.id === srcCharId);
+            if (!sc || !sc.parts[srcCat]) return;
+            // Remove current part meshes
+            for (const m of ac.parts[srcCat].meshes) { if (m.parent) m.parent.remove(m); }
+            // Clone source part meshes
+            const newMeshes = [];
+            for (const m of sc.parts[srcCat].meshes) {
+                const clone = m.clone(true);
+                ac.gltf.scene.add(clone);
+                clone.position.copy(m.position);
+                clone.rotation.copy(m.rotation);
+                clone.scale.copy(m.scale);
+                newMeshes.push(clone);
+            }
+            ac.parts[srcCat] = { ...ac.parts[srcCat], meshes: newMeshes, sourceCharId: srcCharId, sourceCharName: sc
+                    .name };
+            showToast(`Swapped ${srcCat} from ${sc.name}`);
+            updateScene();
+            renderPanel();
+        }
+
+        // Transform
+        function applyTransform(prop, axis, value) {
+            if (!state.selectedPart) return;
+            for (const mesh of state.selectedPart.meshes) {
+                if (prop === 'position') mesh.position[axis] = parseFloat(value);
+                if (prop === 'rotation') mesh.rotation[axis] = parseFloat(value);
+                if (prop === 'scale') mesh.scale[axis] = parseFloat(value);
+            }
+        }
+
+        function getTransformValue(prop, axis) {
+            if (!state.selectedPart || !state.selectedPart.meshes.length) return 0;
+            const m = state.selectedPart.meshes[0];
+            if (prop === 'position') return m.position[axis]?.toFixed(2) || 0;
+            if (prop === 'rotation') return m.rotation[axis]?.toFixed(2) || 0;
+            if (prop === 'scale') return m.scale[axis]?.toFixed(2) || 0;
+            return 0;
+        }
+
+        // Export
+        function exportChar() {
+            const ac = getActiveChar();
+            if (!ac) return showToast('No character');
+            showToast('Exporting...');
+            const exporter = new GLTFExporter();
+            exporter.parse(ac.gltf.scene, (res) => {
+                const blob = res instanceof ArrayBuffer ? new Blob([res], { type: 'application/octet-stream' }) : new Blob(
+                    [JSON.stringify(res)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${ac.name}_edited.glb`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('Exported!');
+            }, (e) => { showToast('Export failed');
+                console.error(e); }, { binary: true });
+        }
+
+        // Loading
+        function loadFiles(files) {
+            const valid = Array.from(files).filter(f => /\.(glb|gltf)$/i.test(f.name));
+            if (!valid.length) return showToast('Use .glb or .gltf');
+            showLoading(true);
+            let done = 0;
+            for (const f of valid) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    gltfLoader.load(e.target.result, (gltf) => {
+                        addCharacter(gltf, f.name);
+                        done++;
+                        if (done === valid.length) { showLoading(false);
+                            updateScene();
+                            renderPanel();
+                            showToast(`Loaded ${done} model(s)`) } else { updateScene();
+                            renderPanel() }
+                    }, undefined, (err) => { console.error(err);
+                        done++;
+                        showToast(`Failed: ${f.name}`); if (done === valid.length) { showLoading(false);
+                            updateScene();
+                            renderPanel() } });
+                };
+                reader.readAsDataURL(f);
+            }
+        }
+
+        function showLoading(s) { document.getElementById('loading-overlay').classList.toggle('hidden', !s); }
+
+        // Toast
+        let toastT;
+        function showToast(msg) { const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(toastT);
+            toastT = setTimeout(() => t.classList.remove('show'), 1800); }
+
+        // Panel
+        function openPanel(tab) { state.activeTab = tab;
+            state.panelOpen = true;
+            document.getElementById('bottom-panel').classList.add('open');
+            document.getElementById('panel-overlay').classList.add('visible');
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            renderPanel(); }
+
+        function closePanel() { state.panelOpen = false;
+            document.getElementById('bottom-panel').classList.remove('open');
+            document.getElementById('panel-overlay').classList.remove('visible'); }
+
+        function renderPanel() {
+            const content = document.getElementById('panel-content');
+            const title = document.getElementById('panel-title');
+            const ac = getActiveChar();
+            switch (state.activeTab) {
+                case 'chars':
+                    title.textContent = 'CHARACTERS';
+                    renderCharsPanel(content, ac);
+                    break;
+                case 'library':
+                    title.textContent = 'PART LIBRARY';
+                    renderLibraryPanel(content, ac);
+                    break;
+                case 'transform':
+                    title.textContent = 'TRANSFORM';
+                    renderTransformPanel(content, ac);
+                    break;
+                case 'textures':
+                    title.textContent = 'TEXTURES';
+                    renderTexturesPanel(content, ac);
+                    break;
+                case 'anims':
+                    title.textContent = 'ANIMATIONS';
+                    renderAnimsPanel(content, ac);
+                    break;
+                case 'bones':
+                    title.textContent = 'SKELETON';
+                    renderBonesPanel(content, ac);
+                    break;
+            }
+        }
+
+        function renderCharsPanel(c, ac) {
+            if (!state.characters.length) {
+                c.innerHTML =
+                    `<div class="empty-state"><div class="empty-icon">👤</div><div class="empty-text">Upload GLB files to begin.</div><div class="upload-zone" id="empty-upload"><div style="font-size:20px;">📁</div><div style="font-size:9px;">UPLOAD MODEL</div></div></div>`;
+                c.querySelector('#empty-upload')?.addEventListener('click', () => document.getElementById('file-input')
+                    .click());
+                return;
+            }
+            let html = `<div class="char-grid">`;
+            html += state.characters.map(ch => `
+            <div class="char-card ${ch.id===state.activeCharId?'active':''}" data-id="${ch.id}">
+              <div class="char-avatar">${ch.meshCount>0?'👤':'❓'}</div>
+              <div class="char-name">${ch.name}</div>
+              <button class="delete-btn" data-del="${ch.id}">✕</button>
+            </div>`).join('');
+            html +=
+                `<div class="char-card" id="add-char" style="border-style:dashed;"><div class="char-avatar" style="background:rgba(255,255,255,0.05);">➕</div><div class="char-name">Add</div></div></div>`;
+            html +=
+                `<div style="margin-top:8px;font-size:8px;color:var(--text-muted);display:flex;gap:6px;align-items:center;"><span>Layout:</span><button class="cat-pill ${state.charLayout==='single'?'active':''}" id="layout-single">Single</button><button class="cat-pill ${state.charLayout==='multi'?'active':''}" id="layout-multi">Side-by-Side</button></div>`;
+            c.innerHTML = html;
+            c.querySelectorAll('.char-card[data-id]').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    if (e.target.dataset.del) return;
+                    state.activeCharId = el.dataset.id;
+                    state.selectedPart = null;
+                    updateScene();
+                    renderPanel();
+                    showToast(getActiveChar()?.name || '');
+                });
+            });
+            c.querySelectorAll('.delete-btn').forEach(b => {
+                b.addEventListener('click', (e) => { e.stopPropagation();
+                    removeCharacter(b.dataset.del);
+                    showToast('Removed') });
+            });
+            c.querySelector('#add-char')?.addEventListener('click', () => document.getElementById('file-input').click());
+            c.querySelector('#layout-single')?.addEventListener('click', () => { state.charLayout = 'single';
+                updateScene();
+                renderPanel() });
+            c.querySelector('#layout-multi')?.addEventListener('click', () => { state.charLayout = 'multi';
+                updateScene();
+                renderPanel() });
+        }
+
+        function renderLibraryPanel(c, ac) {
+            if (!ac) { c.innerHTML = '<div class="empty-state"><div class="empty-icon">🗂️</div><div class="empty-text">Load a character first.</div></div>'; return; }
+            const allCats = new Set();
+            for (const ch of state.characters) for (const cat of Object.keys(ch.parts)) allCats.add(cat);
+            const cats = Array.from(allCats).sort();
+            if (!cats.length) { c.innerHTML =
+                    '<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">No parts found.</div></div>'; return; }
+            let html = `<div class="cat-pills">`;
+            html +=
+                `<button class="cat-pill ${!state.libraryCat?'active':''}" id="lib-all">All</button>`;
+            html += cats.map(cat =>
+                `<button class="cat-pill ${state.libraryCat===cat?'active':''}" data-libcat="${cat}">${CAT_ICONS[cat]||'📦'} ${cat}</button>`
+                ).join('');
+            html += `</div>`;
+            const filterCat = state.libraryCat || null;
+            html += `<div class="part-grid" style="margin-top:6px;">`;
+            for (const ch of state.characters) {
+                for (const [cat, part] of Object.entries(ch.parts)) {
+                    if (filterCat && cat !== filterCat) continue;
+                    html += `
+                <div class="part-card ${ac.id===ch.id?'':''}" data-srcchar="${ch.id}" data-srccat="${cat}" title="Apply to current">
+                  <div class="part-icon">${CAT_ICONS[cat]||'📦'}</div>
+                  <div class="part-name">${cat}</div>
+                  <div class="part-source">${ch.name.substring(0,8)}</div>
+                </div>`;
+                }
+            }
+            html += `</div>`;
+            c.innerHTML = html;
+            c.querySelectorAll('.cat-pill').forEach(p => {
+                p.addEventListener('click', () => {
+                    state.libraryCat = p.dataset.libcat || null;
+                    renderPanel();
+                });
+            });
+            c.querySelectorAll('.part-card[data-srcchar]').forEach(card => {
+                card.addEventListener('click', () => {
+                    const srcChar = card.dataset.srcchar;
+                    const srcCat = card.dataset.srccat;
+                    if (srcChar && srcCat) {
+                        swapPartFromLibrary(srcChar, srcCat);
+                        closePanel();
+                    }
+                });
+            });
+        }
+
+        function renderTransformPanel(c, ac) {
+            if (!state.selectedPart) { c.innerHTML =
+                    '<div class="empty-state"><div class="empty-icon">⚙️</div><div class="empty-text">Tap a part in 3D view to transform it.</div></div>'; return; }
+            const modes = ['position', 'rotation', 'scale'];
+            const axes = ['x', 'y', 'z'];
+            const labels = { position: 'Pos', rotation: 'Rot', scale: 'Scl' };
+            let html = `<div style="font-size:9px;color:var(--neon-cyan);margin-bottom:4px;">${state.selectedPart.partName.toUpperCase()} — ${labels[state.transformMode]}</div>`;
+            html += `<div class="transform-controls">`;
+            for (const m of modes) {
+                html +=
+                    `<button class="tf-btn ${state.transformMode===m?'active':''}" data-tf-mode="${m}">${labels[m]}</button>`;
+            }
+            html += `</div>`;
+            for (const ax of axes) {
+                const val = getTransformValue(state.transformMode, ax);
+                html += `<div class="slider-row"><label>${ax.toUpperCase()}</label>
+              <input type="range" min="${state.transformMode==='scale'?'0.1':'0'}" max="${state.transformMode==='scale'?'3':'5'}" step="${state.transformMode==='rotation'?'0.1':'0.01'}" value="${val}" data-tf-axis="${ax}">
+              <span class="val-display">${val}</span></div>`;
+            }
+            html +=
+                `<div style="margin-top:4px;display:flex;gap:4px;"><button class="cat-pill active" id="tf-reset">Reset</button></div>`;
+            c.innerHTML = html;
+            c.querySelectorAll('[data-tf-mode]').forEach(b => {
+                b.addEventListener('click', () => { state.transformMode = b.dataset.tfMode;
+                    renderPanel() });
+            });
+            c.querySelectorAll('[data-tf-axis]').forEach(sl => {
+                sl.addEventListener('input', () => {
+                    const axis = sl.dataset.tfAxis;
+                    applyTransform(state.transformMode, axis, sl.value);
+                    sl.nextElementSibling.textContent = parseFloat(sl.value).toFixed(2);
+                });
+            });
+            c.querySelector('#tf-reset')?.addEventListener('click', () => {
+                for (const mesh of state.selectedPart.meshes) {
+                    mesh.position.set(0, 0, 0);
+                    mesh.rotation.set(0, 0, 0);
+                    mesh.scale.set(1, 1, 1);
+                }
+                renderPanel();
+                showToast('Reset');
+            });
+        }
+
+        function renderTexturesPanel(c, ac) {
+            if (!ac) { c.innerHTML = '<div class="empty-state"><div class="empty-icon">🎨</div><div class="empty-text">Load a character.</div></div>'; return; }
+            if (!state.selectedPart) { c.innerHTML =
+                    '<div class="empty-state"><div class="empty-icon">🎨</div><div class="empty-text">Select a part in 3D to edit materials.</div></div>'; return; }
+            const mats = new Set();
+            for (const m of state.selectedPart.meshes) { const ms = Array.isArray(m.material) ? m.material : [m
+                    .material]; for (const mat of ms) mats.add(mat); }
+            const matArr = Array.from(mats);
+            let html =
+                `<div style="font-size:9px;color:var(--neon-cyan);margin-bottom:4px;">${state.selectedPart.partName.toUpperCase()} — ${matArr.length} material(s)</div>`;
+            matArr.forEach((mat, i) => {
+                html +=
+                    `<div style="padding:6px;border-radius:8px;border:1px solid rgba(255,0,110,0.15);margin-bottom:5px;background:rgba(255,255,255,0.02);">`;
+                html +=
+                    `<div style="font-size:8px;color:var(--text-secondary);margin-bottom:4px;">MAT ${i+1}</div>`;
+                html += `<div class="slider-row"><label>Color</label><input type="color" class="mat-color" data-i="${i}" value="${mat.color?'#'+mat.color.getHexString():'#ffffff'}"></div>`;
+                html +=
+                    `<div class="slider-row"><label>Rough</label><input type="range" min="0" max="1" step="0.01" value="${mat.roughness??0.5}" class="mat-rough" data-i="${i}"><span class="val-display">${(mat.roughness??0.5).toFixed(2)}</span></div>`;
+                html +=
+                    `<div class="slider-row"><label>Metal</label><input type="range" min="0" max="1" step="0.01" value="${mat.metalness??0}" class="mat-metal" data-i="${i}"><span class="val-display">${(mat.metalness??0).toFixed(2)}</span></div>`;
+                html +=
+                    `<div class="slider-row"><label>Glow</label><input type="range" min="0" max="3" step="0.05" value="${mat.emissiveIntensity??0}" class="mat-emis" data-i="${i}"><span class="val-display">${(mat.emissiveIntensity??0).toFixed(2)}</span></div>`;
+                html += `</div>`;
+            });
+            html +=
+                `<div style="display:flex;gap:4px;"><button class="cat-pill active" id="mat-reset">Reset All</button></div>`;
+            c.innerHTML = html;
+            c.querySelectorAll('.mat-color').forEach(el => {
+                el.addEventListener('input', () => { const i = parseInt(el.dataset.i); if (matArr[i]?.color) { matArr[i]
+                            .color.set(el.value);
+                        matArr[i].needsUpdate = true; } });
+            });
+            c.querySelectorAll('.mat-rough').forEach(el => {
+                el.addEventListener('input', () => { const i = parseInt(el.dataset.i); if (matArr[i]) { matArr[i]
+                            .roughness = parseFloat(el.value);
+                        matArr[i].needsUpdate = true;
+                        el.nextElementSibling.textContent = parseFloat(el.value).toFixed(2); } });
+            });
+            c.querySelectorAll('.mat-metal').forEach(el => {
+                el.addEventListener('input', () => { const i = parseInt(el.dataset.i); if (matArr[i]) { matArr[i]
+                            .metalness = parseFloat(el.value);
+                        matArr[i].needsUpdate = true;
+                        el.nextElementSibling.textContent = parseFloat(el.value).toFixed(2); } });
+            });
+            c.querySelectorAll('.mat-emis').forEach(el => {
+                el.addEventListener('input', () => { const i = parseInt(el.dataset.i); if (matArr[i]) { matArr[i]
+                            .emissiveIntensity = parseFloat(el.value);
+                        matArr[i].needsUpdate = true;
+                        el.nextElementSibling.textContent = parseFloat(el.value).toFixed(2); } });
+            });
+            c.querySelector('#mat-reset')?.addEventListener('click', () => { for (const m of state.selectedPart.meshes) {
+                    const ms = Array.isArray(m.material) ? m.material : [m.material]; for (const mat of ms) { mat
+                            .color.set(0xffffff);
+                        mat.roughness = 0.5;
+                        mat.metalness = 0;
+                        mat.emissiveIntensity = 0;
+                        mat.needsUpdate = true; } }
+                renderPanel();
+                showToast('Reset') });
+        }
+
+        function renderAnimsPanel(c, ac) {
+            if (!ac) { c.innerHTML = '<div class="empty-state"><div class="empty-icon">🎬</div><div class="empty-text">Load a character.</div></div>'; return; }
+            if (!ac.animations.length) { c.innerHTML =
+                    '<div class="empty-state"><div class="empty-icon">🎬</div><div class="empty-text">No baked animations detected.</div></div>'; return; }
+            let html = '';
+            for (const a of ac.animations) {
+                const playing = state.animationPlaying && state.animationAction?.getClip?.() === a.clip;
+                html +=
+                    `<div class="anim-row ${playing?'active':''}" data-anim="${a.name}"><button class="anim-play-btn">${playing?'⏸':'▶'}</button><span class="anim-name">${a.name}</span><span style="font-size:7px;color:var(--text-muted);">${a.duration.toFixed(1)}s</span></div>`;
+            }
+            if (state.animationPlaying) html +=
+                `<div style="margin-top:4px;"><button class="cat-pill active" id="anim-stop">Stop</button></div>`;
+            c.innerHTML = html;
+            c.querySelectorAll('[data-anim]').forEach(el => {
+                el.addEventListener('click', () => {
+                    const aName = el.dataset.anim;
+                    const a = ac.animations.find(x => x.name === aName);
+                    if (a && state.animationMixer) {
+                        if (state.animationAction && state.animationPlaying) { state.animationAction.stop();
+                            state.animationPlaying = false;
+                            state.animationAction = null; } else { state.animationAction = state.animationMixer
+                                .clipAction(a.clip);
+                            state.animationAction.reset();
+                            state.animationAction.play();
+                            state.animationPlaying = true; }
+                        renderPanel();
+                    }
+                });
+            });
+            c.querySelector('#anim-stop')?.addEventListener('click', () => { if (state.animationAction) { state
+                        .animationAction.stop();
+                    state.animationPlaying = false;
+                    state.animationAction = null; }
+                renderPanel() });
+        }
+
+        function renderBonesPanel(c, ac) {
+            if (!ac) { c.innerHTML = '<div class="empty-state"><div class="empty-icon">🦴</div><div class="empty-text">Load a character.</div></div>'; return; }
+            if (!ac.bones.length) { c.innerHTML =
+                    '<div class="empty-state"><div class="empty-icon">🦴</div><div class="empty-text">No bones found.</div></div>'; return; }
+            const map = new Map();
+            for (const b of ac.bones) map.set(b.name, { ...b, children: [] });
+            const roots = [];
+            for (const b of ac.bones) { if (b.parent && map.has(b.parent)) map.get(b.parent).children.push(map.get(b
+                    .name));
+                else roots.push(map.get(b.name)); }
+
+            function buildHtml(b, depth = 0) {
+                let h = `<li style="padding-left:${depth*4}px;">🦴 ${b.name}</li>`;
+                if (b.children.length) { h += '<ul>'; for (const ch of b.children) h += buildHtml(ch, depth + 1);
+                    h += '</ul>'; }
+                return h;
+            }
+            let tree = '<ul class="bone-tree">';
+            for (const r of roots) tree += buildHtml(r);
+            tree += '</ul>';
+            c.innerHTML =
+                `<div style="font-size:9px;color:var(--neon-cyan);margin-bottom:4px;">${ac.bones.length} BONES</div>${tree}`;
+        }
+
+        // Events
+        document.getElementById('btn-upload').addEventListener('click', () => document.getElementById('file-input')
+            .click());
+        document.getElementById('file-input').addEventListener('change', (e) => { if (e.target.files.length) loadFiles(e
+                .target.files);
+            e.target.value = '' });
+        document.getElementById('btn-export').addEventListener('click', exportChar);
+        document.getElementById('btn-layout').addEventListener('click', () => { state.charLayout = state.charLayout ===
+                'single' ? 'multi' : 'single';
+            updateScene();
+            renderPanel();
+            showToast(`Layout: ${state.charLayout}`) });
+        document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => { const t = b.dataset.tab; if (
+                state.panelOpen && state.activeTab === t) closePanel();
+            else openPanel(t) }));
+        document.getElementById('panel-close').addEventListener('click', closePanel);
+        document.getElementById('panel-overlay').addEventListener('click', closePanel);
+
+        // 3D pointer events
+        renderer.domElement.addEventListener('pointerdown', (e) => { pointerDown = true;
+            pointerMoved = false;
+            swipeStart = { x: e.clientX, y: e.clientY };
+            swipeActive = true; });
+        renderer.domElement.addEventListener('pointermove', (e) => { if (pointerDown) { const dx = e.clientX - swipeStart
+                    .x,
+                    dy = e.clientY - swipeStart.y; if (Math.abs(dx) > 8 || Math.abs(dy) > 8) pointerMoved = true; } });
+        renderer.domElement.addEventListener('pointerup', (e) => {
+            if (pointerDown && !pointerMoved) {
+                const rect = renderer.domElement.getBoundingClientRect();
+                pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(pointer, camera);
+                const ac = getActiveChar();
+                if (ac?.gltf) {
+                    const meshes = [];
+                    ac.gltf.scene.traverse(n => { if (n.isMesh || n.isSkinnedMesh) meshes.push(n) });
+                    const hits = raycaster.intersectObjects(meshes, true);
+                    if (hits.length) selectPartByMesh(hits[0].object);
+                }
+            }
+            if (swipeActive) {
+                const dx = e.clientX - swipeStart.x,
+                    dy = e.clientY - swipeStart.y;
+                if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                    const chars = state.characters;
+                    if (chars.length > 1) {
+                        const idx = chars.findIndex(c => c.id === state.activeCharId);
+                        if (dx < 0 && idx < chars.length - 1) { state.activeCharId = chars[idx + 1].id;
+                            updateScene();
+                            renderPanel();
+                            showToast(chars[idx + 1].name) } else if (dx > 0 && idx > 0) { state.activeCharId = chars[
+                                idx - 1].id;
+                            updateScene();
+                            renderPanel();
+                            showToast(chars[idx - 1].name) }
+                    }
+                } else if (Math.abs(dy) > 50 && dy < 0 && !state.panelOpen) { openPanel(state.activeTab || 'chars') }
+            }
+            pointerDown = false;
+            swipeActive = false;
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'o') document.getElementById('file-input').click();
+            if (e.key === 'e') exportChar();
+            if (e.key === 'Escape') closePanel();
+        });
+        window.addEventListener('resize', () => { camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight) });
+        document.addEventListener('dragover', e => e.preventDefault());
+        document.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files.length) loadFiles(e
+                .dataTransfer.files) });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            if (state.animationMixer) state.animationMixer.update(0.016);
+            particles.rotation.y += 0.0004;
+            glowLight.intensity = 1.2 + Math.sin(Date.now() * 0.002) * 0.4;
+            renderer.render(scene, camera);
+        }
+
+        // Init
+        updateScene();
+        renderPanel();
+        setTimeout(() => showLoading(false), 600);
+        animate();
+        showToast('CYBERDOLL v2 READY');
+        console.log('CYBERDOLL SCHRANK v2 — Part Library, Transform, Multi-char, Transparent HUD');
+    </script>
+</body>
+</html>
