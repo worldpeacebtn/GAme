@@ -3,21 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Avatar Forge Pro — Game Mode + Swipe XYZ + Transparent HUD</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Avatar Forge Pro — Grid Remap + Texture HUD + Animation Grid</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js">
+    </script>
     <style>
         :root {
             --bg: #0a0a14;
-            --panel: rgba(18, 18, 31, 0.75);
-            --border: rgba(42, 42, 62, 0.8);
+            --panel: #12121f;
+            --border: #2a2a3e;
             --accent: #ec4899;
             --accent2: #8b5cf6;
             --accent3: #06b6d4;
+            --bone-head: #fbbf24;
+            --bone-spine: #fb923c;
+            --bone-left: #60a5fa;
+            --bone-right: #f87171;
             --text: #e2e8f0;
             --text-dim: #94a3b8;
         }
@@ -38,512 +47,354 @@
             background: var(--bg);
             color: var(--text);
         }
-        ::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-        }
-        ::-webkit-scrollbar-track {
-            background: rgba(20, 20, 35, 0.4);
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--accent);
-            border-radius: 9999px;
-        }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(20,20,35,0.6); }
+        ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 9999px; }
         .panel {
             background: var(--panel);
             border: 1px solid var(--border);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border-radius: 14px;
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
-        .btn-glow {
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-        .btn-glow:hover {
-            box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
-            transform: translateY(-1px);
-        }
-        .btn-glow:active {
-            transform: scale(0.95);
-        }
+        .btn-glow { transition: all 0.2s ease; cursor: pointer; }
+        .btn-glow:hover { box-shadow: 0 0 20px rgba(236,72,153,0.4); transform: translateY(-1px); }
+        .btn-glow:active { transform: scale(0.96); }
         .bone-grid-item {
-            transition: all 0.2s;
-            cursor: pointer;
+            transition: all 0.2s; cursor: pointer;
             border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 6px;
+            border-radius: 10px;
+            padding: 8px;
             text-align: center;
-            background: rgba(26, 26, 46, 0.8);
+            background: #1a1a2e;
         }
-        .bone-grid-item:hover {
-            border-color: var(--accent);
-            background: rgba(236, 72, 153, 0.1);
-        }
-        .bone-grid-item.selected {
-            border-color: #fff;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        .bone-grid-item:hover { border-color: var(--accent); background: rgba(236,72,153,0.1); }
+        .bone-grid-item.selected { border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.3); }
+        .bone-grid-item .bone-dot {
+            width: 12px; height: 12px; border-radius: 50%;
+            display: inline-block; margin-bottom: 4px;
+            box-shadow: 0 0 8px currentColor;
         }
         .tex-hud-item {
-            transition: all 0.2s;
-            cursor: pointer;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 2px;
-            text-align: center;
-            background: rgba(26, 26, 46, 0.8);
+            transition: all 0.2s; cursor: pointer; border: 1px solid var(--border);
+            border-radius: 8px; padding: 4px; text-align: center; background: #1a1a2e;
         }
-        .tex-hud-item:hover {
-            border-color: var(--accent3);
-        }
-        .tex-hud-item.active {
-            border-color: var(--accent3);
-            background: rgba(6, 182, 212, 0.2);
-        }
-        .tex-thumb {
-            width: 100%;
-            aspect-ratio: 1;
-            object-fit: cover;
-            border-radius: 4px;
-            background: #2a2a3e;
-        }
+        .tex-hud-item:hover { border-color: var(--accent3); }
+        .tex-hud-item.active { border-color: var(--accent3); background: rgba(6,182,212,0.2); }
+        .tex-thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 4px; background: #2a2a3e; }
         .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
-            z-index: 60;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(6px); z-index: 60;
+            display: flex; align-items: center; justify-content: center;
         }
         .modal-panel {
-            background: #1a1a2e;
-            border: 1px solid #3a3a5e;
-            border-radius: 16px;
-            padding: 15px;
-            max-width: 90vw;
-            max-height: 85vh;
-            overflow-y: auto;
+            background: #1a1a2e; border: 1px solid #3a3a5e; border-radius: 20px;
+            padding: 20px; max-width: 90vw; max-height: 85vh; overflow-y: auto;
             animation: slideUp 0.25s ease;
         }
-        @keyframes slideUp {
-            from {
-                transform: translateY(30px);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
-        }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .anim-grid-item {
-            transition: all 0.2s;
-            cursor: pointer;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 4px;
-            text-align: center;
-            background: rgba(26, 26, 46, 0.8);
+            transition: all 0.2s; cursor: pointer; border: 1px solid var(--border);
+            border-radius: 10px; padding: 6px; text-align: center; background: #1a1a2e;
         }
-        .anim-grid-item:hover {
-            border-color: var(--accent);
-            background: rgba(236, 72, 153, 0.1);
-        }
-        .anim-grid-item.active {
-            border-color: var(--accent);
-            background: rgba(236, 72, 153, 0.2);
-            box-shadow: 0 0 10px rgba(236, 72, 153, 0.3);
-        }
-        .toast-enter {
-            animation: toastIn 0.3s ease forwards;
-        }
-        @keyframes toastIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        .hair-toggle-btn.on {
-            background: rgba(236, 72, 153, 0.3);
-            border-color: var(--accent);
-        }
-        .hair-toggle-btn.off {
-            background: rgba(30, 30, 50, 0.7);
-            border-color: #444;
-            color: #888;
-        }
-        .tab-btn.active {
-            background: rgba(236, 72, 153, 0.15);
-            color: var(--accent);
-            border-color: var(--accent);
-        }
+        .anim-grid-item:hover { border-color: var(--accent); background: rgba(236,72,153,0.1); }
+        .anim-grid-item.active { border-color: var(--accent); background: rgba(236,72,153,0.2); box-shadow: 0 0 12px rgba(236,72,153,0.3); }
+        .toast-enter { animation: toastIn 0.3s ease forwards; }
+        @keyframes toastIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .hair-toggle-btn.on { background: rgba(236,72,153,0.3); border-color: var(--accent); }
+        .hair-toggle-btn.off { background: rgba(30,30,50,0.8); border-color: #444; color: #888; }
+        .tab-btn.active { background: rgba(236,72,153,0.15); color: var(--accent); border-color: var(--accent); }
         .xyz-btn {
-            width: 30px;
-            height: 30px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.15s;
-            user-select: none;
+            width: 36px; height: 36px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 14px; cursor: pointer;
+            transition: all 0.15s; user-select: none;
             border: 1px solid var(--border);
         }
-        .xyz-btn:hover {
-            filter: brightness(1.3);
-        }
-        .xyz-btn:active {
-            transform: scale(0.9);
-        }
-        .xyz-btn.x-color {
-            background: rgba(236, 72, 153, 0.2);
-            border-color: #ec4899;
-            color: #ec4899;
-        }
-        .xyz-btn.y-color {
-            background: rgba(139, 92, 246, 0.2);
-            border-color: #8b5cf6;
-            color: #8b5cf6;
-        }
-        .xyz-btn.z-color {
-            background: rgba(6, 182, 212, 0.2);
-            border-color: #06b6d4;
-            color: #06b6d4;
-        }
+        .xyz-btn:hover { filter: brightness(1.3); }
+        .xyz-btn:active { transform: scale(0.92); }
+        .xyz-btn.x-color { background: rgba(236,72,153,0.2); border-color: #ec4899; color: #ec4899; }
+        .xyz-btn.y-color { background: rgba(139,92,246,0.2); border-color: #8b5cf6; color: #8b5cf6; }
+        .xyz-btn.z-color { background: rgba(6,182,212,0.2); border-color: #06b6d4; color: #06b6d4; }
         .xyz-value {
-            font-family: monospace;
-            font-size: 11px;
-            text-align: center;
-            min-width: 45px;
-            background: rgba(26, 26, 46, 0.8);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 2px 6px;
-            color: #fff;
+            font-family: monospace; font-size: 12px; text-align: center;
+            min-width: 50px; background: #1a1a2e; border: 1px solid var(--border);
+            border-radius: 8px; padding: 4px 8px; color: #fff;
         }
-        .range-slider {
-            width: 100%;
-            cursor: pointer;
-            accent-color: var(--accent);
-        }
-        .game-action-btn {
-            padding: 8px 10px;
-            border-radius: 10px;
-            background: rgba(30, 30, 50, 0.8);
-            border: 1px solid var(--border);
-            color: #fff;
-            font-size: 10px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 2px;
-        }
-        .game-action-btn:hover {
-            border-color: var(--accent);
-            background: rgba(236, 72, 153, 0.15);
-        }
-        .game-action-btn.active {
-            border-color: var(--accent);
-            background: rgba(236, 72, 153, 0.3);
-            box-shadow: 0 0 12px rgba(236, 72, 153, 0.4);
-        }
-        @media (max-width: 768px) {
-            .hide-mobile {
-                display: none !important;
-            }
-        }
+        @media (max-width: 768px) { .hide-mobile { display: none !important; } }
     </style>
 </head>
 <body>
-    <!-- 3D CANVAS (fixed) -->
-    <div id="canvas-container" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 0;"></div>
+
+    <!-- 3D CANVAS -->
+    <div id="canvas-container" class="fixed inset-0 z-0"></div>
     <div id="glitch-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:100;opacity:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(236,72,153,0.05) 2px,rgba(236,72,153,0.05) 4px);"></div>
 
-    <!-- EMPTY STATE -->
-    <div id="upload-empty-state" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-6 transition-opacity duration-700">
-        <div class="max-w-md panel p-8 rounded-3xl space-y-5 text-center">
-            <div class="w-20 h-20 bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/40 rounded-3xl flex items-center justify-center mx-auto text-pink-400 text-3xl animate-bounce"><i class="fa-solid fa-person"></i></div>
-            <h2 class="text-2xl font-bold text-white">Avatar Forge Pro</h2>
-            <p class="text-sm text-slate-400">Upload .glb/.vrm · Grid Remap · Texture HUD · Game Mode</p>
-            <label class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-pink-600 to-purple-500 hover:from-pink-500 hover:to-purple-400 active:scale-95 text-white font-bold px-7 py-3.5 rounded-2xl shadow-xl cursor-pointer transition-all text-sm">
-                <i class="fa-solid fa-cloud-arrow-up"></i><span>Upload Avatar</span>
-                <input type="file" id="gltf-upload-hero" accept=".glb,.gltf,.vrm" class="hidden">
-            </label>
-        </div>
-    </div>
-
-    <!-- TOP BAR (compact) -->
-    <div class="fixed top-2 left-2 right-2 z-40 flex items-center justify-between gap-1 pointer-events-none" style="top:6px;">
-        <div class="panel px-3 py-1.5 flex items-center gap-2 pointer-events-auto" style="background:rgba(18,18,31,0.6);">
-            <div id="status-dot" class="w-2 h-2 rounded-full bg-rose-500 animate-pulse flex-shrink-0"></div>
+    <!-- TOP BAR -->
+    <div class="fixed top-2 left-2 right-2 z-40 flex items-center justify-between gap-2 pointer-events-none" style="top:8px;">
+        <div class="panel px-3.5 py-2 flex items-center gap-2.5 pointer-events-auto">
+            <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse flex-shrink-0"></div>
             <div>
-                <h1 class="text-[8px] font-bold text-slate-500 tracking-widest uppercase">Avatar Forge</h1>
-                <p id="asset-name" class="text-[10px] font-bold text-pink-400 truncate max-w-[80px] sm:max-w-[160px]">No Model</p>
+                <h1 class="text-[9px] font-bold text-slate-500 tracking-widest uppercase">Avatar Forge Pro</h1>
+                <p id="asset-name" class="text-xs font-bold text-pink-400 truncate max-w-[100px] sm:max-w-[200px]">No Model</p>
             </div>
         </div>
-        <div class="flex items-center gap-1 pointer-events-auto flex-wrap">
-            <button id="btn-toggle-skeleton" class="panel px-2 py-1.5 text-slate-300 btn-glow flex items-center gap-1 text-[9px] font-bold" style="background:rgba(18,18,31,0.6);"><i class="fa-solid fa-bone text-emerald-400 text-xs"></i><span class="hide-mobile">Bones</span></button>
-            <button id="btn-skeleton-map" class="panel px-2 py-1.5 text-amber-300 btn-glow flex items-center gap-1 text-[9px] font-bold" style="background:rgba(18,18,31,0.6);"><i class="fa-solid fa-diagram-project text-xs"></i><span class="hide-mobile">Map</span></button>
-            <button id="btn-open-remap" class="panel px-2 py-1.5 text-sky-300 btn-glow flex items-center gap-1 text-[9px] font-bold" style="background:rgba(18,18,31,0.6);"><i class="fa-solid fa-exchange-alt text-xs"></i><span class="hide-mobile">Remap</span></button>
-            <button id="btn-toggle-texture-hud" class="panel px-2 py-1.5 text-sky-300 btn-glow flex items-center gap-1 text-[9px] font-bold" style="background:rgba(18,18,31,0.6);"><i class="fa-solid fa-layer-group text-xs"></i><span class="hide-mobile">Tex</span></button>
-            <button id="btn-toggle-game-mode" class="panel px-2 py-1.5 text-emerald-300 btn-glow flex items-center gap-1 text-[9px] font-bold" style="background:rgba(18,18,31,0.6);"><i class="fa-solid fa-gamepad text-xs"></i><span class="hide-mobile">Game</span></button>
-            <button id="btn-toggle-hair" class="hair-toggle-btn on panel px-2 py-1.5 btn-glow flex items-center gap-1 text-[9px] font-bold text-pink-300" style="background:rgba(18,18,31,0.6);"><i class="fa-solid fa-scissors text-xs"></i><span class="hide-mobile">Hair</span></button>
-            <button id="btn-export-model" class="panel px-2 py-1.5 text-emerald-300 btn-glow flex items-center gap-1 text-[9px] font-bold" style="background:rgba(18,18,31,0.6);"><i class="fa-solid fa-download text-xs"></i><span class="hide-mobile">Export</span></button>
-            <label class="panel px-2 py-1.5 text-sky-300 btn-glow flex items-center gap-1 text-[9px] font-bold cursor-pointer" style="background:rgba(18,18,31,0.6);"><i class="fa-solid fa-upload text-xs"></i><span class="hide-mobile">Load</span><input type="file" id="gltf-upload" accept=".glb,.gltf,.vrm" class="hidden"></label>
+        <div class="flex items-center gap-1.5 pointer-events-auto flex-wrap">
+            <button id="btn-toggle-skeleton" class="panel px-2.5 py-2 text-slate-300 btn-glow flex items-center gap-1 text-[10px] font-bold"><i class="fa-solid fa-bone text-emerald-400 text-xs"></i><span class="hide-mobile">Bones</span></button>
+            <button id="btn-skeleton-map" class="panel px-2.5 py-2 text-amber-300 btn-glow flex items-center gap-1 text-[10px] font-bold"><i class="fa-solid fa-diagram-project text-xs"></i><span class="hide-mobile">Map</span></button>
+            <button id="btn-open-remap" class="panel px-2.5 py-2 text-sky-300 btn-glow flex items-center gap-1 text-[10px] font-bold"><i class="fa-solid fa-exchange-alt text-xs"></i><span class="hide-mobile">Remap</span></button>
+            <button id="btn-toggle-texture-hud" class="panel px-2.5 py-2 text-sky-300 btn-glow flex items-center gap-1 text-[10px] font-bold"><i class="fa-solid fa-layer-group text-xs"></i><span class="hide-mobile">Textures</span></button>
+            <button id="btn-toggle-hair" class="hair-toggle-btn on panel px-2.5 py-2 btn-glow flex items-center gap-1 text-[10px] font-bold text-pink-300"><i class="fa-solid fa-scissors text-xs"></i><span class="hide-mobile">Hair</span></button>
+            <button id="btn-export-model" class="panel px-2.5 py-2 text-emerald-300 btn-glow flex items-center gap-1 text-[10px] font-bold"><i class="fa-solid fa-download text-xs"></i><span class="hide-mobile">Export</span></button>
+            <label class="panel px-2.5 py-2 text-sky-300 btn-glow flex items-center gap-1 text-[10px] font-bold cursor-pointer"><i class="fa-solid fa-upload text-xs"></i><span class="hide-mobile">Load</span><input type="file" id="gltf-upload" accept=".glb,.gltf,.vrm" class="hidden"></label>
         </div>
     </div>
 
-    <!-- TEXTURE HUD (floating, toggle) -->
-    <div id="texture-hud" class="fixed z-40 pointer-events-none hidden" style="top:50px; left:50%; transform:translateX(-50%); width:260px; max-width:90vw;">
-        <div class="panel p-2 pointer-events-auto" style="background:rgba(18,18,31,0.7);">
-            <div class="flex items-center justify-between mb-1">
-                <span class="text-[9px] font-bold text-sky-300"><i class="fa-solid fa-layer-group mr-1"></i>TEXTURES</span>
+    <!-- TEXTURE HUD (toggleable floating panel) -->
+    <div id="texture-hud" class="fixed z-40 pointer-events-none hidden" style="top:70px; left:50%; transform:translateX(-50%); width:300px; max-width:90vw;">
+        <div class="panel p-3 pointer-events-auto">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-bold text-sky-300"><i class="fa-solid fa-layer-group mr-1"></i>TEXTURE HUD</span>
                 <div class="flex gap-1">
-                    <button id="btn-texture-link-mode" class="bg-slate-800 hover:bg-slate-700 px-1.5 py-0.5 rounded-md text-slate-300 text-[8px]" title="Link mode"><i class="fa-solid fa-link"></i></button>
-                    <button id="btn-texture-undo" class="bg-slate-800 hover:bg-slate-700 px-1.5 py-0.5 rounded-md text-slate-300 text-[8px]"><i class="fa-solid fa-undo"></i></button>
-                    <button id="btn-texture-redo" class="bg-slate-800 hover:bg-slate-700 px-1.5 py-0.5 rounded-md text-slate-300 text-[8px]"><i class="fa-solid fa-redo"></i></button>
-                    <button id="btn-texture-delete" class="bg-slate-800 hover:bg-slate-700 px-1.5 py-0.5 rounded-md text-rose-400 text-[8px]"><i class="fa-solid fa-trash"></i></button>
+                    <button id="btn-texture-link-mode" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg text-slate-300 text-[9px]" title="Link mode: click part to apply selected texture"><i class="fa-solid fa-link"></i> Link</button>
+                    <button id="btn-texture-undo" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg text-slate-300 text-[9px]" title="Undo texture assignment"><i class="fa-solid fa-undo"></i></button>
+                    <button id="btn-texture-redo" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg text-slate-300 text-[9px]" title="Redo texture assignment"><i class="fa-solid fa-redo"></i></button>
+                    <button id="btn-texture-delete" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg text-rose-400 text-[9px]" title="Delete selected texture from library"><i class="fa-solid fa-trash"></i></button>
                 </div>
             </div>
-            <div class="flex gap-1 items-center mb-1">
-                <span class="text-[8px] text-slate-400">Alpha:</span>
-                <input type="range" id="texture-alpha" min="0" max="1" step="0.01" value="1" class="flex-1 cursor-pointer" style="accent-color:var(--accent3);">
-                <span id="texture-alpha-value" class="text-[8px] text-sky-300">1.00</span>
+            <div class="flex gap-2 items-center mb-2">
+                <span class="text-[9px] text-slate-400">Alpha:</span>
+                <input type="range" id="texture-alpha" min="0" max="1" step="0.01" value="1" class="flex-1 cursor-pointer">
+                <span id="texture-alpha-value" class="text-[9px] text-sky-300">1.00</span>
             </div>
-            <div id="texture-hud-grid" class="grid grid-cols-3 gap-1 max-h-24 overflow-y-auto"></div>
-            <div class="mt-1 flex gap-1">
-                <label class="flex-1 bg-slate-800 hover:bg-slate-700 cursor-pointer px-1.5 py-0.5 rounded-md text-center text-[8px] text-sky-300 border border-sky-500/30"><i class="fa-solid fa-upload mr-0.5"></i>Upload<input type="file" id="texture-hud-upload" accept=".png,.jpg,.jpeg,.webp" class="hidden"></label>
-                <button id="btn-texture-readd" class="bg-slate-800 hover:bg-slate-700 px-1.5 py-0.5 rounded-md text-slate-300 text-[8px]"><i class="fa-solid fa-plus"></i></button>
+            <div id="texture-hud-grid" class="grid grid-cols-3 gap-1.5 max-h-40 overflow-y-auto"></div>
+            <div class="mt-2 flex gap-1">
+                <label class="flex-1 bg-slate-800 hover:bg-slate-700 cursor-pointer px-2 py-1 rounded-lg text-center text-[9px] text-sky-300 border border-sky-500/30"><i class="fa-solid fa-upload mr-1"></i>Upload<input type="file" id="texture-hud-upload" accept=".png,.jpg,.jpeg,.webp" class="hidden"></label>
+                <button id="btn-texture-readd" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg text-slate-300 text-[9px]" title="Re-add texture to selected part"><i class="fa-solid fa-plus"></i></button>
             </div>
         </div>
     </div>
 
-    <!-- GAME MODE ACTION BAR -->
-    <div id="game-mode-bar" class="fixed bottom-[215px] left-1/2 transform -translate-x-1/2 z-35 hidden pointer-events-none">
-        <div class="flex gap-2 pointer-events-auto bg-black/30 backdrop-blur-md rounded-2xl p-1.5 border border-slate-700/50">
-            <button class="game-action-btn" data-action="run"><span>🏃</span><span class="text-[8px]">Run</span></button>
-            <button class="game-action-btn" data-action="jump"><span>🦘</span><span class="text-[8px]">Jump</span></button>
-            <button class="game-action-btn" data-action="block"><span>🛡️</span><span class="text-[8px]">Block</span></button>
-            <button class="game-action-btn" data-action="down"><span>⬇️</span><span class="text-[8px]">Down</span></button>
-            <button class="game-action-btn" data-action="attack"><span>⚔️</span><span class="text-[8px]">Attack</span></button>
-            <button class="game-action-btn" data-action="talk"><span>💬</span><span class="text-[8px]">Talk</span></button>
-        </div>
-    </div>
-
-    <!-- LEFT PANEL — ANIMATIONS (compact) -->
-    <div class="fixed left-1 z-30 pointer-events-none" style="top:45px; bottom:215px; width:130px; max-width:30vw;">
-        <div class="panel p-1.5 h-full flex flex-col pointer-events-auto overflow-hidden" style="background:rgba(18,18,31,0.5);">
-            <div class="flex items-center justify-between mb-1">
-                <span class="text-[8px] font-bold text-slate-400"><i class="fa-solid fa-film mr-0.5 text-purple-400"></i>ANIM</span>
-                <button id="btn-stop-anim" class="text-rose-400 hover:text-rose-300 text-[8px] px-1 py-0.5 rounded bg-rose-500/10"><i class="fa-solid fa-stop"></i></button>
+    <!-- LEFT PANEL — ANIMATIONS GRID -->
+    <div class="fixed left-2 z-30 pointer-events-none" style="top:70px; bottom:220px; width:200px; max-width:35vw;">
+        <div class="panel p-2.5 h-full flex flex-col pointer-events-auto overflow-hidden">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-bold text-slate-400"><i class="fa-solid fa-film mr-1 text-purple-400"></i>ANIM GRID</span>
+                <button id="btn-stop-anim" class="text-rose-400 hover:text-rose-300 text-[10px] px-1.5 py-0.5 rounded-lg bg-rose-500/10"><i class="fa-solid fa-stop"></i></button>
             </div>
-            <div id="anim-grid" class="grid grid-cols-2 gap-1 flex-1 overflow-y-auto pr-0.5"></div>
-            <div class="mt-1 pt-1 border-t border-slate-800 text-[7px] text-slate-500 text-center"><span id="current-anim-label">Idle</span></div>
+            <div id="anim-grid" class="grid grid-cols-2 gap-1.5 flex-1 overflow-y-auto pr-0.5"></div>
+            <div class="mt-2 pt-2 border-t border-slate-800 text-[9px] text-slate-500 text-center"><span id="current-anim-label">Idle</span></div>
         </div>
     </div>
 
-    <!-- RIGHT PANEL — SKELETON (compact) -->
-    <div class="fixed right-1 z-30 pointer-events-none" style="top:45px; bottom:215px; width:130px; max-width:30vw;">
-        <div class="panel p-1.5 h-full flex flex-col pointer-events-auto overflow-hidden" style="background:rgba(18,18,31,0.5);">
-            <div class="flex items-center justify-between mb-1">
-                <span class="text-[8px] font-bold text-slate-400"><i class="fa-solid fa-sitemap mr-0.5 text-emerald-400"></i>BONES</span>
-                <button id="btn-open-remap-side" class="text-sky-400 hover:text-sky-300 text-[8px] px-1 py-0.5 rounded bg-sky-500/10">Remap</button>
+    <!-- RIGHT PANEL — SKELETON LIST -->
+    <div class="fixed right-2 z-30 pointer-events-none" style="top:70px; bottom:220px; width:190px; max-width:40vw;">
+        <div class="panel p-2.5 h-full flex flex-col pointer-events-auto overflow-hidden">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[10px] font-bold text-slate-400"><i class="fa-solid fa-sitemap mr-1 text-emerald-400"></i>BONES</span>
+                <button id="btn-open-remap-side" class="text-sky-400 hover:text-sky-300 text-[9px] px-1.5 py-0.5 rounded bg-sky-500/10">Remap</button>
             </div>
-            <div id="bone-hierarchy-list" class="flex-1 overflow-y-auto space-y-0.5 pr-0.5 text-[8px]"></div>
-            <div class="mt-1 pt-1 border-t border-slate-800 text-[7px] text-slate-500"><span id="bone-count-label">0</span> · <span id="selected-bone-label" class="text-pink-400">None</span></div>
+            <div id="bone-hierarchy-list" class="flex-1 overflow-y-auto space-y-0.5 pr-0.5 text-[10px]"></div>
+            <div class="mt-2 pt-2 border-t border-slate-800 text-[9px] text-slate-500"><span id="bone-count-label">0 bones</span> · <span id="selected-bone-label" class="text-pink-400">None</span></div>
         </div>
     </div>
 
-    <!-- BOTTOM DOCK (scaled down) -->
-    <div id="persistent-dock" class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/80 backdrop-blur-xl border-t border-slate-800 shadow-[0_-5px_20px_rgba(0,0,0,0.5)] flex flex-col select-none" style="height:210px;">
-        <div class="grid grid-cols-7 bg-slate-950/60 border-b border-slate-800 p-0.5 text-[8px] font-bold text-center flex-shrink-0">
-            <button onclick="switchTab('tab-pose')" id="btn-tab-pose" class="tab-btn py-0.5 rounded-lg text-slate-400 hover:text-white">Pose</button>
-            <button onclick="switchTab('tab-anim')" id="btn-tab-anim" class="tab-btn py-0.5 rounded-lg text-slate-400 hover:text-white">Key</button>
-            <button onclick="switchTab('tab-replay')" id="btn-tab-replay" class="tab-btn py-0.5 rounded-lg text-slate-400 hover:text-white">Replay</button>
-            <button onclick="switchTab('tab-textures')" id="btn-tab-textures" class="tab-btn py-0.5 rounded-lg text-slate-400 hover:text-white">Tex</button>
-            <button onclick="switchTab('tab-parts')" id="btn-tab-parts" class="tab-btn py-0.5 rounded-lg text-slate-400 hover:text-white">Parts</button>
-            <button onclick="switchTab('tab-materials')" id="btn-tab-materials" class="tab-btn py-0.5 rounded-lg text-slate-400 hover:text-white">Mat</button>
-            <button onclick="switchTab('tab-effects')" id="btn-tab-effects" class="tab-btn py-0.5 rounded-lg text-slate-400 hover:text-white">FX</button>
+    <!-- BOTTOM DOCK -->
+    <div id="persistent-dock" class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-2xl border-t border-slate-800 shadow-[0_-10px_40px_rgba(0,0,0,0.7)] flex flex-col select-none" style="height:215px;">
+        <div class="grid grid-cols-7 bg-slate-950/80 border-b border-slate-800 p-1 text-[10px] font-bold text-center flex-shrink-0">
+            <button onclick="switchTab('tab-pose')" id="btn-tab-pose" class="tab-btn py-1.5 rounded-xl text-slate-400 hover:text-white">Pose</button>
+            <button onclick="switchTab('tab-anim')" id="btn-tab-anim" class="tab-btn py-1.5 rounded-xl text-slate-400 hover:text-white">Keyframe</button>
+            <button onclick="switchTab('tab-replay')" id="btn-tab-replay" class="tab-btn py-1.5 rounded-xl text-slate-400 hover:text-white">Replay</button>
+            <button onclick="switchTab('tab-textures')" id="btn-tab-textures" class="tab-btn py-1.5 rounded-xl text-slate-400 hover:text-white">Textures</button>
+            <button onclick="switchTab('tab-parts')" id="btn-tab-parts" class="tab-btn py-1.5 rounded-xl text-slate-400 hover:text-white">Parts</button>
+            <button onclick="switchTab('tab-materials')" id="btn-tab-materials" class="tab-btn py-1.5 rounded-xl text-slate-400 hover:text-white">Material</button>
+            <button onclick="switchTab('tab-effects')" id="btn-tab-effects" class="tab-btn py-1.5 rounded-xl text-slate-400 hover:text-white">FX</button>
         </div>
-        <div class="flex-1 overflow-y-auto p-2 text-[9px] space-y-1.5">
-            <!-- POSE TAB with XYZ + Swipe Sliders -->
+        <div class="flex-1 overflow-y-auto p-3 text-xs space-y-2">
+            <!-- POSE TAB with XYZ -->
             <div id="tab-pose" class="space-y-2">
-                <div class="flex items-center gap-1 flex-wrap">
-                    <label class="text-slate-400 text-[8px]">Joint:</label>
-                    <select id="pose-bone-select" class="flex-1 min-w-[70px] bg-slate-950 border border-slate-700 rounded-md px-1 py-0.5 text-white text-[9px]"></select>
-                    <button onclick="resetSelectedBone()" class="bg-slate-800 hover:bg-slate-700 px-1.5 py-0.5 rounded-md text-slate-300 text-[8px]"><i class="fa-solid fa-rotate-left"></i></button>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <label class="text-slate-400 text-[10px]">Joint:</label>
+                    <select id="pose-bone-select" class="flex-1 min-w-[80px] bg-slate-950 border border-slate-700 rounded-xl px-2 py-1.5 text-white text-[11px]"></select>
+                    <button onclick="resetSelectedBone()" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded-lg text-slate-300 text-[10px]"><i class="fa-solid fa-rotate-left"></i></button>
                 </div>
-                <div class="grid grid-cols-3 gap-1.5">
-                    <div class="bg-slate-950/50 p-1.5 rounded-lg border border-slate-800 text-center">
-                        <div class="text-[8px] text-pink-400 font-bold mb-0.5">X</div>
-                        <div class="flex items-center gap-0.5 justify-center">
-                            <button class="xyz-btn x-color" style="width:24px;height:24px;font-size:10px;" onclick="adjustRotation('x',-0.1)">−</button>
-                            <span class="xyz-value" id="val-x" style="min-width:35px;font-size:9px;">0°</span>
-                            <button class="xyz-btn x-color" style="width:24px;height:24px;font-size:10px;" onclick="adjustRotation('x',0.1)">+</button>
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800 text-center">
+                        <div class="text-[9px] text-pink-400 font-bold mb-1">X (Pitch)</div>
+                        <div class="flex items-center gap-1 justify-center">
+                            <button class="xyz-btn x-color" onclick="adjustRotation('x',-0.1)">−</button>
+                            <span class="xyz-value" id="val-x">0°</span>
+                            <button class="xyz-btn x-color" onclick="adjustRotation('x',0.1)">+</button>
                         </div>
-                        <input type="range" id="slider-x" min="-3.14" max="3.14" step="0.01" value="0" class="range-slider mt-0.5" oninput="setRotationFromSlider('x',this.value)">
-                        <div class="flex justify-between mt-0.5">
-                            <button class="text-[7px] text-pink-400 bg-pink-500/20 px-1 rounded" onclick="setRotation('x',-3.14)">MIN</button>
-                            <button class="text-[7px] text-pink-400 bg-pink-500/20 px-1 rounded" onclick="setRotation('x',3.14)">MAX</button>
-                        </div>
-                    </div>
-                    <div class="bg-slate-950/50 p-1.5 rounded-lg border border-slate-800 text-center">
-                        <div class="text-[8px] text-purple-400 font-bold mb-0.5">Y</div>
-                        <div class="flex items-center gap-0.5 justify-center">
-                            <button class="xyz-btn y-color" style="width:24px;height:24px;font-size:10px;" onclick="adjustRotation('y',-0.1)">−</button>
-                            <span class="xyz-value" id="val-y" style="min-width:35px;font-size:9px;">0°</span>
-                            <button class="xyz-btn y-color" style="width:24px;height:24px;font-size:10px;" onclick="adjustRotation('y',0.1)">+</button>
-                        </div>
-                        <input type="range" id="slider-y" min="-3.14" max="3.14" step="0.01" value="0" class="range-slider mt-0.5" oninput="setRotationFromSlider('y',this.value)">
-                        <div class="flex justify-between mt-0.5">
-                            <button class="text-[7px] text-purple-400 bg-purple-500/20 px-1 rounded" onclick="setRotation('y',-3.14)">MIN</button>
-                            <button class="text-[7px] text-purple-400 bg-purple-500/20 px-1 rounded" onclick="setRotation('y',3.14)">MAX</button>
+                        <div class="flex gap-1 mt-1 justify-center">
+                            <button class="xyz-btn x-color text-xs" style="width:28px;height:28px;" onclick="adjustRotation('x',-0.5)">−−</button>
+                            <button class="xyz-btn x-color text-xs" style="width:28px;height:28px;" onclick="adjustRotation('x',0.5)">++</button>
                         </div>
                     </div>
-                    <div class="bg-slate-950/50 p-1.5 rounded-lg border border-slate-800 text-center">
-                        <div class="text-[8px] text-sky-400 font-bold mb-0.5">Z</div>
-                        <div class="flex items-center gap-0.5 justify-center">
-                            <button class="xyz-btn z-color" style="width:24px;height:24px;font-size:10px;" onclick="adjustRotation('z',-0.1)">−</button>
-                            <span class="xyz-value" id="val-z" style="min-width:35px;font-size:9px;">0°</span>
-                            <button class="xyz-btn z-color" style="width:24px;height:24px;font-size:10px;" onclick="adjustRotation('z',0.1)">+</button>
+                    <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800 text-center">
+                        <div class="text-[9px] text-purple-400 font-bold mb-1">Y (Yaw)</div>
+                        <div class="flex items-center gap-1 justify-center">
+                            <button class="xyz-btn y-color" onclick="adjustRotation('y',-0.1)">−</button>
+                            <span class="xyz-value" id="val-y">0°</span>
+                            <button class="xyz-btn y-color" onclick="adjustRotation('y',0.1)">+</button>
                         </div>
-                        <input type="range" id="slider-z" min="-3.14" max="3.14" step="0.01" value="0" class="range-slider mt-0.5" oninput="setRotationFromSlider('z',this.value)">
-                        <div class="flex justify-between mt-0.5">
-                            <button class="text-[7px] text-sky-400 bg-sky-500/20 px-1 rounded" onclick="setRotation('z',-3.14)">MIN</button>
-                            <button class="text-[7px] text-sky-400 bg-sky-500/20 px-1 rounded" onclick="setRotation('z',3.14)">MAX</button>
+                        <div class="flex gap-1 mt-1 justify-center">
+                            <button class="xyz-btn y-color text-xs" style="width:28px;height:28px;" onclick="adjustRotation('y',-0.5)">−−</button>
+                            <button class="xyz-btn y-color text-xs" style="width:28px;height:28px;" onclick="adjustRotation('y',0.5)">++</button>
+                        </div>
+                    </div>
+                    <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800 text-center">
+                        <div class="text-[9px] text-sky-400 font-bold mb-1">Z (Roll)</div>
+                        <div class="flex items-center gap-1 justify-center">
+                            <button class="xyz-btn z-color" onclick="adjustRotation('z',-0.1)">−</button>
+                            <span class="xyz-value" id="val-z">0°</span>
+                            <button class="xyz-btn z-color" onclick="adjustRotation('z',0.1)">+</button>
+                        </div>
+                        <div class="flex gap-1 mt-1 justify-center">
+                            <button class="xyz-btn z-color text-xs" style="width:28px;height:28px;" onclick="adjustRotation('z',-0.5)">−−</button>
+                            <button class="xyz-btn z-color text-xs" style="width:28px;height:28px;" onclick="adjustRotation('z',0.5)">++</button>
                         </div>
                     </div>
                 </div>
             </div>
-            <!-- Other tabs omitted for brevity; they follow the same compact styling -->
+
+            <!-- KEYFRAME TAB -->
             <div id="tab-anim" class="space-y-2 hidden">
                 <div class="flex items-center justify-between">
-                    <span class="text-slate-300 font-bold text-[8px]"><i class="fa-solid fa-key text-rose-500 mr-1"></i>Keyframes</span>
-                    <span id="keyframe-count" class="text-pink-400 font-mono text-[8px]">0</span>
+                    <span class="text-slate-300 font-bold"><i class="fa-solid fa-key text-rose-500 mr-1"></i>Keyframes</span>
+                    <span id="keyframe-count" class="text-pink-400 font-mono text-[10px]">0</span>
                 </div>
-                <div class="flex gap-1 flex-wrap">
-                    <button id="btn-record-key" class="flex-1 bg-pink-600 hover:bg-pink-500 text-white font-bold py-0.5 rounded-md text-[8px]">Record</button>
-                    <button id="btn-export-anim" class="bg-slate-800 hover:bg-slate-700 px-1.5 py-0.5 rounded-md text-slate-300 text-[8px]">Export</button>
-                    <button id="btn-clear-anim" class="bg-slate-800 hover:bg-slate-700 px-1.5 py-0.5 rounded-md text-slate-300 text-[8px]">Clear</button>
+                <div class="flex gap-2 flex-wrap">
+                    <button id="btn-record-key" class="flex-1 bg-pink-600 hover:bg-pink-500 text-white font-bold py-1.5 rounded-xl text-[10px]"><i class="fa-solid fa-circle-dot mr-1"></i>Record</button>
+                    <button id="btn-export-anim" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded-xl text-slate-300 text-[10px]"><i class="fa-solid fa-file-export"></i></button>
+                    <button id="btn-clear-anim" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded-xl text-slate-300 text-[10px]"><i class="fa-solid fa-trash"></i></button>
                 </div>
-                <div id="keyframe-list" class="bg-slate-950/50 p-1.5 rounded-md border border-slate-800 max-h-10 overflow-y-auto font-mono text-[7px] text-slate-400">No keyframes</div>
+                <div id="keyframe-list" class="bg-slate-950/60 p-2 rounded-xl border border-slate-800 max-h-14 overflow-y-auto font-mono text-[9px] text-slate-400">No keyframes</div>
             </div>
+
+            <!-- REPLAY TAB -->
             <div id="tab-replay" class="space-y-2 hidden">
                 <div class="flex items-center justify-between">
-                    <span class="text-slate-300 font-bold text-[8px]"><i class="fa-solid fa-rotate-right text-purple-400 mr-1"></i>Replay</span>
-                    <span id="replay-frame-info" class="text-purple-400 font-mono text-[8px]">0/0</span>
+                    <span class="text-slate-300 font-bold"><i class="fa-solid fa-rotate-right text-purple-400 mr-1"></i>Replay</span>
+                    <span id="replay-frame-info" class="text-purple-400 font-mono text-[10px]">0/0</span>
                 </div>
-                <div id="replay-track" class="bg-slate-950/50 p-0.5 rounded-md border border-slate-800 h-[25px] relative cursor-pointer"><div id="replay-frame-markers" class="h-full relative"></div></div>
-                <div class="flex gap-1 items-center">
-                    <button id="btn-replay-play" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-0.5 rounded-md text-[8px]">Play</button>
-                    <button id="btn-replay-loop" class="bg-slate-800 hover:bg-slate-700 px-1 py-0.5 rounded-md text-slate-300 text-[8px]">Loop</button>
-                    <button id="btn-replay-speed" class="bg-slate-800 hover:bg-slate-700 px-1 py-0.5 rounded-md text-slate-300 text-[8px]">1x</button>
+                <div id="replay-track" class="bg-slate-950/60 p-1 rounded-xl border border-slate-800 h-[40px] relative cursor-pointer">
+                    <div id="replay-frame-markers" class="h-full relative"></div>
+                </div>
+                <div class="flex gap-2 items-center">
+                    <button id="btn-replay-play" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-1.5 rounded-xl text-[10px]"><i class="fa-solid fa-play mr-1"></i>Play</button>
+                    <button id="btn-replay-loop" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded-xl text-slate-300 text-[10px]"><i class="fa-solid fa-repeat"></i></button>
+                    <button id="btn-replay-speed" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded-xl text-slate-300 text-[10px]">1x</button>
                 </div>
             </div>
+
+            <!-- TEXTURES TAB -->
             <div id="tab-textures" class="space-y-2 hidden">
                 <div class="flex items-center justify-between">
-                    <span class="text-slate-300 font-bold text-[8px]"><i class="fa-solid fa-images text-sky-400 mr-1"></i>Library</span>
-                    <span id="tex-count" class="text-sky-400 font-mono text-[8px]">0</span>
+                    <span class="text-slate-300 font-bold"><i class="fa-solid fa-images text-sky-400 mr-1"></i>Library</span>
+                    <span id="tex-count" class="text-sky-400 font-mono text-[10px]">0</span>
                 </div>
-                <div class="flex gap-1">
-                    <label class="flex-1 bg-slate-800 hover:bg-slate-700 cursor-pointer px-1 py-0.5 rounded-md text-center text-[8px] text-sky-300 border border-sky-500/30">Upload<input type="file" id="texture-upload" accept=".png,.jpg,.jpeg,.webp" class="hidden"></label>
-                    <button id="btn-reload-textures" class="bg-slate-800 hover:bg-slate-700 px-1 py-0.5 rounded-md text-slate-300 text-[8px]">Reload</button>
+                <div class="flex gap-2">
+                    <label class="flex-1 bg-slate-800 hover:bg-slate-700 cursor-pointer px-2 py-1.5 rounded-xl text-center text-[10px] text-sky-300 border border-sky-500/30"><i class="fa-solid fa-upload mr-1"></i>Upload<input type="file" id="texture-upload" accept=".png,.jpg,.jpeg,.webp" class="hidden"></label>
+                    <button id="btn-reload-textures" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded-xl text-slate-300 text-[10px]"><i class="fa-solid fa-sync"></i></button>
                 </div>
-                <div id="texture-library-grid" class="grid grid-cols-4 gap-1 max-h-10 overflow-y-auto"></div>
+                <div id="texture-library-grid" class="grid grid-cols-4 gap-1.5 max-h-16 overflow-y-auto"></div>
             </div>
+
+            <!-- PARTS TAB -->
             <div id="tab-parts" class="space-y-2 hidden">
                 <div class="flex items-center justify-between">
-                    <span class="text-slate-300 font-bold text-[8px]"><i class="fa-solid fa-shirt text-pink-400 mr-1"></i>Parts</span>
-                    <span id="asset-part-count" class="text-pink-400 font-mono text-[8px]">0</span>
+                    <span class="text-slate-300 font-bold"><i class="fa-solid fa-shirt text-pink-400 mr-1"></i>Parts</span>
+                    <span id="asset-part-count" class="text-pink-400 font-mono text-[10px]">0</span>
                 </div>
-                <div id="asset-parts-list" class="space-y-0.5 max-h-10 overflow-y-auto"></div>
-                <div class="grid grid-cols-3 gap-0.5">
-                    <button onclick="togglePartVisibility('all')" class="bg-slate-800 hover:bg-slate-700 p-0.5 rounded text-slate-300 text-[7px]">All</button>
-                    <button onclick="togglePartVisibility('hair')" class="bg-slate-800 hover:bg-slate-700 p-0.5 rounded text-slate-300 text-[7px]">Hair</button>
-                    <button onclick="togglePartVisibility('clothing')" class="bg-slate-800 hover:bg-slate-700 p-0.5 rounded text-slate-300 text-[7px]">Clothes</button>
+                <div id="asset-parts-list" class="space-y-1 max-h-16 overflow-y-auto"></div>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button onclick="togglePartVisibility('all')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-300 text-[9px]">Show All</button>
+                    <button onclick="togglePartVisibility('hair')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-300 text-[9px]">Hair</button>
+                    <button onclick="togglePartVisibility('clothing')" class="bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg text-slate-300 text-[9px]">Clothes</button>
                 </div>
-                <div class="text-[7px] text-slate-500 italic">Double-click part or use Link mode</div>
+                <div class="text-[9px] text-slate-500 italic">Double-click part to edit texture, or use Link mode in Texture HUD</div>
             </div>
+
+            <!-- MATERIALS TAB -->
             <div id="tab-materials" class="space-y-2 hidden">
-                <div class="flex items-center gap-2">
-                    <span class="text-slate-300 text-[8px]">Color</span>
-                    <input type="color" id="mat-color-1" value="#f5f5f5" class="w-6 h-6 rounded border-0 cursor-pointer bg-transparent">
-                    <span class="text-slate-400 text-[7px]" id="mat-color-hex">#f5f5f5</span>
+                <div class="flex items-center gap-3">
+                    <span class="text-slate-300 text-[10px]">Color</span>
+                    <input type="color" id="mat-color-1" value="#f5f5f5" class="w-8 h-8 rounded-lg border-0 cursor-pointer bg-transparent">
+                    <span class="text-slate-400 text-[9px]" id="mat-color-hex">#f5f5f5</span>
                 </div>
-                <div class="grid grid-cols-2 gap-1">
-                    <div class="bg-slate-950/50 p-1 rounded border border-slate-800"><div class="text-[7px] text-slate-400">Rough <span id="val-roughness" class="text-amber-400">0.4</span></div><input type="range" id="mat-roughness" min="0" max="1" step="0.01" value="0.4" class="w-full cursor-pointer"></div>
-                    <div class="bg-slate-950/50 p-1 rounded border border-slate-800"><div class="text-[7px] text-slate-400">Metal <span id="val-metalness" class="text-purple-400">0.05</span></div><input type="range" id="mat-metalness" min="0" max="1" step="0.01" value="0.05" class="w-full cursor-pointer"></div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800"><div class="text-[9px] text-slate-400">Rough <span id="val-roughness" class="text-amber-400">0.4</span></div><input type="range" id="mat-roughness" min="0" max="1" step="0.01" value="0.4" class="w-full cursor-pointer"></div>
+                    <div class="bg-slate-950/60 p-2 rounded-xl border border-slate-800"><div class="text-[9px] text-slate-400">Metal <span id="val-metalness" class="text-purple-400">0.05</span></div><input type="range" id="mat-metalness" min="0" max="1" step="0.01" value="0.05" class="w-full cursor-pointer"></div>
                 </div>
             </div>
+
+            <!-- EFFECTS TAB -->
             <div id="tab-effects" class="space-y-2 hidden">
-                <div class="grid grid-cols-2 gap-1">
-                    <button onclick="applyEffectPreset('cyberglitch')" class="bg-pink-600/30 border border-pink-500/50 p-1 rounded-md text-pink-300 text-[8px]">⚡ Glitch</button>
-                    <button onclick="applyEffectPreset('ghost')" class="bg-purple-600/30 border border-purple-500/50 p-1 rounded-md text-purple-300 text-[8px]">👻 Ghost</button>
-                    <button onclick="applyEffectPreset('holo')" class="bg-sky-600/30 border border-sky-500/50 p-1 rounded-md text-sky-300 text-[8px]">✨ Holo</button>
-                    <button onclick="applyEffectPreset('normal')" class="bg-slate-600/30 border border-slate-500/50 p-1 rounded-md text-slate-300 text-[8px]">↺ Reset</button>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="applyEffectPreset('cyberglitch')" class="bg-pink-600/30 border border-pink-500/50 p-2 rounded-xl text-pink-300 text-[10px]">⚡ Glitch</button>
+                    <button onclick="applyEffectPreset('ghost')" class="bg-purple-600/30 border border-purple-500/50 p-2 rounded-xl text-purple-300 text-[10px]">👻 Ghost</button>
+                    <button onclick="applyEffectPreset('holo')" class="bg-sky-600/30 border border-sky-500/50 p-2 rounded-xl text-sky-300 text-[10px]">✨ Holo</button>
+                    <button onclick="applyEffectPreset('normal')" class="bg-slate-600/30 border border-slate-500/50 p-2 rounded-xl text-slate-300 text-[10px]">↺ Reset</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- MODALS (same as before, scaled) -->
+    <!-- SKELETON MAP MODAL -->
     <div id="skeleton-map-modal" class="modal-overlay hidden" style="display:none;">
-        <div class="modal-panel w-[320px]">
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-xs font-bold text-amber-300">Skeleton Map</h3>
-                <button onclick="closeModal('skeleton-map-modal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+        <div class="modal-panel w-[380px]">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-bold text-amber-300"><i class="fa-solid fa-diagram-project mr-2"></i>Skeleton Map</h3>
+                <button onclick="closeModal('skeleton-map-modal')" class="text-slate-400 hover:text-white text-xl">&times;</button>
             </div>
-            <div id="skeleton-map-canvas" style="width:280px;height:360px;background:#0d0d1a;border-radius:10px;position:relative;" class="mx-auto"></div>
-            <div id="skeleton-map-detail" class="text-center text-[9px] text-slate-300 mt-1"></div>
+            <p class="text-[10px] text-slate-400 mb-2">Click a node to select joint. Connected bones highlighted in 3D.</p>
+            <div id="skeleton-map-canvas" class="mx-auto" style="width:320px;height:420px;background:#0d0d1a;border-radius:12px;position:relative;"></div>
+            <div id="skeleton-map-detail" class="text-center text-[10px] text-slate-300 mt-2"></div>
+            <button onclick="closeModal('skeleton-map-modal')" class="w-full mt-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-2 rounded-xl text-xs">Close</button>
         </div>
     </div>
 
+    <!-- BONE REMAP MODAL (GRID) -->
     <div id="bone-remap-modal" class="modal-overlay hidden" style="display:none;">
-        <div class="modal-panel w-[550px] max-w-[92vw] max-h-[80vh] overflow-y-auto">
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-xs font-bold text-sky-300">Bone Remapping Grid</h3>
-                <button onclick="closeModal('bone-remap-modal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+        <div class="modal-panel w-[600px] max-w-[92vw] max-h-[80vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-bold text-sky-300"><i class="fa-solid fa-exchange-alt mr-2"></i>Bone Remapping Grid</h3>
+                <button onclick="closeModal('bone-remap-modal')" class="text-slate-400 hover:text-white text-xl">&times;</button>
             </div>
-            <div id="bone-remap-grid" class="grid grid-cols-3 gap-1.5"></div>
-            <div class="flex gap-2 mt-2">
-                <button id="btn-apply-remap" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-1 rounded-md text-xs">Apply</button>
-                <button id="btn-auto-detect" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2 py-1 rounded-md text-xs">Auto</button>
+            <p class="text-[10px] text-slate-400 mb-3">Click a slot to see its bone in 3D. Use dropdown to reassign. Connections highlighted when slot selected.</p>
+            <div id="bone-remap-grid" class="grid grid-cols-3 gap-2"></div>
+            <div class="flex gap-2 mt-3">
+                <button id="btn-apply-remap" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-xl text-xs">Apply Mapping</button>
+                <button id="btn-auto-detect" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-2 rounded-xl text-xs">Auto-Detect</button>
             </div>
         </div>
     </div>
 
+    <!-- TEXTURE ASSIGN MODAL (still available for double-click) -->
     <div id="texture-assign-modal" class="modal-overlay hidden" style="display:none;">
-        <div class="modal-panel w-[320px] max-w-[92vw]">
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-xs font-bold text-sky-300">Assign Texture</h3>
-                <button onclick="closeModal('texture-assign-modal')" class="text-slate-400 hover:text-white text-lg">&times;</button>
+        <div class="modal-panel w-[380px] max-w-[92vw]">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-sm font-bold text-sky-300"><i class="fa-solid fa-palette mr-2"></i>Assign Texture</h3>
+                <button onclick="closeModal('texture-assign-modal')" class="text-slate-400 hover:text-white text-xl">&times;</button>
             </div>
-            <p id="tex-assign-target" class="text-[9px] text-slate-400 mb-1">Target: -</p>
-            <div class="grid grid-cols-4 gap-1 max-h-36 overflow-y-auto" id="tex-assign-grid"></div>
-            <div class="flex gap-1 mt-2">
-                <button id="btn-apply-texture" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-1 rounded-md text-xs">Apply</button>
-                <button id="btn-remove-texture" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-2 py-1 rounded-md text-xs">Remove</button>
+            <p id="tex-assign-target" class="text-[10px] text-slate-400 mb-2">Target: -</p>
+            <div class="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto" id="tex-assign-grid"></div>
+            <div class="flex gap-2 mt-3">
+                <button id="btn-apply-texture" class="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-xl text-xs">Apply</button>
+                <button id="btn-remove-texture" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold px-3 py-2 rounded-xl text-xs">Remove</button>
             </div>
         </div>
     </div>
 
-    <div id="toast-container" class="fixed top-12 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 backdrop-blur-xl px-3 py-1.5 rounded-full border border-slate-700 text-[10px] text-slate-200 opacity-0 transition-all duration-300 pointer-events-none shadow-2xl toast-enter">Ready</div>
+    <!-- TOAST -->
+    <div id="toast-container" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur-xl px-4 py-2 rounded-full border border-slate-700 text-xs text-slate-200 opacity-0 transition-all duration-300 pointer-events-none shadow-2xl toast-enter">Ready</div>
 
     <script>
         // ============================================================
-        //  AVATAR FORGE PRO — Game Mode + Swipe XYZ + Transparent HUD
+        // AVATAR FORGE PRO — Grid Remap + Texture HUD + Animation Grid
         // ============================================================
+
         let scene, camera, renderer, character;
         let clock = new THREE.Clock();
         let charPos = new THREE.Vector3(0, 0, 0);
@@ -576,8 +427,8 @@
         let textureLinkMode = false;
         let undoStack = [],
             redoStack = [];
-        let gameModeActive = false;
 
+        // Bone mapping
         const boneGroups = {
             head: { label: 'Head', color: '#fbbf24' },
             neck: { label: 'Neck', color: '#fbbf24' },
@@ -617,6 +468,7 @@
             const container = document.getElementById('canvas-container');
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x0a0a14);
+            scene.fog = new THREE.FogExp2(0x0a0a14, 0.03);
             camera = new THREE.PerspectiveCamera(58, window.innerWidth / window.innerHeight, 0.1, 1000);
             renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -642,7 +494,6 @@
             setupTextureLibrary();
             setupTextureHUD();
             setupReplaySystem();
-            setupGameMode();
             window.addEventListener('resize', onWindowResize);
             animate();
         }
@@ -659,9 +510,10 @@
             scene.add(floor);
         }
 
-        // ---------- BONE DETECTION (same as previous) ----------
-        function parseBoneNameParts(name) { return name.toLowerCase().replace(/[\.\-]/g, '_').split('_').filter(p => p
-                .length > 0); }
+        // ---------- IMPROVED BONE DETECTION ----------
+        function parseBoneNameParts(name) {
+            return name.toLowerCase().replace(/[\.\-]/g, '_').split('_').filter(p => p.length > 0);
+        }
 
         function mapBoneToGroup(bone) {
             const bn = bone.name.toLowerCase();
@@ -670,10 +522,11 @@
             const isRight = parts.some(p => ['r', 'right', 'r_hand', 'rightarm', 'right_arm', 'arm_r'].includes(p));
             const assign = (key) => { if (!skeletonBones[key]) { skeletonBones[key] = bone;
                     boneRemapSelections[key] = bone.name || bone.uuid; } };
+
             if (parts.includes('head')) assign('head');
             else if (parts.includes('neck')) assign('neck');
             else if (parts.includes('chest') || parts.includes('upperbody') || parts.includes('spine2')) assign(
-                'chest');
+            'chest');
             else if (parts.includes('spine') || parts.includes('hips') || parts.includes('pelvis')) { assign('spine');
                 if (parts.includes('hips') || parts.includes('pelvis')) assign('hips'); } else if (parts.includes(
                     'upperarm') || parts.includes('shoulder') || parts.includes('arm') || parts.includes('clavicle')) {
@@ -700,6 +553,7 @@
                 if (isRight) assign('rightAnkle');
                 else if (isLeft) assign('leftAnkle');
             }
+            // Fallback
             if (!skeletonBones.rightArm && bn.includes('r_arm')) assign('rightArm');
             if (!skeletonBones.leftArm && bn.includes('l_arm')) assign('leftArm');
             if (!skeletonBones.rightLeg && bn.includes('r_leg')) assign('rightLeg');
@@ -859,18 +713,15 @@
                 updateTextureLibraryUI();
                 updateTextureHUD();
                 setupAnimGrid();
-                const emptyState = document.getElementById('upload-empty-state');
-                if (emptyState) { emptyState.classList.add('fade-out');
-                    setTimeout(() => emptyState.style.display = 'none', 700); }
                 document.getElementById('status-dot').className =
-                    'w-2 h-2 rounded-full bg-emerald-500 animate-pulse flex-shrink-0';
+                    'w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse flex-shrink-0';
                 document.getElementById('asset-name').innerText = fileName;
                 showToast(`Loaded: ${fileName} — ${allDetectedBones.length} bones, ${textureLibrary.length} textures`);
             }, undefined, (err) => { console.error(err);
                 showToast('Load failed'); });
         }
 
-        // ---------- XYZ + SWIPE SLIDERS ----------
+        // ---------- XYZ ROTATION ----------
         function adjustRotation(axis, amount) {
             if (!selectedBoneKey || !skeletonBones[selectedBoneKey]) { showToast('Select a bone first!'); return; }
             const bone = skeletonBones[selectedBoneKey];
@@ -880,41 +731,17 @@
             updateBoneVisualPositions();
         }
 
-        function setRotation(axis, value) {
-            if (!selectedBoneKey || !skeletonBones[selectedBoneKey]) return;
-            const bone = skeletonBones[selectedBoneKey];
-            bone.rotation[axis] = value;
-            if (skeletonHelper) skeletonHelper.update();
-            updateXYZValues();
-            updateBoneVisualPositions();
-            document.getElementById(`slider-${axis}`).value = value;
-        }
-
-        function setRotationFromSlider(axis, value) {
-            const val = parseFloat(value);
-            if (selectedBoneKey && skeletonBones[selectedBoneKey]) {
-                skeletonBones[selectedBoneKey].rotation[axis] = val;
-                if (skeletonHelper) skeletonHelper.update();
-                updateXYZValues();
-                updateBoneVisualPositions();
-            }
-        }
-
         function updateXYZValues() {
             const bone = skeletonBones[selectedBoneKey];
-            const setVal = (id, val) => document.getElementById(id).textContent = val.toFixed(1) + '°';
             if (!bone) {
-                setVal('val-x', 0);
-                setVal('val-y', 0);
-                setVal('val-z', 0);
+                document.getElementById('val-x').textContent = '0°';
+                document.getElementById('val-y').textContent = '0°';
+                document.getElementById('val-z').textContent = '0°';
                 return;
             }
-            setVal('val-x', bone.rotation.x * (180 / Math.PI));
-            setVal('val-y', bone.rotation.y * (180 / Math.PI));
-            setVal('val-z', bone.rotation.z * (180 / Math.PI));
-            document.getElementById('slider-x').value = bone.rotation.x;
-            document.getElementById('slider-y').value = bone.rotation.y;
-            document.getElementById('slider-z').value = bone.rotation.z;
+            document.getElementById('val-x').textContent = (bone.rotation.x * (180 / Math.PI)).toFixed(1) + '°';
+            document.getElementById('val-y').textContent = (bone.rotation.y * (180 / Math.PI)).toFixed(1) + '°';
+            document.getElementById('val-z').textContent = (bone.rotation.z * (180 / Math.PI)).toFixed(1) + '°';
         }
 
         function resetSelectedBone() {
@@ -926,65 +753,1152 @@
             showToast('Bone reset');
         }
 
-        // ---------- GAME MODE ----------
-        function setupGameMode() {
-            document.getElementById('btn-toggle-game-mode').addEventListener('click', () => {
-                gameModeActive = !gameModeActive;
-                document.getElementById('game-mode-bar').classList.toggle('hidden', !gameModeActive);
-                const btn = document.getElementById('btn-toggle-game-mode');
-                if (gameModeActive) {
-                    btn.classList.add('bg-emerald-600/30');
-                    showToast('Game Mode ON');
-                } else {
-                    btn.classList.remove('bg-emerald-600/30');
-                    showToast('Game Mode OFF');
-                }
+        // ---------- SKELETON MAP ----------
+        function openSkeletonMap() {
+            document.getElementById('skeleton-map-modal').style.display = 'flex';
+            renderSkeletonMap();
+        }
+
+        function renderSkeletonMap() {
+            const canvas = document.getElementById('skeleton-map-canvas');
+            canvas.innerHTML = '';
+            const nodePositions = {
+                head: { x: 160, y: 60 },
+                neck: { x: 160, y: 100 },
+                chest: { x: 160, y: 140 },
+                spine: { x: 160, y: 180 },
+                hips: { x: 160, y: 220 },
+                rightArm: { x: 220, y: 145 },
+                rightElbow: { x: 260, y: 170 },
+                rightWrist: { x: 290, y: 195 },
+                rightFingers: { x: 305, y: 215 },
+                leftArm: { x: 100, y: 145 },
+                leftElbow: { x: 60, y: 170 },
+                leftWrist: { x: 30, y: 195 },
+                leftFingers: { x: 15, y: 215 },
+                rightLeg: { x: 195, y: 260 },
+                rightKnee: { x: 210, y: 300 },
+                rightAnkle: { x: 225, y: 340 },
+                leftLeg: { x: 125, y: 260 },
+                leftKnee: { x: 110, y: 300 },
+                leftAnkle: { x: 95, y: 340 },
+            };
+            const connections = [
+                ['hips', 'spine'],
+                ['spine', 'chest'],
+                ['chest', 'neck'],
+                ['neck', 'head'],
+                ['chest', 'rightArm'],
+                ['chest', 'leftArm'],
+                ['rightArm', 'rightElbow'],
+                ['leftArm', 'leftElbow'],
+                ['rightElbow', 'rightWrist'],
+                ['leftElbow', 'leftWrist'],
+                ['rightWrist', 'rightFingers'],
+                ['leftWrist', 'leftFingers'],
+                ['hips', 'rightLeg'],
+                ['hips', 'leftLeg'],
+                ['rightLeg', 'rightKnee'],
+                ['leftLeg', 'leftKnee'],
+                ['rightKnee', 'rightAnkle'],
+                ['leftKnee', 'leftAnkle'],
+            ];
+            connections.forEach(([a, b]) => {
+                const pa = nodePositions[a],
+                    pb = nodePositions[b];
+                const dx = pb.x - pa.x,
+                    dy = pb.y - pa.y;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                const line = document.createElement('div');
+                line.style.cssText =
+                    `position:absolute;left:${pa.x}px;top:${pa.y}px;width:${len}px;height:2px;background:rgba(255,255,255,0.3);transform-origin:left center;transform:rotate(${angle}deg);`;
+                canvas.appendChild(line);
             });
-            document.querySelectorAll('.game-action-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const action = e.currentTarget.dataset.action;
-                    triggerGameAction(action);
+            Object.keys(boneGroups).forEach(key => {
+                const pos = nodePositions[key];
+                if (!pos) return;
+                const bone = skeletonBones[key];
+                const color = bone ? boneGroups[key].color : '#444';
+                const node = document.createElement('div');
+                node.style.cssText =
+                    `position:absolute;left:${pos.x-8}px;top:${pos.y-8}px;width:16px;height:16px;border-radius:50%;background:${color};border:2px solid ${selectedBoneKey===key?'#fff':'rgba(255,255,255,0.5)'};box-shadow:0 0 10px rgba(255,255,255,0.3);cursor:pointer;`;
+                node.textContent = bone ? '●' : '○';
+                node.title = `${boneGroups[key].label} → ${bone ? bone.name : 'Not mapped'}`;
+                node.onclick = () => {
+                    selectedBoneKey = key;
+                    updateBoneHierarchyUI();
+                    updateXYZValues();
+                    renderSkeletonMap();
+                    document.getElementById('skeleton-map-detail').textContent =
+                        `${boneGroups[key].label}: ${skeletonBones[key]?.name || 'Not mapped'}`;
+                    updateBoneVisualPositions();
+                };
+                canvas.appendChild(node);
+            });
+            if (selectedBoneKey) {
+                document.getElementById('skeleton-map-detail').textContent =
+                    `${boneGroups[selectedBoneKey].label}: ${skeletonBones[selectedBoneKey]?.name || 'Not mapped'}`;
+            } else {
+                document.getElementById('skeleton-map-detail').textContent = 'Click a node to select';
+            }
+        }
+
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+        // ---------- BONE REMAP GRID ----------
+        function openBoneRemap() {
+            document.getElementById('bone-remap-modal').style.display = 'flex';
+            const grid = document.getElementById('bone-remap-grid');
+            grid.innerHTML = '';
+            const boneOptions = [{ value: '', label: '— None —' }, ...allDetectedBones.map(b => ({ value: b.name || b
+                    .uuid, label: b.name || b.uuid }))];
+            Object.keys(boneGroups).forEach(key => {
+                const current = skeletonBones[key];
+                const currentVal = current?.name || current?.uuid || '';
+                const card = document.createElement('div');
+                card.className = 'bone-grid-item';
+                card.setAttribute('data-key', key);
+                card.innerHTML = `
+                    <div class="w-3 h-3 rounded-full mx-auto mb-1" style="background:${boneGroups[key].color};box-shadow:0 0 6px ${boneGroups[key].color}"></div>
+                    <div class="text-[10px] font-bold text-slate-300 truncate">${boneGroups[key].label}</div>
+                    <div class="text-[8px] text-slate-500 truncate">${current ? current.name : 'Unmapped'}</div>
+                    <select class="remap-select w-full mt-1 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-[9px] text-white">
+                        ${boneOptions.map(opt => `<option value="${opt.value}" ${opt.value === currentVal ? 'selected' : ''}>${opt.label}</option>`).join('')}
+                    </select>
+                `;
+                card.onclick = (e) => {
+                    if (e.target.tagName === 'SELECT') return;
+                    selectedBoneKey = key;
+                    updateBoneHierarchyUI();
+                    updateXYZValues();
+                    updateBoneVisualPositions();
+                    document.querySelectorAll('.bone-grid-item').forEach(el => el.classList.remove('selected'));
+                    card.classList.add('selected');
+                    showToast(`Selected ${boneGroups[key].label}`);
+                };
+                grid.appendChild(card);
+            });
+            document.getElementById('btn-apply-remap').onclick = () => {
+                document.querySelectorAll('.remap-select').forEach(sel => {
+                    const key = sel.closest('.bone-grid-item').dataset.key;
+                    const val = sel.value;
+                    if (!val) { skeletonBones[key] = null;
+                        boneRemapSelections[key] = ''; return; }
+                    const bone = allDetectedBones.find(b => (b.name || b.uuid) === val);
+                    if (bone) { skeletonBones[key] = bone;
+                        boneRemapSelections[key] = val; }
+                });
+                closeModal('bone-remap-modal');
+                buildBoneVisuals();
+                updateBoneHierarchyUI();
+                updatePoseSelectOptions();
+                showToast('Bone mapping updated');
+            };
+            document.getElementById('btn-auto-detect').onclick = () => {
+                Object.keys(skeletonBones).forEach(k => { skeletonBones[k] = null;
+                    boneRemapSelections[k] = ''; });
+                allDetectedBones.forEach(b => mapBoneToGroup(b));
+                Object.keys(skeletonBones).forEach(k => { if (skeletonBones[k]) boneRemapSelections[k] = skeletonBones[k]
+                        .name || skeletonBones[k].uuid; });
+                openBoneRemap();
+                showToast('Auto-detection re-run');
+            };
+        }
+
+        // ---------- TEXTURE LIBRARY & HUD ----------
+        function setupTextureLibrary() {
+            document.getElementById('texture-upload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const textureLoader = new THREE.TextureLoader();
+                textureLoader.load(URL.createObjectURL(file), (tex) => {
+                    tex.name = file.name;
+                    const existing = textureLibrary.find(t => t.name === file.name);
+                    if (!existing) {
+                        textureLibrary.push({ name: file.name, texture: tex, source: 'upload' });
+                        updateTextureLibraryUI();
+                        updateTextureHUD();
+                        showToast(`Texture added: ${file.name}`);
+                    } else showToast('Texture already exists');
+                });
+            });
+            document.getElementById('btn-reload-textures').addEventListener('click', () => {
+                extractTexturesFromModel();
+                updateTextureLibraryUI();
+                updateTextureHUD();
+                showToast('Textures reloaded');
+            });
+        }
+
+        function extractTexturesFromModel() {
+            if (!character) return;
+            const seen = new Set();
+            character.traverse(child => {
+                if (!child.isMesh || !child.material) return;
+                const mats = Array.isArray(child.material) ? child.material : [child.material];
+                mats.forEach(mat => {
+                    if (mat.map && !seen.has(mat.map.uuid)) {
+                        seen.add(mat.map.uuid);
+                        const name = mat.map.name || `tex_${textureLibrary.length + 1}`;
+                        if (!textureLibrary.find(t => t.texture === mat.map || t.name === name)) {
+                            textureLibrary.push({ name, texture: mat.map, source: 'model' });
+                        }
+                    }
                 });
             });
         }
 
-        function triggerGameAction(action) {
-            if (!character) { showToast('Load model first'); return; }
-            let animId = '';
-            switch (action) {
-                case 'run':
-                    animId = 'run';
-                    break;
-                case 'jump':
-                    animId = 'jump';
-                    charVel.y = 0.3;
-                    break;
-                case 'block':
-                    // custom block pose
-                    if (skeletonBones.rightArm) skeletonBones.rightArm.rotation.set(-0.5, 0, 1.2);
-                    if (skeletonBones.leftArm) skeletonBones.leftArm.rotation.set(-0.5, 0, -1.2);
-                    showToast('Block pose');
-                    return;
-                case 'down':
-                    if (character) character.position.y = 0.4;
-                    showToast('Crouch');
-                    return;
-                case 'attack':
-                    animId = 'punch';
-                    break;
-                case 'talk':
-                    animId = 'wave';
-                    break;
+        function generateTextureThumbnail(texture, size = 64) {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                const img = texture.image;
+                if (img && img.width) {
+                    const aspect = img.width / img.height;
+                    let sw = size,
+                        sh = size;
+                    if (aspect > 1) sh = size / aspect;
+                    else sw = size * aspect;
+                    ctx.drawImage(img, (size - sw) / 2, (size - sh) / 2, sw, sh);
+                } else {
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(0, 0, size, size);
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('TEX', size / 2, size / 2);
+                }
+                return canvas.toDataURL();
+            } catch (e) { return ''; }
+        }
+
+        function updateTextureLibraryUI() {
+            const grid = document.getElementById('texture-library-grid');
+            document.getElementById('tex-count').textContent = `${textureLibrary.length}`;
+            if (textureLibrary.length === 0) {
+                grid.innerHTML = '<div class="text-slate-500 italic text-[9px] col-span-4">No textures</div>';
+                return;
             }
-            if (animId) {
-                selectAnimPreset(animId);
-                showToast(`Action: ${action} → ${animId}`);
+            grid.innerHTML = '';
+            textureLibrary.forEach((tex) => {
+                const thumb = generateTextureThumbnail(tex.texture);
+                const div = document.createElement('div');
+                div.className =
+                    `tex-card p-1 rounded-lg flex flex-col items-center gap-0.5 ${selectedTextureForAssign === tex ? 'selected' : ''}`;
+                div.innerHTML =
+                    `<img src="${thumb}" class="tex-thumb" alt="${tex.name}"><span class="text-[7px] text-slate-400 truncate w-full text-center">${tex.name}</span>`;
+                div.onclick = () => { selectedTextureForAssign = tex;
+                    updateTextureLibraryUI();
+                    updateTextureHUD(); };
+                grid.appendChild(div);
+            });
+        }
+
+        function setupTextureHUD() {
+            const hud = document.getElementById('texture-hud');
+            document.getElementById('btn-toggle-texture-hud').addEventListener('click', () => {
+                hud.classList.toggle('hidden');
+            });
+            document.getElementById('texture-hud-upload').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const textureLoader = new THREE.TextureLoader();
+                textureLoader.load(URL.createObjectURL(file), (tex) => {
+                    tex.name = file.name;
+                    const existing = textureLibrary.find(t => t.name === file.name);
+                    if (!existing) {
+                        textureLibrary.push({ name: file.name, texture: tex, source: 'upload' });
+                        updateTextureHUD();
+                        updateTextureLibraryUI();
+                        showToast(`Texture added: ${file.name}`);
+                    } else showToast('Texture already exists');
+                });
+            });
+            document.getElementById('btn-texture-link-mode').addEventListener('click', (e) => {
+                textureLinkMode = !textureLinkMode;
+                e.target.classList.toggle('bg-pink-600', textureLinkMode);
+                e.target.classList.toggle('bg-slate-800', !textureLinkMode);
+                showToast(textureLinkMode ? 'Link mode: click part to apply selected texture' : 'Link mode off');
+            });
+            document.getElementById('texture-alpha').addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                document.getElementById('texture-alpha-value').textContent = val.toFixed(2);
+                if (currentTextureAssignTarget?.material) {
+                    const mats = Array.isArray(currentTextureAssignTarget.material) ? currentTextureAssignTarget
+                        .material : [currentTextureAssignTarget.material];
+                    mats.forEach(m => { m.transparent = val < 1;
+                        m.opacity = val;
+                        m.needsUpdate = true; });
+                } else {
+                    primaryMaterials.forEach(m => { m.transparent = val < 1;
+                        m.opacity = val;
+                        m.needsUpdate = true; });
+                }
+            });
+            document.getElementById('btn-texture-undo').addEventListener('click', () => {
+                if (undoStack.length === 0) return;
+                const action = undoStack.pop();
+                redoStack.push(action);
+                applyTextureAction(action, true);
+                updateTextureLibraryUI();
+                updateTextureHUD();
+                showToast('Undo');
+            });
+            document.getElementById('btn-texture-redo').addEventListener('click', () => {
+                if (redoStack.length === 0) return;
+                const action = redoStack.pop();
+                undoStack.push(action);
+                applyTextureAction(action, false);
+                updateTextureLibraryUI();
+                updateTextureHUD();
+                showToast('Redo');
+            });
+            document.getElementById('btn-texture-delete').addEventListener('click', () => {
+                if (!selectedTextureForAssign) { showToast('Select a texture to delete'); return; }
+                const idx = textureLibrary.indexOf(selectedTextureForAssign);
+                if (idx > -1) {
+                    textureLibrary.splice(idx, 1);
+                    selectedTextureForAssign = null;
+                    updateTextureHUD();
+                    updateTextureLibraryUI();
+                    showToast('Texture deleted from library');
+                }
+            });
+            document.getElementById('btn-texture-readd').addEventListener('click', () => {
+                if (currentTextureAssignTarget && selectedTextureForAssign) {
+                    applyTextureToPart(currentTextureAssignTarget, selectedTextureForAssign);
+                } else showToast('Select a part and a texture first');
+            });
+        }
+
+        function updateTextureHUD() {
+            const grid = document.getElementById('texture-hud-grid');
+            if (textureLibrary.length === 0) {
+                grid.innerHTML = '<div class="text-slate-500 italic text-[9px] col-span-3">No textures</div>';
+                return;
+            }
+            grid.innerHTML = '';
+            textureLibrary.forEach((tex) => {
+                const thumb = generateTextureThumbnail(tex.texture, 48);
+                const div = document.createElement('div');
+                div.className =
+                    `tex-hud-item ${selectedTextureForAssign === tex ? 'active' : ''}`;
+                div.innerHTML = `<img src="${thumb}" class="tex-thumb" alt="${tex.name}"><span class="text-[7px] text-slate-400 truncate block">${tex.name}</span>`;
+                div.onclick = () => { selectedTextureForAssign = tex;
+                    updateTextureHUD();
+                    updateTextureLibraryUI(); };
+                grid.appendChild(div);
+            });
+        }
+
+        function applyTextureToPart(partMesh, tex) {
+            const mats = Array.isArray(partMesh.material) ? partMesh.material : [partMesh.material];
+            const oldMaps = mats.map(m => m.map);
+            undoStack.push({ part: partMesh, oldMaps, newTexture: tex, type: 'texture' });
+            redoStack = [];
+            mats.forEach(m => { m.map = tex.texture;
+                m.color.set(0xffffff);
+                m.needsUpdate = true; });
+            showToast(`Texture applied to ${partMesh.name || 'part'}`);
+        }
+
+        function applyTextureAction(action, isUndo) {
+            const { part, oldMaps, newTexture } = action;
+            const mats = Array.isArray(part.material) ? part.material : [part.material];
+            if (isUndo) {
+                mats.forEach((m, i) => { m.map = oldMaps[i] || null;
+                    m.needsUpdate = true; });
+            } else {
+                mats.forEach(m => { m.map = newTexture.texture;
+                    m.color.set(0xffffff);
+                    m.needsUpdate = true; });
             }
         }
 
-        // ---------- (Other functions unchanged, but adapted for compact UI) ----------
-        // ... (all previous functions like texture, remap, skeleton map, animation, etc. remain the same,
-        //      just ensure references to element IDs match the new HTML.)
+        // ---------- OPEN TEXTURE ASSIGN MODAL (double-click) ----------
+        function openTextureAssignModal(partMesh) {
+            const modal = document.getElementById('texture-assign-modal');
+            modal.style.display = 'flex';
+            currentTextureAssignTarget = partMesh;
+            document.getElementById('tex-assign-target').textContent = `Target: ${partMesh.name || 'Unnamed'}`;
+            const grid = document.getElementById('tex-assign-grid');
+            grid.innerHTML = '';
+            textureLibrary.forEach((tex) => {
+                const thumb = generateTextureThumbnail(tex.texture);
+                const div = document.createElement('div');
+                div.className =
+                    `tex-card p-1 rounded-lg flex flex-col items-center gap-0.5 ${partMesh.material?.map === tex.texture ? 'selected' : ''}`;
+                div.innerHTML = `<img src="${thumb}" class="tex-thumb" alt="${tex.name}"><span class="text-[7px] text-slate-400 truncate w-full text-center">${tex.name}</span>`;
+                div.onclick = () => {
+                    grid.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+                    div.classList.add('selected');
+                    selectedTextureForAssign = tex;
+                };
+                grid.appendChild(div);
+            });
+            document.getElementById('btn-apply-texture').onclick = () => {
+                if (currentTextureAssignTarget && selectedTextureForAssign) {
+                    applyTextureToPart(currentTextureAssignTarget, selectedTextureForAssign);
+                    closeModal('texture-assign-modal');
+                    showToast('Texture applied!');
+                } else showToast('Select a texture first!');
+            };
+            document.getElementById('btn-remove-texture').onclick = () => {
+                if (currentTextureAssignTarget?.material) {
+                    const mats = Array.isArray(currentTextureAssignTarget.material) ? currentTextureAssignTarget
+                        .material : [currentTextureAssignTarget.material];
+                    const oldMaps = mats.map(m => m.map);
+                    undoStack.push({ part: currentTextureAssignTarget, oldMaps, newTexture: null, type: 'remove' });
+                    redoStack = [];
+                    mats.forEach(m => { m.map = null;
+                        m.needsUpdate = true; });
+                    closeModal('texture-assign-modal');
+                    showToast('Texture removed');
+                }
+            };
+        }
+
+        // ---------- REPLAY SYSTEM ----------
+        function setupReplaySystem() {
+            document.getElementById('btn-replay-play').addEventListener('click', () => {
+                if (recordedKeyframes.length < 2) { showToast('Need 2+ frames'); return; }
+                replayPlaying = !replayPlaying;
+                replayTime = 0;
+                const btn = document.getElementById('btn-replay-play');
+                btn.innerHTML = replayPlaying ? '<i class="fa-solid fa-pause mr-1"></i>Pause' :
+                    '<i class="fa-solid fa-play mr-1"></i>Play';
+                btn.className = replayPlaying ?
+                    'flex-1 bg-orange-500 hover:bg-orange-400 text-white font-bold py-1.5 rounded-xl text-[10px]' :
+                    'flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-1.5 rounded-xl text-[10px]';
+            });
+            document.getElementById('btn-replay-loop').addEventListener('click', (e) => {
+                replayLoop = !replayLoop;
+                e.target.classList.toggle('text-emerald-400', replayLoop);
+            });
+            document.getElementById('btn-replay-speed').addEventListener('click', (e) => {
+                const speeds = [1, 1.5, 2, 0.5];
+                const idx = speeds.indexOf(replaySpeed);
+                replaySpeed = speeds[(idx + 1) % speeds.length];
+                e.target.textContent = `${replaySpeed}x`;
+            });
+            document.getElementById('replay-track').addEventListener('click', (e) => {
+                if (recordedKeyframes.length < 2) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                replayTime = pct * (recordedKeyframes.length - 1);
+                applyReplayFrame(replayTime);
+                updateReplayUI();
+            });
+        }
+
+        function updateReplayUI() {
+            const track = document.getElementById('replay-frame-markers');
+            track.innerHTML = '';
+            const total = recordedKeyframes.length;
+            document.getElementById('replay-frame-info').textContent =
+                `${Math.floor(replayTime)} / ${Math.max(0, total - 1)}`;
+            if (total < 2) return;
+            recordedKeyframes.forEach((_, idx) => {
+                const marker = document.createElement('div');
+                marker.style.cssText =
+                    `position:absolute;left:${(idx/(total-1))*100}%;top:0;bottom:0;width:3px;background:#ec4899;box-shadow:0 0 8px #ec4899;`;
+                track.appendChild(marker);
+            });
+            const playhead = document.createElement('div');
+            playhead.style.cssText =
+                `position:absolute;left:${(replayTime/(total-1))*100}%;top:-2px;bottom:-2px;width:2px;background:#fff;box-shadow:0 0 10px #fff;pointer-events:none;`;
+            track.appendChild(playhead);
+        }
+
+        function applyReplayFrame(time) {
+            const total = recordedKeyframes.length;
+            if (total === 0) return;
+            if (time <= 0) { applyPose(recordedKeyframes[0].pose, 1); return; }
+            if (time >= total - 1) { applyPose(recordedKeyframes[total - 1].pose, 1); return; }
+            const idx = Math.floor(time);
+            const frac = time - idx;
+            const frameA = recordedKeyframes[idx];
+            const frameB = recordedKeyframes[idx + 1];
+            if (!frameA || !frameB) return;
+            Object.keys(frameA.pose).forEach(key => {
+                const bone = skeletonBones[key];
+                if (!bone || !frameB.pose[key]) return;
+                bone.rotation.x += (frameB.pose[key].rx - bone.rotation.x) * frac;
+                bone.rotation.y += (frameB.pose[key].ry - bone.rotation.y) * frac;
+                bone.rotation.z += (frameB.pose[key].rz - bone.rotation.z) * frac;
+            });
+            if (skeletonHelper) skeletonHelper.update();
+        }
+
+        // ---------- ANIM GRID ----------
+        function setupAnimGrid() {
+            const grid = document.getElementById('anim-grid');
+            grid.innerHTML = '';
+            animationPresets.forEach(preset => {
+                const div = document.createElement('div');
+                div.className = `anim-grid-item ${preset.id === currentAnimPreset ? 'active' : ''}`;
+                div.innerHTML = `<span class="text-lg">${preset.icon}</span><br><span class="text-[9px] font-bold">${preset.name}</span>`;
+                div.onclick = () => selectAnimPreset(preset.id);
+                grid.appendChild(div);
+            });
+        }
+
+        function selectAnimPreset(id) {
+            currentAnimPreset = id;
+            customAnimPlaying = false;
+            replayPlaying = false;
+            document.getElementById('btn-replay-play').innerHTML = '<i class="fa-solid fa-play mr-1"></i>Play';
+            document.getElementById('current-anim-label').textContent =
+                animationPresets.find(p => p.id === id)?.name || id;
+            setupAnimGrid();
+            if (id === 'glitch') applyEffectPreset('cyberglitch');
+            else if (id === 'ghost') applyEffectPreset('ghost');
+            else if (currentEffect !== 'normal') applyEffectPreset('normal');
+        }
+
+        function getAnimPose(time, presetId) {
+            const t = time;
+            const pose = {};
+            const set = (key, rx, ry, rz) => pose[key] = { rx, ry, rz };
+            switch (presetId) {
+                case 'idle':
+                    set('chest', Math.sin(t * 1.5) * 0.04, 0, 0);
+                    set('head', Math.sin(t * 1.2 + 0.5) * 0.05, Math.cos(t * 0.8) * 0.04, 0);
+                    set('rightArm', 0.05, 0, Math.sin(t * 1.3) * 0.08);
+                    set('leftArm', 0.05, 0, -Math.sin(t * 1.3) * 0.08);
+                    break;
+                case 'walk':
+                    const sw = Math.sin(t * 4);
+                    set('rightArm', sw * 0.5, 0, 0.06);
+                    set('leftArm', -sw * 0.5, 0, -0.06);
+                    set('rightLeg', -sw * 0.7, 0, 0);
+                    set('leftLeg', sw * 0.7, 0, 0);
+                    set('rightKnee', 0.4 + sw * 0.2, 0, 0);
+                    set('leftKnee', 0.4 - sw * 0.2, 0, 0);
+                    break;
+                case 'run':
+                    const sr = Math.sin(t * 6.5);
+                    set('rightArm', sr * 0.8, 0, 0.1);
+                    set('leftArm', -sr * 0.8, 0, -0.1);
+                    set('rightLeg', -sr * 1.0, 0, 0);
+                    set('leftLeg', sr * 1.0, 0, 0);
+                    set('rightKnee', 0.7 + sr * 0.3, 0, 0);
+                    set('leftKnee', 0.7 - sr * 0.3, 0, 0);
+                    break;
+                case 'wave':
+                    set('rightArm', -1.2, 0, Math.sin(t * 5) * 0.5 - 0.6);
+                    set('rightElbow', -0.3, 0, 0);
+                    set('rightWrist', 0, 0, Math.sin(t * 5) * 0.5);
+                    set('head', 0, Math.sin(t * 3) * 0.15, 0);
+                    break;
+                case 'dance':
+                    set('rightArm', Math.sin(t * 5) * 0.7, 0, Math.cos(t * 4) * 0.5);
+                    set('leftArm', -Math.sin(t * 5) * 0.7, 0, -Math.cos(t * 4) * 0.5);
+                    set('rightLeg', Math.sin(t * 4) * 0.3, 0, 0);
+                    set('leftLeg', -Math.sin(t * 4) * 0.3, 0, 0);
+                    set('chest', Math.sin(t * 6) * 0.15, Math.cos(t * 5) * 0.1, Math.sin(t * 4) * 0.1);
+                    set('head', Math.sin(t * 5) * 0.1, Math.cos(t * 4) * 0.15, 0);
+                    break;
+                case 'jump':
+                    const jp = Math.max(0, Math.sin(t * 3));
+                    set('rightArm', -0.8 + jp * 1.2, 0, 0.3);
+                    set('leftArm', -0.8 + jp * 1.2, 0, -0.3);
+                    set('rightLeg', -0.4 + jp * 0.5, 0, 0);
+                    set('leftLeg', -0.4 + jp * 0.5, 0, 0);
+                    set('chest', 0.2 - jp * 0.3, 0, 0);
+                    break;
+                case 'bow':
+                    const bt = Math.min(t, Math.PI);
+                    set('spine', bt * 0.5, 0, 0);
+                    set('chest', bt * 0.4, 0, 0);
+                    set('head', bt * 0.3, 0, 0);
+                    break;
+                case 'sit':
+                    const st = Math.min(t, Math.PI);
+                    set('rightLeg', st * 0.5, 0, 0);
+                    set('leftLeg', st * 0.5, 0, 0);
+                    set('rightKnee', -st * 1.0, 0, 0);
+                    set('leftKnee', -st * 1.0, 0, 0);
+                    break;
+                case 'punch':
+                    const pt = Math.sin(t * 4);
+                    set('rightArm', -0.1, 0, -1.2 + Math.max(0, pt) * 0.8);
+                    set('chest', Math.max(0, pt) * 0.2, Math.max(0, pt) * 0.3, 0);
+                    break;
+                case 'kick':
+                    const kt = Math.sin(t * 3.5);
+                    set('rightLeg', -0.3, 0, Math.max(0, kt) * 0.9);
+                    set('rightKnee', 0.2 + Math.max(0, kt) * 0.5, 0, 0);
+                    set('chest', Math.max(0, kt) * 0.15, Math.max(0, kt) * 0.2, 0);
+                    break;
+                case 'ghost':
+                    const gt = t * 2;
+                    set('rightArm', Math.sin(gt) * 0.4, 0, Math.cos(gt) * 0.35);
+                    set('leftArm', -Math.sin(gt) * 0.4, 0, -Math.cos(gt) * 0.35);
+                    set('chest', Math.sin(gt * 0.7) * 0.1, Math.cos(gt * 0.9) * 0.08, 0);
+                    set('head', Math.sin(gt * 1.1) * 0.08, 0, Math.cos(gt * 0.8) * 0.05);
+                    break;
+                case 'glitch':
+                    const gl = Math.floor(t * 8) / 8;
+                    const rnd = (seed) => Math.sin(gl * 100 + seed) * 0.4;
+                    set('rightArm', rnd(1), rnd(2), rnd(3));
+                    set('leftArm', rnd(4), rnd(5), rnd(6));
+                    set('rightLeg', rnd(9) * 0.3, 0, 0);
+                    set('leftLeg', rnd(10) * 0.3, 0, 0);
+                    set('chest', rnd(11) * 0.2, rnd(12) * 0.2, 0);
+                    set('head', rnd(13) * 0.3, rnd(14) * 0.3, 0);
+                    break;
+            }
+            return pose;
+        }
+
+        function applyPose(pose, blendFactor = 1.0) {
+            Object.keys(pose).forEach(key => {
+                const bone = skeletonBones[key];
+                if (!bone) return;
+                const target = pose[key];
+                if (blendFactor >= 1) bone.rotation.set(target.rx, target.ry, target.rz);
+                else {
+                    bone.rotation.x += (target.rx - bone.rotation.x) * blendFactor;
+                    bone.rotation.y += (target.ry - bone.rotation.y) * blendFactor;
+                    bone.rotation.z += (target.rz - bone.rotation.z) * blendFactor;
+                }
+            });
+            if (skeletonHelper) skeletonHelper.update();
+        }
+
+        // ---------- KEYFRAME ----------
+        function recordFullPose() {
+            if (!character) { showToast('Load a model first!'); return; }
+            const pose = {};
+            Object.keys(skeletonBones).forEach(key => {
+                const bone = skeletonBones[key];
+                if (bone) pose[key] = { rx: bone.rotation.x, ry: bone.rotation.y, rz: bone.rotation.z };
+            });
+            recordedKeyframes.push({ time: recordedKeyframes.length * 0.5, pose });
+            document.getElementById('keyframe-count').textContent = `${recordedKeyframes.length}`;
+            const listEl = document.getElementById('keyframe-list');
+            if (recordedKeyframes.length === 1) listEl.innerHTML = '';
+            const div = document.createElement('div');
+            div.className = 'text-pink-300 font-mono text-[9px] py-0.5';
+            div.textContent = `Frame #${recordedKeyframes.length}`;
+            listEl.appendChild(div);
+            listEl.scrollTop = listEl.scrollHeight;
+            updateReplayUI();
+            showToast(`Recorded frame #${recordedKeyframes.length}`);
+        }
+
+        function exportAnimationData() {
+            if (recordedKeyframes.length === 0) { showToast('No animation'); return; }
+            const json = JSON.stringify(recordedKeyframes, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'animation_sequence.json';
+            link.click();
+            showToast('Animation exported');
+        }
+
+        function clearAnimationData() {
+            recordedKeyframes = [];
+            replayTime = 0;
+            replayPlaying = false;
+            document.getElementById('keyframe-count').textContent = '0';
+            document.getElementById('keyframe-list').textContent = 'No keyframes';
+            document.getElementById('btn-replay-play').innerHTML = '<i class="fa-solid fa-play mr-1"></i>Play';
+            updateReplayUI();
+            showToast('Animation cleared');
+        }
+
+        // ---------- PARTS ----------
+        function applyHairVisibility() {
+            character?.traverse(child => {
+                if (!child.isMesh) return;
+                const name = (child.name || '').toLowerCase();
+                if (name.includes('hair') || name.includes('beard') || name.includes('fur')) child.visible = showHair;
+            });
+            const btn = document.getElementById('btn-toggle-hair');
+            btn.className = showHair ?
+                'hair-toggle-btn on panel px-2.5 py-2 btn-glow flex items-center gap-1 text-[10px] font-bold text-pink-300' :
+                'hair-toggle-btn off panel px-2.5 py-2 btn-glow flex items-center gap-1 text-[10px] font-bold';
+        }
+
+        function togglePartVisibility(type) {
+            character?.traverse(child => {
+                if (!child.isMesh) return;
+                const name = (child.name || '').toLowerCase();
+                let toggle = false;
+                if (type === 'hair' && (name.includes('hair') || name.includes('beard') || name.includes('fur')))
+                    toggle = true;
+                if (type === 'clothing' && (name.includes('skirt') || name.includes('shirt') || name.includes(
+                        'pant') || name.includes('dress') || name.includes('jacket') || name.includes('cloth')))
+                    toggle = true;
+                if (toggle) child.visible = !child.visible;
+                if (type === 'all') child.visible = true;
+            });
+            updateAssetPartsUI();
+        }
+
+        // ---------- EFFECTS ----------
+        function applyEffectPreset(effect) {
+            if (primaryMaterials.length === 0) { showToast('No materials'); return; }
+            stopGlitchEffect();
+            currentEffect = effect;
+            primaryMaterials.forEach(mat => {
+                mat.transparent = false;
+                mat.opacity = 1;
+                mat.emissive = mat.emissive || new THREE.Color(0x000000);
+                mat.emissive.set(0x000000);
+                mat.emissiveIntensity = 0;
+                mat.wireframe = false;
+                switch (effect) {
+                    case 'cyberglitch':
+                        mat.color.set(0xec4899);
+                        mat.roughness = 0.1;
+                        mat.metalness = 0.9;
+                        mat.emissive.set(0xec4899);
+                        mat.emissiveIntensity = 0.35;
+                        startGlitchEffect();
+                        break;
+                    case 'ghost':
+                        mat.color.set(0xa78bfa);
+                        mat.roughness = 0.25;
+                        mat.metalness = 0.1;
+                        mat.transparent = true;
+                        mat.opacity = 0.55;
+                        mat.emissive.set(0xa78bfa);
+                        mat.emissiveIntensity = 0.6;
+                        break;
+                    case 'holo':
+                        mat.color.set(0x22d3ee);
+                        mat.roughness = 0.05;
+                        mat.metalness = 0.85;
+                        mat.transparent = true;
+                        mat.opacity = 0.7;
+                        mat.emissive.set(0x22d3ee);
+                        mat.emissiveIntensity = 0.9;
+                        break;
+                    case 'normal':
+                        mat.color.set(0xf5f5f5);
+                        mat.roughness = 0.4;
+                        mat.metalness = 0.05;
+                        mat.transparent = false;
+                        mat.opacity = 1;
+                        break;
+                }
+                mat.needsUpdate = true;
+            });
+            showToast(`${effect} effect applied`);
+        }
+
+        function startGlitchEffect() {
+            document.getElementById('glitch-overlay').style.opacity = '1';
+            document.getElementById('glitch-overlay').style.animation = 'glitchPulse 0.4s infinite';
+            glitchInterval = setInterval(() => {
+                if (character) {
+                    character.position.x = charPos.x + (Math.random() - 0.5) * 0.04;
+                    setTimeout(() => { if (character) character.position.x = charPos.x; }, 60);
+                }
+            }, 180);
+        }
+
+        function stopGlitchEffect() {
+            document.getElementById('glitch-overlay').style.opacity = '0';
+            document.getElementById('glitch-overlay').style.animation = 'none';
+            if (glitchInterval) { clearInterval(glitchInterval);
+                glitchInterval = null; }
+        }
+
+        // ---------- UI HELPERS ----------
+        function switchTab(tabId) {
+            const tabs = ['tab-pose', 'tab-anim', 'tab-replay', 'tab-textures', 'tab-parts', 'tab-materials',
+                'tab-effects'
+            ];
+            tabs.forEach(id => document.getElementById(id).classList.add('hidden'));
+            tabs.forEach(id => { document.getElementById('btn-' + id).className =
+                    'tab-btn py-1.5 rounded-xl text-slate-400 hover:text-white transition-all'; });
+            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById('btn-' + tabId).className =
+                'tab-btn py-1.5 rounded-xl text-pink-400 bg-slate-800 transition-all';
+            if (tabId === 'tab-replay') updateReplayUI();
+            if (tabId === 'tab-textures') updateTextureLibraryUI();
+        }
+
+        function updateBoneHierarchyUI() {
+            const listEl = document.getElementById('bone-hierarchy-list');
+            const total = Object.values(skeletonBones).filter(b => b).length;
+            document.getElementById('bone-count-label').textContent = `${total} bones`;
+            if (total === 0) { listEl.innerHTML = '<div class="text-slate-500 italic text-[10px]">No bones mapped</div>'; return; }
+            listEl.innerHTML = '';
+            Object.keys(boneGroups).forEach(key => {
+                const bone = skeletonBones[key];
+                if (!bone) return;
+                const g = boneGroups[key];
+                const isSel = selectedBoneKey === key;
+                const div = document.createElement('div');
+                div.className =
+                    `bone-item flex items-center gap-1.5 px-2 py-1 rounded-lg cursor-pointer border ${isSel ? 'border-pink-500 bg-pink-500/10' : 'border-transparent hover:bg-slate-800'}`;
+                div.innerHTML =
+                    `<span class="w-2 h-2 rounded-full" style="background:${g.color}"></span><span class="flex-1 text-[10px] text-slate-300">${g.label}</span>`;
+                div.onclick = () => { selectedBoneKey = isSel ? null : key;
+                    updateXYZValues();
+                    updateBoneHierarchyUI();
+                    updateBoneVisualPositions();
+                    document.getElementById('selected-bone-label').textContent = selectedBoneKey ? g.label : 'None'; };
+                listEl.appendChild(div);
+            });
+        }
+
+        function updateAssetPartsUI() {
+            const listEl = document.getElementById('asset-parts-list');
+            const total = Object.values(assetParts).flat().length;
+            document.getElementById('asset-part-count').textContent = `${total}`;
+            if (total === 0) { listEl.innerHTML = '<div class="text-slate-500 italic text-[10px]">No parts</div>'; return; }
+            listEl.innerHTML = '';
+            const cats = [{ key: 'hair', label: '💇', color: 'text-purple-300' }, { key: 'clothing', label: '👕',
+                color: 'text-pink-300' }, { key: 'body', label: '🧍', color: 'text-emerald-300' }, { key: 'accessories',
+                label: '💎', color: 'text-amber-300' }, { key: 'other', label: '📦', color: 'text-slate-400' }];
+            cats.forEach(cat => {
+                assetParts[cat.key].forEach((part, idx) => {
+                    const div = document.createElement('div');
+                    div.className =
+                        'flex items-center justify-between p-1.5 rounded-lg bg-slate-950/60 border border-slate-700 cursor-pointer hover:border-pink-500/50';
+                    div.innerHTML =
+                        `<span class="${cat.color} text-[9px]">${cat.label} ${part.name || idx+1}</span><span class="text-[9px] ${part.visible ? 'text-emerald-400' : 'text-slate-500'}">${part.visible ? '👁' : '🚫'}</span>`;
+                    div.onclick = (e) => {
+                        if (textureLinkMode && selectedTextureForAssign) {
+                            applyTextureToPart(part, selectedTextureForAssign);
+                        } else {
+                            part.visible = !part.visible;
+                            updateAssetPartsUI();
+                        }
+                    };
+                    div.ondblclick = () => openTextureAssignModal(part);
+                    listEl.appendChild(div);
+                });
+            });
+        }
+
+        function updatePoseSelectOptions() {
+            const select = document.getElementById('pose-bone-select');
+            select.innerHTML = '';
+            Object.keys(boneGroups).forEach(key => {
+                if (skeletonBones[key]) {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.textContent = boneGroups[key].label;
+                    select.appendChild(opt);
+                }
+            });
+            if (selectedBoneKey && skeletonBones[selectedBoneKey]) select.value = selectedBoneKey;
+            else if (select.options.length > 0) { select.selectedIndex = 0;
+                selectedBoneKey = select.value;
+                updateXYZValues(); }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast-container');
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            clearTimeout(toast._timeout);
+            toast._timeout = setTimeout(() => { toast.style.opacity = '0'; }, 2500);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function exportModel() {
+            if (!character) { showToast('No model'); return; }
+            const exporter = new THREE.GLTFExporter();
+            exporter.parse(character, (result) => {
+                const blob = new Blob([result], { type: 'application/octet-stream' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'edited_avatar.glb';
+                link.click();
+                showToast('Exported!');
+            }, (err) => { console.error(err);
+                showToast('Export failed'); }, { binary: true });
+        }
+
+        // ---------- SETUP CONTROLS ----------
+        function setupControls() {
+            document.getElementById('btn-toggle-skeleton').addEventListener('click', () => {
+                showSkeletonMode = !showSkeletonMode;
+                const btn = document.getElementById('btn-toggle-skeleton');
+                btn.className = showSkeletonMode ?
+                    'panel px-2.5 py-2 btn-glow flex items-center gap-1 text-[10px] font-bold text-emerald-300 border-emerald-500/50' :
+                    'panel px-2.5 py-2 btn-glow flex items-center gap-1 text-[10px] font-bold text-slate-300';
+                if (showSkeletonMode && character && !skeletonHelper) { skeletonHelper = new THREE.SkeletonHelper(
+                        character);
+                    scene.add(skeletonHelper); }
+                boneVisualNodes.forEach(n => n.visible = showSkeletonMode);
+                boneVisualLines.forEach(l => l.visible = showSkeletonMode);
+                if (!showSkeletonMode && skeletonHelper) { scene.remove(skeletonHelper);
+                    skeletonHelper = null; }
+            });
+            document.getElementById('btn-skeleton-map').addEventListener('click', openSkeletonMap);
+            document.getElementById('btn-open-remap').addEventListener('click', openBoneRemap);
+            document.getElementById('btn-open-remap-side').addEventListener('click', openBoneRemap);
+            document.getElementById('btn-toggle-hair').addEventListener('click', () => { showHair = !showHair;
+                applyHairVisibility(); });
+            document.getElementById('btn-export-model').addEventListener('click', exportModel);
+            document.getElementById('btn-record-key').addEventListener('click', recordFullPose);
+            document.getElementById('btn-export-anim').addEventListener('click', exportAnimationData);
+            document.getElementById('btn-clear-anim').addEventListener('click', clearAnimationData);
+            document.getElementById('btn-stop-anim').addEventListener('click', () => { customAnimPlaying = false;
+                replayPlaying = false;
+                currentAnimPreset = 'idle';
+                document.getElementById('current-anim-label').textContent = 'Idle';
+                document.getElementById('btn-replay-play').innerHTML = '<i class="fa-solid fa-play mr-1"></i>Play';
+                setupAnimGrid();
+                showToast('Animation stopped'); });
+            document.getElementById('pose-bone-select').addEventListener('change', (e) => { selectedBoneKey = e.target
+                    .value;
+                updateXYZValues();
+                updateBoneHierarchyUI();
+                updateBoneVisualPositions(); });
+            document.getElementById('mat-color-1').addEventListener('input', (e) => { primaryMaterials.forEach(m => m
+                    .color.set(e.target.value));
+                document.getElementById('mat-color-hex').textContent = e.target.value; });
+            document.getElementById('mat-roughness').addEventListener('input', (e) => { const v = parseFloat(e.target
+                    .value);
+                primaryMaterials.forEach(m => m.roughness = v);
+                document.getElementById('val-roughness').textContent = v.toFixed(2); });
+            document.getElementById('mat-metalness').addEventListener('input', (e) => { const v = parseFloat(e.target
+                    .value);
+                primaryMaterials.forEach(m => m.metalness = v);
+                document.getElementById('val-metalness').textContent = v.toFixed(2); });
+            const handleUpload = (e) => { const file = e.target.files[0]; if (file) loadGLTFModel(URL
+                    .createObjectURL(file), file.name); };
+            document.getElementById('gltf-upload').addEventListener('change', handleUpload);
+
+            const canvasContainer = document.getElementById('canvas-container');
+            let mouseDown = false,
+                lastMouse = { x: 0, y: 0 };
+            canvasContainer.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.panel') || e.target.closest('button') || e.target.closest('select') || e.target
+                    .closest('.modal-overlay')) return;
+                if (textureLinkMode && selectedTextureForAssign) {
+                    const rect = canvasContainer.getBoundingClientRect();
+                    const mouse = new THREE.Vector2(
+                        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+                        -((e.clientY - rect.top) / rect.height) * 2 + 1
+                    );
+                    const raycaster = new THREE.Raycaster();
+                    raycaster.setFromCamera(mouse, camera);
+                    const intersects = raycaster.intersectObjects(character ? [character] : [], true);
+                    if (intersects.length > 0) {
+                        const mesh = intersects[0].object;
+                        if (mesh.isMesh) applyTextureToPart(mesh, selectedTextureForAssign);
+                        return;
+                    }
+                }
+                mouseDown = true;
+                lastMouse.x = e.clientX;
+                lastMouse.y = e.clientY;
+                canvasContainer.style.cursor = 'grabbing';
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (!mouseDown) return;
+                cameraAngleX -= (e.clientX - lastMouse.x) * 0.006;
+                cameraAngleY = Math.max(0.05, Math.min(1.5, cameraAngleY - (e.clientY - lastMouse.y) * 0.006));
+                lastMouse.x = e.clientX;
+                lastMouse.y = e.clientY;
+            });
+            window.addEventListener('mouseup', () => { mouseDown = false;
+                canvasContainer.style.cursor = 'default'; });
+            canvasContainer.addEventListener('touchstart', (e) => {
+                if (e.target.closest('.panel') || e.target.closest('button') || e.target.closest('select') || e.target
+                    .closest('.modal-overlay')) return;
+                isSwiping = true;
+                prevTouchPos.x = e.touches[0].clientX;
+                prevTouchPos.y = e.touches[0].clientY;
+            }, { passive: true });
+            canvasContainer.addEventListener('touchmove', (e) => {
+                if (!isSwiping) return;
+                const t = e.touches[0];
+                cameraAngleX -= (t.clientX - prevTouchPos.x) * 0.006;
+                cameraAngleY = Math.max(0.05, Math.min(1.5, cameraAngleY - (t.clientY - prevTouchPos.y) * 0.006));
+                prevTouchPos.x = t.clientX;
+                prevTouchPos.y = t.clientY;
+            }, { passive: true });
+            canvasContainer.addEventListener('touchend', () => { isSwiping = false; }, { passive: true });
+        }
+
+        // ---------- BONE INTERACTION (Raycasting) ----------
+        const raycaster = new THREE.Raycaster();
+        const mouseNDC = new THREE.Vector2();
+
+        function setupBoneInteraction() {
+            const canvas = renderer.domElement;
+            canvas.addEventListener('pointerdown', (e) => {
+                if (e.target.closest('.panel') || e.target.closest('button') || e.target.closest('select') || e
+                    .target.closest('.modal-overlay')) return;
+                if (textureLinkMode) return;
+                const rect = canvas.getBoundingClientRect();
+                mouseNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                mouseNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouseNDC, camera);
+                const hits = raycaster.intersectObjects(boneVisualNodes.filter(n => n.visible));
+                if (hits.length > 0) {
+                    const key = hits[0].object.userData.boneKey;
+                    if (key && skeletonBones[key]) {
+                        selectedBoneKey = key;
+                        updateBoneHierarchyUI();
+                        updateXYZValues();
+                        updateBoneVisualPositions();
+                        document.getElementById('selected-bone-label').textContent = boneGroups[key].label;
+                        showToast(`Selected: ${boneGroups[key].label}`);
+                    }
+                }
+            });
+        }
+
+        // ---------- VISUAL BONE SYSTEM ----------
+        function buildBoneVisuals() {
+            clearBoneVisuals();
+            Object.keys(skeletonBones).forEach(key => {
+                const bone = skeletonBones[key];
+                if (!bone) return;
+                const sphereGeo = new THREE.SphereGeometry(0.035, 12, 12);
+                const sphereMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(boneGroups[key].color),
+                    roughness: 0.3, metalness: 0.3, emissive: new THREE.Color(boneGroups[key].color),
+                    emissiveIntensity: 0.4 });
+                const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+                sphere.userData.boneKey = key;
+                sphere.userData.isBoneNode = true;
+                sphere.renderOrder = 10;
+                sphere.visible = showSkeletonMode;
+                scene.add(sphere);
+                boneVisualNodes.push(sphere);
+            });
+            const connections = [
+                ['hips', 'spine'],
+                ['spine', 'chest'],
+                ['chest', 'neck'],
+                ['neck', 'head'],
+                ['chest', 'rightArm'],
+                ['chest', 'leftArm'],
+                ['rightArm', 'rightElbow'],
+                ['leftArm', 'leftElbow'],
+                ['rightElbow', 'rightWrist'],
+                ['leftElbow', 'leftWrist'],
+                ['rightWrist', 'rightFingers'],
+                ['leftWrist', 'leftFingers'],
+                ['hips', 'rightLeg'],
+                ['hips', 'leftLeg'],
+                ['rightLeg', 'rightKnee'],
+                ['leftLeg', 'leftKnee'],
+                ['rightKnee', 'rightAnkle'],
+                ['leftKnee', 'leftAnkle'],
+            ];
+            connections.forEach(([a, b]) => {
+                const ba = skeletonBones[a],
+                    bb = skeletonBones[b];
+                if (!ba || !bb) return;
+                const lineGeo = new THREE.BufferGeometry();
+                const pos = new Float32Array(6);
+                lineGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+                const lineMat = new THREE.LineBasicMaterial({ color: boneGroups[a].color, transparent: true,
+                    opacity: 0.7 });
+                const line = new THREE.Line(lineGeo, lineMat);
+                line.userData.boneA = a;
+                line.userData.boneB = b;
+                line.renderOrder = 9;
+                line.visible = showSkeletonMode;
+                scene.add(line);
+                boneVisualLines.push(line);
+            });
+        }
+
+        function updateBoneVisualPositions() {
+            if (!character) return;
+            boneVisualNodes.forEach(sphere => {
+                const key = sphere.userData.boneKey;
+                const bone = skeletonBones[key];
+                if (!bone) { sphere.visible = false; return; }
+                const worldPos = new THREE.Vector3();
+                bone.getWorldPosition(worldPos);
+                sphere.position.copy(worldPos);
+                sphere.visible = showSkeletonMode;
+                sphere.material.emissiveIntensity = selectedBoneKey === key ? 1.2 : 0.4;
+                sphere.scale.setScalar(selectedBoneKey === key ? 2.2 : 1.0);
+            });
+            boneVisualLines.forEach(line => {
+                const ba = skeletonBones[line.userData.boneA],
+                    bb = skeletonBones[line.userData.boneB];
+                if (!ba || !bb) { line.visible = false; return; }
+                const posA = new THREE.Vector3(),
+                    posB = new THREE.Vector3();
+                ba.getWorldPosition(posA);
+                bb.getWorldPosition(posB);
+                const attr = line.geometry.attributes.position;
+                attr.array[0] = posA.x;
+                attr.array[1] = posA.y;
+                attr.array[2] = posA.z;
+                attr.array[3] = posB.x;
+                attr.array[4] = posB.y;
+                attr.array[5] = posB.z;
+                attr.needsUpdate = true;
+                line.geometry.computeBoundingSphere();
+                line.visible = showSkeletonMode;
+            });
+        }
+
+        function clearBoneVisuals() {
+            boneVisualNodes.forEach(n => scene.remove(n));
+            boneVisualLines.forEach(l => scene.remove(l));
+            boneVisualNodes = [];
+            boneVisualLines = [];
+        }
+
+        // ---------- MAIN LOOP ----------
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+            const time = Date.now() * 0.001;
+            if (replayPlaying && recordedKeyframes.length >= 2) {
+                replayTime += delta * replaySpeed;
+                const maxTime = recordedKeyframes.length - 1;
+                if (replayTime >= maxTime) { if (replayLoop) replayTime = 0;
+                    else { replayPlaying = false;
+                        document.getElementById('btn-replay-play').innerHTML =
+                            '<i class="fa-solid fa-play mr-1"></i>Play'; } }
+                applyReplayFrame(replayTime);
+                updateReplayUI();
+            } else if (character && !customAnimPlaying && !replayPlaying) {
+                const pose = getAnimPose(time, currentAnimPreset);
+                applyPose(pose, 0.2);
+            }
+            if (character) {
+                if (charPos.y > 0 || charVel.y !== 0) { charPos.y += charVel.y;
+                    charVel.y -= 0.018; if (charPos.y <= 0) { charPos.y = 0;
+                        charVel.y = 0; } }
+                character.position.copy(charPos);
+                springBones.forEach((item, idx) => {
+                    const st = time + idx * 0.7;
+                    const targetX = (item.baseRotation?.x ?? -0.3) + Math.sin(st * 2.5) * 0.08;
+                    const targetZ = (item.baseRotation?.z ?? 0) + Math.cos(st * 2.0) * 0.08;
+                    item.bone.rotation.x += (targetX - item.bone.rotation.x) * 0.08;
+                    item.bone.rotation.z += (targetZ - item.bone.rotation.z) * 0.08;
+                });
+                if (skeletonHelper) skeletonHelper.update();
+                updateBoneVisualPositions();
+                const cx = charPos.x + Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+                const cy = charPos.y + Math.sin(cameraAngleY) * cameraDistance + 0.7;
+                const cz = charPos.z + Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+                camera.position.lerp(new THREE.Vector3(cx, cy, cz), 0.12);
+                camera.lookAt(charPos.x, charPos.y + 0.7, charPos.z);
+            }
+            renderer.render(scene, camera);
+        }
 
         // ---------- BOOT ----------
         window.onload = function() {
@@ -997,7 +1911,7 @@
             updateTextureHUD();
             setupAnimGrid();
             switchTab('tab-pose');
-            showToast('Avatar Forge Pro ready');
+            showToast('Avatar Forge Pro — Grid Remap + Texture HUD ready');
         };
     </script>
 </body>
