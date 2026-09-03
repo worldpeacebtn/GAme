@@ -25,7 +25,7 @@ button{cursor:pointer}
 .gridcard:hover{border-color:#a855f7;transform:translateY(-1px)}
 .gridcard.sel{border-color:#22d3ee;background:rgba(34,211,238,.1)}
 #canvas-container{position:fixed;inset:0;z-index:0;overflow:hidden}
-#canvas-container canvas{position:absolute;inset:0;width:100%!important;height:100%!important;display:block;touch-action:none}
+#canvas-container{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;z-index:0!important;overflow:hidden!important;display:block!important}#canvas-container canvas{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;display:block!important;visibility:visible!important;opacity:1!important;touch-action:none}
 #stage-vignette{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 42%,transparent 0 35%,rgba(2,6,23,.22) 72%,rgba(2,6,23,.65) 100%)}
 #selection-ring{position:fixed;z-index:5;pointer-events:none;border:2px solid #22d3ee;border-radius:50%;width:24px;height:24px;display:none;box-shadow:0 0 16px #22d3ee}
 #dock{height:196px}
@@ -40,6 +40,7 @@ button{cursor:pointer}
 .bone-dot{width:9px;height:9px;border-radius:50%;display:inline-block;box-shadow:0 0 9px currentColor}
 .preview-card{width:118px;height:104px;overflow:hidden}
 #preview-canvas{width:100%;height:72px;display:block}
+#canvas-help{position:fixed;left:50%;top:52px;transform:translateX(-50%);z-index:8;pointer-events:none;background:rgba(2,6,23,.55);border:1px solid rgba(148,163,184,.22);border-radius:999px;padding:5px 9px;font-size:8px;color:#cbd5e1;backdrop-filter:blur(8px);opacity:.72}
 </style>
 </head>
 <body>
@@ -358,9 +359,16 @@ function init(){
   scene.fog=new THREE.FogExp2(0x020617,.018);
 
   camera=new THREE.PerspectiveCamera(55,innerWidth/innerHeight,.03,1000);
-  renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
-  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-  renderer.setSize(innerWidth,innerHeight);
+  try{
+    renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+  }catch(err){
+    console.error('WebGL init failed',err);
+    c.innerHTML='<div style="position:absolute;inset:0;display:grid;place-items:center;color:#fda4af;font:600 14px system-ui;text-align:center;padding:24px">WebGL could not start.<br>Please enable hardware acceleration/WebGL and reopen this file.</div>';
+    return;
+  }
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));
+  renderer.setSize(innerWidth,innerHeight,false);
+  renderer.domElement.style.cssText='position:absolute;inset:0;width:100vw;height:100vh;display:block;visibility:visible;opacity:1;z-index:0;touch-action:none';
   renderer.shadowMap.enabled=true;
   renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.outputEncoding=THREE.sRGBEncoding;
@@ -409,38 +417,45 @@ function updatePreview(){
 }
 
 function createDefaultCharacter(){
-  if(character){scene.remove(character)}
-  character=new THREE.Group();character.name='Default Character';
-  const hips=new THREE.Bone();hips.name='hips';hips.position.y=.9;
-  const spine=new THREE.Bone();spine.name='spine';spine.position.y=.28;hips.add(spine);
-  const chest=new THREE.Bone();chest.name='chest';chest.position.y=.28;spine.add(chest);
-  const neck=new THREE.Bone();neck.name='neck';neck.position.y=.22;chest.add(neck);
-  const head=new THREE.Bone();head.name='head';head.position.y=.2;neck.add(head);
-  const la=new THREE.Bone();la.name='leftArm';la.position.set(-.35,.16,0);chest.add(la);
-  const ra=new THREE.Bone();ra.name='rightArm';ra.position.set(.35,.16,0);chest.add(ra);
-  const ll=new THREE.Bone();ll.name='leftLeg';ll.position.set(-.13,-.05,0);hips.add(ll);
-  const rl=new THREE.Bone();rl.name='rightLeg';rl.position.set(.13,-.05,0);hips.add(rl);
+  if(character) scene.remove(character);
+  character=new THREE.Group();
+  character.name='Default Character';
+  character.position.set(0,0,0);
+
+  const hips=new THREE.Bone(); hips.name='hips'; hips.position.set(0,.95,0);
+  const spine=new THREE.Bone(); spine.name='spine'; spine.position.set(0,.28,0); hips.add(spine);
+  const chest=new THREE.Bone(); chest.name='chest'; chest.position.set(0,.28,0); spine.add(chest);
+  const neck=new THREE.Bone(); neck.name='neck'; neck.position.set(0,.22,0); chest.add(neck);
+  const head=new THREE.Bone(); head.name='head'; head.position.set(0,.22,0); neck.add(head);
+  const la=new THREE.Bone(); la.name='leftArm'; la.position.set(-.36,.12,0); chest.add(la);
+  const ra=new THREE.Bone(); ra.name='rightArm'; ra.position.set(.36,.12,0); chest.add(ra);
+  const ll=new THREE.Bone(); ll.name='leftLeg'; ll.position.set(-.14,-.05,0); hips.add(ll);
+  const rl=new THREE.Bone(); rl.name='rightLeg'; rl.position.set(.14,-.05,0); hips.add(rl);
   character.add(hips);
+
   defaultRigBones={hips,spine,chest,neck,head,leftArm:la,rightArm:ra,leftLeg:ll,rightLeg:rl};
-  const mk=(name,bone,size,color,pos)=>{const m=new THREE.Mesh(new THREE.CapsuleGeometry(Math.min(size.x,size.z)*.5,size.y,5,10),new THREE.MeshStandardMaterial({color,roughness:.42,metalness:.08}));m.name=name;m.position.copy(pos);m.castShadow=m.receiveShadow=true;bone.add(m);return m};
-  mk('Torso',chest,.34,.55,0,0);
-  function cube(name,bone,s,c,p){const m=new THREE.Mesh(new THREE.BoxGeometry(...s),new THREE.MeshStandardMaterial({color:c,roughness:.45}));m.name=name;m.position.copy(p);m.castShadow=m.receiveShadow=true;bone.add(m);return m}
-  cube('Body',chest,[.5,.35,.3],0x64748b,new THREE.Vector3(0,.05,0));
-  cube('Head',head,[.34,.34,.32],0xf1c7a7,new THREE.Vector3(0,.05,0));
-  cube('LeftArm',la,[.12,.45,.12],0x60a5fa,new THREE.Vector3(0,-.2,0));
-  cube('RightArm',ra,[.12,.45,.12],0xf87171,new THREE.Vector3(0,-.2,0));
-  cube('LeftLeg',ll,[.15,.6,.15],0x34d399,new THREE.Vector3(0,-.28,0));
-  cube('RightLeg',rl,[.15,.6,.15],0xa78bfa,new THREE.Vector3(0,-.28,0));
-  allBones=Object.values(defaultRigBones);allMeshes=[];materials=[];
-  character.traverse(o=>{if(o.isMesh){allMeshes.push(o);materials.push(...matsOf(o))}});
+
+  const cube=(name,bone,size,color,pos)=>{
+    const m=new THREE.Mesh(
+      new THREE.BoxGeometry(size[0],size[1],size[2]),
+      new THREE.MeshStandardMaterial({color,roughness:.45,metalness:.08})
+    );
+    m.name=name; m.position.copy(pos);
+    m.castShadow=true; m.receiveShadow=true; bone.add(m); return m;
+  };
+
+  cube('Torso',chest,[.55,.42,.32],0x64748b,new THREE.Vector3(0,.02,0));
+  cube('Head',head,[.36,.36,.34],0xf1c7a7,new THREE.Vector3(0,.04,0));
+  cube('LeftArm',la,[.13,.48,.13],0x60a5fa,new THREE.Vector3(0,-.22,0));
+  cube('RightArm',ra,[.13,.48,.13],0xf472b6,new THREE.Vector3(0,-.22,0));
+  cube('LeftLeg',ll,[.15,.62,.15],0x34d399,new THREE.Vector3(0,-.30,0));
+  cube('RightLeg',rl,[.15,.62,.15],0xa78bfa,new THREE.Vector3(0,-.30,0));
+
   scene.add(character);
-  charPos.set(0,0,0);character.position.copy(charPos);
-  springBones=[];importedClips=[];mixer=null;activeClipAction=null;
-  selectedBone=defaultRigBones.chest;selectedMesh=allMeshes[1]||allMeshes[0];
   rebuildEverything('Default');
+  frameCharacter();
   updatePreview();
 }
-
 function resetModelState(){
   allBones=[];allMeshes=[];materials=[];springBones=[];importedClips=[];
   textureLibrary=[];selectedTexture=null;textureUndo=[];textureRedo=[];
@@ -524,7 +539,11 @@ function extractTextures(){
     matsOf(o).forEach(m=>{
       ['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','alphaMap'].forEach(slot=>{
         const tex=m[slot];
-        if(tex&&!seen.has(tex.uuid)){seen.add(tex.uuid);textureLibrary.push({name:tex.name||slot+'_'+textureLibrary.length,texture:tex,source:'model',slot})}
+        if(tex&&!seen.has(tex.uuid)){
+          seen.add(tex.uuid);
+          tex.needsUpdate=true;
+          textureLibrary.push({name:tex.name||slot+'_'+textureLibrary.length,texture:tex,source:'model',slot});
+        }
       });
     });
   });
@@ -630,7 +649,19 @@ function applyFX(fx){
 }
 
 function texThumb(tex,size=64){
-  try{const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d');const im=tex.image;if(im?.width){const a=im.width/im.height;let w=size,h=size;if(a>1)h=size/a;else w=size*a;x.drawImage(im,(size-w)/2,(size-h)/2,w,h)}else{x.fillStyle='#222';x.fillRect(0,0,size,size);x.fillStyle='#fff';x.fillText('TEX',size/2,size/2)}return c.toDataURL()}catch(e){return ''}
+  try{
+    const c=document.createElement('canvas'); c.width=c.height=size;
+    const x=c.getContext('2d'); const im=tex?.image;
+    if(im && im.width && im.height){
+      const a=im.width/im.height; let w=size,h=size;
+      if(a>1)h=size/a; else w=size*a;
+      x.drawImage(im,(size-w)/2,(size-h)/2,w,h);
+    }else{
+      x.fillStyle='#222';x.fillRect(0,0,size,size);
+      x.fillStyle='#fff';x.font='10px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('TEX',size/2,size/2);
+    }
+    return c.toDataURL('image/png');
+  }catch(err){console.warn('thumbnail failed',err);return ''}
 }
 function updateTextureGrid(){
   const g=$('tex-grid');g.innerHTML='';
@@ -644,7 +675,7 @@ function applyTexture(mesh,entry){
   if(!mesh||!entry)return;
   const ms=matsOf(mesh);const old=ms.map(m=>m.map);
   textureUndo.push({mesh,old,entry});textureRedo=[];
-  ms.forEach(m=>{m.map=entry.texture;m.color.set(0xffffff);m.needsUpdate=true});
+  ms.forEach(m=>{entry.texture.flipY=false;m.map=entry.texture;m.color.set(0xffffff);m.needsUpdate=true});
   toast('Texture applied to '+(mesh.name||'mesh'));
 }
 function openTextureModal(mesh){
@@ -804,30 +835,104 @@ function updateSelectionRing(){
 }
 
 function setupCanvasSelection(){
-  const c=renderer.domElement,ray=new THREE.Raycaster(),ndc=new THREE.Vector2();let drag=false,last={x:0,y:0};
-  c.addEventListener('pointerdown',e=>{
-    if(e.button!==undefined&&e.button!==0)return;
-    const rect=c.getBoundingClientRect();ndc.x=((e.clientX-rect.left)/rect.width)*2-1;ndc.y=-((e.clientY-rect.top)/rect.height)*2+1;
-    ray.setFromCamera(ndc,camera);
-    if(textureLinkMode&&selectedTexture){
-      const hits=ray.intersectObjects(allMeshes,true);if(hits.length){applyTexture(hits[0].object,selectedTexture);return}
-    }
-    const hits=ray.intersectObjects(allMeshes,true);
-    if(hits.length){selectMesh(hits[0].object)}
-    drag=true;last={x:e.clientX,y:e.clientY};c.setPointerCapture?.(e.pointerId);
-  });
-  c.addEventListener('pointermove',e=>{
-    if(!drag)return;
-    const dx=e.clientX-last.x,dy=e.clientY-last.y;cameraYaw-=dx*.009;cameraPitch=Math.max(-.05,Math.min(1.25,cameraPitch-dy*.009));last={x:e.clientX,y:e.clientY};
-  });
-  c.addEventListener('pointerup',()=>drag=false);
-  c.addEventListener('wheel',e=>{cameraDistance=Math.max(.6,Math.min(20,cameraDistance+e.deltaY*.004))},{passive:true});
-  c.addEventListener('dblclick',e=>{
-    const rect=c.getBoundingClientRect();ndc.x=((e.clientX-rect.left)/rect.width)*2-1;ndc.y=-((e.clientY-rect.top)/rect.height)*2+1;ray.setFromCamera(ndc,camera);
-    const hits=ray.intersectObjects(allMeshes,true);if(hits.length)openTextureModal(hits[0].object);
-  });
-}
+  const c=renderer.domElement;
+  const ray=new THREE.Raycaster(), ndc=new THREE.Vector2();
+  let active=false, moved=false, lastX=0,lastY=0, downX=0, downY=0, downAt=0;
+  let pinchStartDist=0, pinchStartZoom=0;
 
+  const blocked=e=>!!e.target.closest('.panel,.modal,.dock,.tabpage,.dockpage,button,input,select,textarea,label');
+
+  const hitTest=(x,y)=>{
+    const rect=c.getBoundingClientRect();
+    ndc.x=((x-rect.left)/rect.width)*2-1;
+    ndc.y=-((y-rect.top)/rect.height)*2+1;
+    ray.setFromCamera(ndc,camera);
+    return ray.intersectObjects(allMeshes.filter(m=>m.visible),true);
+  };
+
+  c.addEventListener('pointerdown',e=>{
+    if(blocked(e)||e.button===2)return;
+    active=true; moved=false;
+    lastX=downX=e.clientX; lastY=downY=e.clientY; downAt=performance.now();
+    c.setPointerCapture?.(e.pointerId);
+
+    if(e.pointerType==='touch' && e.isPrimary){
+      const touches=c._activeTouches||(c._activeTouches=new Map());
+      touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(touches.size===2){
+        const a=[...touches.values()];
+        pinchStartDist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+        pinchStartZoom=cameraDistance;
+      }
+    }
+  });
+
+  c.addEventListener('pointermove',e=>{
+    if(e.pointerType==='touch'){
+      const touches=c._activeTouches;
+      if(touches){
+        if(touches.has(e.pointerId))touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+        if(touches.size>=2){
+          const a=[...touches.values()];
+          const d=Math.max(10,Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y));
+          cameraDistance=Math.max(.45,Math.min(24,pinchStartZoom*(pinchStartDist/d)));
+          moved=true; return;
+        }
+      }
+    }
+    if(!active)return;
+    const dx=e.clientX-lastX,dy=e.clientY-lastY;
+    if(Math.abs(e.clientX-downX)+Math.abs(e.clientY-downY)>6)moved=true;
+    cameraYaw-=dx*.008;
+    cameraPitch=Math.max(-.35,Math.min(1.35,cameraPitch-dy*.008));
+    lastX=e.clientX; lastY=e.clientY;
+  });
+
+  const finish=e=>{
+    if(e.pointerType==='touch' && c._activeTouches)c._activeTouches.delete(e.pointerId);
+    if(!active)return;
+    const elapsed=performance.now()-downAt;
+    if(!moved && elapsed<280){
+      const hits=hitTest(e.clientX,e.clientY);
+      if(hits.length){
+        const mesh=hits[0].object;
+        if(textureLinkMode && selectedTexture){
+          applyTexture(mesh,selectedTexture);
+        }else{
+          selectMesh(mesh);
+        }
+      }
+    }
+    active=false;
+  };
+  c.addEventListener('pointerup',finish);
+  c.addEventListener('pointercancel',finish);
+  c.addEventListener('contextmenu',e=>e.preventDefault());
+
+  c.addEventListener('wheel',e=>{
+    if(blocked(e))return;
+    e.preventDefault();
+    cameraDistance=Math.max(.45,Math.min(24,cameraDistance+e.deltaY*.006));
+  },{passive:false});
+
+  c.addEventListener('dblclick',e=>{
+    if(blocked(e))return;
+    const hits=hitTest(e.clientX,e.clientY);
+    if(hits.length)openTextureModal(hits[0].object);
+  });
+
+  // Two-finger touch fallback for browsers that don't expose two pointer events cleanly.
+  c.addEventListener('touchmove',e=>{
+    if(e.touches.length===2){
+      const a=e.touches[0],b=e.touches[1];
+      const d=Math.max(10,Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY));
+      if(!c._pinchBase){c._pinchBase={d,zoom:cameraDistance}}
+      cameraDistance=Math.max(.45,Math.min(24,c._pinchBase.zoom*(c._pinchBase.d/d)));
+      e.preventDefault();
+    }
+  },{passive:false});
+  c.addEventListener('touchend',()=>{c._pinchBase=null},{passive:true});
+}
 function setupJoystick(){
   const base=$('joystick'),thumb=$('joy-thumb');
   const start=e=>{e.preventDefault();joy.active=true;const r=base.getBoundingClientRect();joy.cx=r.left+r.width/2;joy.cy=r.top+r.height/2;move(e)};
@@ -860,7 +965,23 @@ function setupUI(){
   $('opacity').oninput=e=>{eachSelectedMat(m=>{m.opacity=+e.target.value;m.transparent=m.opacity<1;m.needsUpdate=true});$('opacity-v').textContent=(+e.target.value).toFixed(2)};
   document.querySelectorAll('.fx').forEach(b=>b.onclick=()=>applyFX(b.dataset.fx));
   document.querySelectorAll('.tr').forEach(b=>b.onclick=()=>{if(selectedMesh){selectedMesh.position[b.dataset.axis]+=+b.dataset.dir;toast('Mesh moved')}});
-  $('tex-upload').onchange=e=>{const f=e.target.files[0];if(!f)return;new THREE.TextureLoader().load(URL.createObjectURL(f),t=>{t.name=f.name;textureLibrary.push({name:f.name,texture:t,source:'upload'});updateTextureGrid();toast('Texture added')})};
+  $('tex-upload').onchange=e=>{
+    const f=e.target.files?.[0]; if(!f)return;
+    const url=URL.createObjectURL(f);
+    const loader=new THREE.TextureLoader();
+    loader.load(url,t=>{
+      URL.revokeObjectURL(url);
+      t.name=f.name;
+      t.flipY=false;
+      t.needsUpdate=true;
+      const old=textureLibrary.find(x=>x.name===f.name);
+      if(old)old.texture=t; else textureLibrary.push({name:f.name,texture:t,source:'upload',slot:'map'});
+      selectedTexture=textureLibrary.find(x=>x.name===f.name);
+      updateTextureGrid();toast('Texture loaded: '+f.name);
+    },undefined,err=>{
+      URL.revokeObjectURL(url);console.error(err);toast('Texture load failed');
+    });
+  };
   $('tex-link').onclick=()=>{textureLinkMode=!textureLinkMode;$('tex-link').classList.toggle('bg-cyan-600/30',textureLinkMode);toast(textureLinkMode?'Link Mode ON — click mesh':'Link Mode OFF')};
   $('tex-undo').onclick=undoTexture;$('tex-redo').onclick=redoTexture;$('tex-extract').onclick=extractAndRefresh;$('tex-link2').onclick=()=>$('tex-link').click();$('tex-upload2').onclick=()=>$('tex-upload').click();
   $('tex-remove').onclick=()=>{if(selectedMesh){matsOf(selectedMesh).forEach(m=>{m.map=null;m.needsUpdate=true});toast('Texture map removed')}};
@@ -899,7 +1020,7 @@ function exportModel(){
   ex.parse(character,result=>{const blob=new Blob([result],{type:'application/octet-stream'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='edited_avatar.glb';a.click();toast('GLB exported')},err=>{console.error(err);toast('Export failed')},{binary:true});
 }
 function onResize(){if(!camera)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);if(previewCamera){const cv=$('preview-canvas');previewCamera.aspect=(cv.clientWidth||118)/(cv.clientHeight||72);previewCamera.updateProjectionMatrix();previewRenderer.setSize(cv.clientWidth||118,cv.clientHeight||72,false)}}
-window.addEventListener('load',init);
+window.addEventListener('load',()=>{if(window.__AVATAR_FORGE_BOOTED)return;window.__AVATAR_FORGE_BOOTED=true;init();});
 })();
 </script>
 </body>
