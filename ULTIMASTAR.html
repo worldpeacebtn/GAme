@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ULTIMATE AniMAstAR — Fixed</title>
+    <title>ULTIMATE AniMAstAR — Final</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -20,7 +20,7 @@
         .btn-glow:active{transform:scale(.94)}
         .tab-btn{padding:3px 8px;border-radius:6px;font-size:8px;transition:all .15s;cursor:pointer;border:1px solid transparent;background:transparent;color:#94a3b8}
         .tab-btn.active{background:rgba(236,72,153,.15);color:#ec4899;border-color:#ec4899}
-        .timeline-track{background:rgba(30,30,50,.6);border:1px solid #2a2a3e;border-radius:6px;height:32px;position:relative;cursor:pointer}
+        .timeline-track{background:rgba(30,30,50,.4);border:1px solid rgba(42,42,62,.5);border-radius:6px;height:32px;position:relative;cursor:pointer}
         .keyframe-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:#ec4899;top:50%;transform:translateY(-50%);cursor:pointer;box-shadow:0 0 6px rgba(236,72,153,.5)}
         .playhead{position:absolute;width:2px;height:100%;background:#fff;top:0;pointer-events:none;box-shadow:0 0 8px #fff}
         .toast-enter{animation:toastIn .3s ease forwards}@keyframes toastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -48,30 +48,37 @@
         .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:60;display:flex;align-items:center;justify-content:center}
         .modal-panel{background:#1a1a2e;border:1px solid #3a3a5e;border-radius:14px;padding:16px;max-width:90vw;max-height:85vh;overflow-y:auto}
         .neon-grid{position:fixed;inset:0;pointer-events:none;z-index:2;background:rgba(0,0,0,0);transition:background .5s}
-        .neon-grid.active{background:rgba(0,0,0,.4);background-image:linear-gradient(rgba(236,72,153,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(139,92,246,.05) 1px,transparent 1px);background-size:16px 16px}
-        #uh-joystick{position:fixed;bottom:165px;right:8px;z-index:40;display:none;pointer-events:auto}
+        .neon-grid.active{background:rgba(0,0,0,.3);background-image:linear-gradient(rgba(236,72,153,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(139,92,246,.05) 1px,transparent 1px);background-size:16px 16px}
+        #uh-joystick{position:fixed;bottom:150px;left:8px;z-index:40;display:none;pointer-events:auto}
         #uh-joystick.active{display:block}
-        .timeline-overlay{position:fixed;bottom:160px;left:50%;transform:translateX(-50%);z-index:35;pointer-events:none;width:85%;max-width:640px}
-        .timeline-overlay .tl-panel{pointer-events:auto;background:rgba(18,18,31,.7);border:1px solid #2a2a3e;border-radius:12px;padding:4px 10px;backdrop-filter:blur(12px);display:flex;align-items:center;gap:4px;flex-wrap:wrap}
+        .timeline-overlay{position:fixed;bottom:145px;left:50%;transform:translateX(-50%);z-index:35;pointer-events:none;width:85%;max-width:640px}
+        .timeline-overlay .tl-panel{pointer-events:auto;background:rgba(18,18,31,.3);border:1px solid rgba(42,42,62,.4);border-radius:12px;padding:4px 8px;backdrop-filter:blur(8px);display:flex;flex-direction:column;gap:3px}
+        .timeline-overlay .tl-panel .tl-row{display:flex;align-items:center;gap:4px;flex-wrap:wrap}
         .timeline-overlay .tl-panel .tl-track-wrap{flex:1;min-width:60px}
         .timeline-overlay .tl-panel .tl-btns{display:flex;gap:2px;flex-wrap:wrap}
-        .timeline-overlay .tl-panel .tl-btns button{background:rgba(30,30,50,.6);border:1px solid #2a2a3e;border-radius:4px;padding:2px 5px;color:#cbd5e1;font-size:7px;cursor:pointer;transition:.15s}
+        .timeline-overlay .tl-panel .tl-btns button{background:rgba(30,30,50,.5);border:1px solid rgba(42,42,62,.5);border-radius:4px;padding:2px 5px;color:#cbd5e1;font-size:7px;cursor:pointer;transition:.15s}
         .timeline-overlay .tl-panel .tl-btns button:hover{background:rgba(139,92,246,.2)}
         .timeline-overlay .tl-panel .tl-btns button.primary{background:rgba(236,72,153,.2);border-color:#ec4899}
-        .library-panel{position:fixed;left:4px;top:40px;bottom:160px;width:140px;z-index:30;pointer-events:none;transition:transform .25s}
-        .library-panel.open{transform:translateX(0)}.library-panel.closed{transform:translateX(-160px)}
+        .library-panel{position:fixed;left:4px;top:40px;bottom:145px;width:130px;z-index:30;pointer-events:none;transition:transform .25s}
+        .library-panel.open{transform:translateX(0)}.library-panel.closed{transform:translateX(-150px)}
         .library-panel .lib-inner{pointer-events:auto;height:100%;background:rgba(18,18,31,.85);border:1px solid #2a2a3e;border-radius:10px;backdrop-filter:blur(20px);padding:4px;overflow-y:auto}
         .library-panel .lib-inner .lib-item{padding:2px 5px;border-radius:3px;cursor:pointer;border:1px solid transparent;font-size:7px;display:flex;justify-content:space-between;align-items:center}
         .library-panel .lib-inner .lib-item:hover{background:rgba(139,92,246,.1);border-color:#8b5cf6}
         #toast-container{position:fixed;bottom:6px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(10,10,20,.9);padding:4px 14px;border-radius:999px;border:1px solid #2a2a3e;font-size:8px;color:#e2e8f0;opacity:0;transition:opacity .3s;pointer-events:none}
         .bone-section-header{font-size:6px;font-weight:700;color:#64748b;margin-top:2px;padding:1px 0;border-bottom:1px solid #1e293b}
-        #persistent-dock{height:155px}
+        #persistent-dock{height:140px}
         .part-edit-panel{background:#1a1a2e;border:1px solid #2a2a3e;border-radius:8px;padding:4px;margin-top:4px}
-        .info-hud{position:fixed;top:38px;right:6px;z-index:40;background:rgba(18,18,31,.8);border:1px solid #2a2a3e;border-radius:6px;padding:2px 8px;font-size:7px;color:#94a3b8;backdrop-filter:blur(12px);pointer-events:none}
+        .info-hud{position:fixed;top:38px;right:6px;z-index:40;background:rgba(18,18,31,.7);border:1px solid #2a2a3e;border-radius:6px;padding:2px 8px;font-size:7px;color:#94a3b8;backdrop-filter:blur(8px);pointer-events:none}
+        .cam-controls{display:flex;gap:2px;align-items:center}
+        .cam-controls button{background:rgba(30,30,50,.5);border:1px solid rgba(42,42,62,.5);border-radius:4px;padding:2px 6px;color:#cbd5e1;font-size:7px;cursor:pointer;transition:.15s}
+        .cam-controls button:hover{background:rgba(139,92,246,.2)}
+        #static-grid{position:fixed;inset:0;pointer-events:none;z-index:1;background:rgba(0,0,0,0);background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:20px 20px;display:none}
+        #static-grid.active{display:block}
     </style>
 </head>
 <body>
 <div id="canvas-container" class="fixed inset-0 z-0"></div>
+<div id="static-grid"></div>
 <div id="neon-grid" class="neon-grid"></div>
 <div id="glitch-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:100;opacity:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(236,72,153,0.04) 2px,rgba(236,72,153,0.04) 4px);"></div>
 
@@ -92,6 +99,7 @@
         <button id="btn-toggle-texture-hud" class="panel px-1.5 py-0.5 text-sky-300 btn-glow"><i class="fa-solid fa-layer-group text-[9px]"></i></button>
         <button id="btn-toggle-hair" class="panel px-1.5 py-0.5 text-pink-300 btn-glow"><i class="fa-solid fa-scissors text-[9px]"></i></button>
         <button id="btn-neon-grid" class="panel px-1.5 py-0.5 text-cyan-300 btn-glow"><i class="fa-solid fa-grid-2 text-[9px]"></i></button>
+        <button id="btn-static-grid" class="panel px-1.5 py-0.5 text-blue-300 btn-glow"><i class="fa-solid fa-th text-[9px]"></i></button>
         <button id="btn-cut" class="panel px-1.5 py-0.5 text-red-300 btn-glow"><i class="fa-solid fa-cut text-[9px]"></i></button>
         <button id="btn-export-model" class="panel px-1.5 py-0.5 text-emerald-300 btn-glow"><i class="fa-solid fa-download text-[9px]"></i></button>
         <label class="panel px-1.5 py-0.5 text-sky-300 btn-glow cursor-pointer"><i class="fa-solid fa-upload text-[9px]"></i><input type="file" id="gltf-upload" accept=".glb,.gltf,.vrm" class="hidden"></label>
@@ -100,8 +108,17 @@
     </div>
 </div>
 
+<!-- CAMERA CONTROLS (center, 1st, 3rd) -->
+<div class="fixed top-1 left-1/2 transform -translate-x-1/2 z-40 flex gap-1 pointer-events-auto" style="top:38px;">
+    <div class="cam-controls panel px-2 py-0.5">
+        <button id="cam-center"><i class="fa-solid fa-crosshairs"></i></button>
+        <button id="cam-1st"><i class="fa-solid fa-eye"></i> 1st</button>
+        <button id="cam-3rd"><i class="fa-solid fa-person"></i> 3rd</button>
+    </div>
+</div>
+
 <!-- TEXTURE HUD -->
-<div id="texture-hud" class="fixed z-40 pointer-events-none hidden" style="top:38px;left:50%;transform:translateX(-50%);width:220px;">
+<div id="texture-hud" class="fixed z-40 pointer-events-none hidden" style="top:44px;left:50%;transform:translateX(-50%);width:200px;">
     <div class="panel p-1.5 pointer-events-auto">
         <div class="flex items-center justify-between mb-0.5"><span class="text-[7px] font-bold text-sky-300">TEXTURES</span>
             <div class="flex gap-0.5">
@@ -117,7 +134,7 @@
 </div>
 
 <!-- SKELETON & BONE GROUPS (right) -->
-<div class="fixed right-1 z-30 pointer-events-none" style="top:38px;bottom:155px;width:130px;">
+<div class="fixed right-1 z-30 pointer-events-none" style="top:44px;bottom:140px;width:120px;">
     <div class="panel p-1 h-full flex flex-col pointer-events-auto overflow-hidden">
         <span class="text-[6px] font-bold text-slate-400 mb-0.5">BONES / GROUPS</span>
         <div id="bone-hierarchy-list" class="flex-1 overflow-y-auto"></div>
@@ -133,28 +150,32 @@
     </div>
 </div>
 
-<!-- TIMELINE OVERLAY -->
+<!-- TIMELINE OVERLAY (transparent background, track below buttons) -->
 <div id="timeline-overlay" class="timeline-overlay">
     <div class="tl-panel">
-        <div class="tl-btns">
-            <button id="tl-record" class="primary"><i class="fa-solid fa-circle-dot"></i></button>
-            <button id="tl-add-key"><i class="fa-solid fa-plus"></i></button>
-            <button id="tl-play"><i class="fa-solid fa-play"></i></button>
-            <button id="tl-loop"><i class="fa-solid fa-repeat"></i></button>
-            <button id="tl-mirror"><i class="fa-solid fa-arrows-left-right"></i></button>
-            <button id="tl-export"><i class="fa-solid fa-file-export"></i></button>
-            <button id="tl-clear"><i class="fa-solid fa-trash"></i></button>
-            <button id="tl-undo"><i class="fa-solid fa-undo"></i></button>
-            <button id="tl-redo"><i class="fa-solid fa-redo"></i></button>
+        <div class="tl-row">
+            <div class="tl-btns">
+                <button id="tl-record" class="primary"><i class="fa-solid fa-circle-dot"></i></button>
+                <button id="tl-add-key"><i class="fa-solid fa-plus"></i></button>
+                <button id="tl-play"><i class="fa-solid fa-play"></i></button>
+                <button id="tl-loop"><i class="fa-solid fa-repeat"></i></button>
+                <button id="tl-mirror"><i class="fa-solid fa-arrows-left-right"></i></button>
+                <button id="tl-export"><i class="fa-solid fa-file-export"></i></button>
+                <button id="tl-clear"><i class="fa-solid fa-trash"></i></button>
+                <button id="tl-undo"><i class="fa-solid fa-undo"></i></button>
+                <button id="tl-redo"><i class="fa-solid fa-redo"></i></button>
+            </div>
+            <span id="tl-frame-info" class="text-[6px] text-slate-400">0/0</span>
         </div>
-        <div class="tl-track-wrap">
-            <div id="tl-track" class="timeline-track"></div>
+        <div class="tl-row">
+            <div class="tl-track-wrap">
+                <div id="tl-track" class="timeline-track"></div>
+            </div>
         </div>
-        <span id="tl-frame-info" class="text-[6px] text-slate-400">0/0</span>
     </div>
 </div>
 
-<!-- JOYSTICK -->
+<!-- JOYSTICK (left side) -->
 <div id="uh-joystick" class="active">
     <div class="joystick-base" id="joystick-base"><div class="joystick-thumb" id="joystick-thumb"></div></div>
     <div class="joystick-actions">
@@ -166,7 +187,7 @@
 </div>
 
 <!-- BOTTOM DOCK -->
-<div id="persistent-dock" class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-2xl border-t border-slate-800 flex flex-col select-none" style="height:155px;">
+<div id="persistent-dock" class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-2xl border-t border-slate-800 flex flex-col select-none" style="height:140px;">
     <div class="grid grid-cols-5 bg-slate-950/80 border-b border-slate-800 p-0.5 text-[8px] font-bold text-center flex-shrink-0">
         <button onclick="switchTab('tab-pose')" id="btn-tab-pose" class="tab-btn">Pose</button>
         <button onclick="switchTab('tab-parts')" id="btn-tab-parts" class="tab-btn">Parts/FX</button>
@@ -230,7 +251,7 @@
 
         <!-- GAME -->
         <div id="tab-game" class="space-y-1 hidden">
-            <div class="text-[7px] text-slate-400">Joystick & actions on right side.</div>
+            <div class="text-[7px] text-slate-400">Joystick & actions on left side.</div>
             <button id="btn-game-toggle" class="bg-purple-600/30 border border-purple-500/50 p-1 rounded text-purple-300 text-[7px]">Toggle Game</button>
         </div>
     </div>
@@ -244,7 +265,7 @@
 
 <script>
 // ============================================================
-// ULTIMATE AniMAstAR — Fixed Canvas + Textures + Timeline
+// ULTIMATE AniMAstAR — Final with transparent timeline, grid, cam controls
 // ============================================================
 
 // ---------- CORE ----------
@@ -263,7 +284,7 @@ let isRecording=false,recTimer=0,timelinePlaying=false,timelineLoop=false;
 let timelineKeyframes=[],replayTime=0,replaySpeed=1;
 let timelineHistory=[],historyIdx=-1;
 let glitchInterval=null,angleSpheres=[];
-let gltfAnimations=[]; // baked-in animations from GLB
+let gltfAnimations=[];
 
 // Bone mapping
 const boneGroups={
@@ -317,17 +338,11 @@ function init(){
     setupControls();setupBoneInteraction();setupTextureSystem();setupSwipeValues();setupJoystick();
     window.addEventListener('resize',onResize);
 
-    // Create default character
     createDefaultCharacter();
-
-    // Setup timeline & library
     setupTimeline();
     setupLibrary();
 
-    // Start loop
     animate();
-
-    // Switch to pose tab
     switchTab('tab-pose');
     showToast('ULTIMATE AniMAstAR ready');
 }
@@ -336,8 +351,6 @@ function init(){
 function createDefaultCharacter(){
     if(character){scene.remove(character);clearBoneVisuals();if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper=null}}
     character=new THREE.Group();character.position.set(0,0.7,0);
-
-    // Build skeleton
     const hips=new THREE.Bone();hips.name='hips';hips.position.set(0,0.8,0);
     const spine=new THREE.Bone();spine.name='spine';spine.position.set(0,0.25,0);hips.add(spine);
     const chest=new THREE.Bone();chest.name='chest';chest.position.set(0,0.25,0);spine.add(chest);
@@ -358,18 +371,9 @@ function createDefaultCharacter(){
     const rn=new THREE.Bone();rn.name='rightAnkle';rn.position.set(0,-0.3,0);rk.add(rn);
     const ln=new THREE.Bone();ln.name='leftAnkle';ln.position.set(0,-0.3,0);lk.add(ln);
     character.add(hips);
-
     const map={hips,spine,chest,neck,head,rightArm:ra,leftArm:la,rightElbow:re,leftElbow:le,rightWrist:rw,leftWrist:lw,rightFingers:rf,leftFingers:lf,rightLeg:rl,leftLeg:ll,rightKnee:rk,leftKnee:lk,rightAnkle:rn,leftAnkle:ln};
-    Object.assign(skeletonBones,map);
-    Object.keys(map).forEach(k=>boneRemapSelections[k]=map[k].name);
-    allBones=Object.values(map);
-
-    // Add meshes
-    const makeMesh=(name,color,pos,scale)=>{
-        const g=new THREE.BoxGeometry(scale.x,scale.y,scale.z);
-        const m=new THREE.MeshStandardMaterial({color,roughness:0.5,metalness:0.1});
-        const mesh=new THREE.Mesh(g,m);mesh.name=name;mesh.position.copy(pos);mesh.castShadow=mesh.receiveShadow=true;return mesh;
-    };
+    Object.assign(skeletonBones,map);Object.keys(map).forEach(k=>boneRemapSelections[k]=map[k].name);allBones=Object.values(map);
+    const makeMesh=(name,color,pos,scale)=>{const g=new THREE.BoxGeometry(scale.x,scale.y,scale.z);const m=new THREE.MeshStandardMaterial({color,roughness:0.5,metalness:0.1});const mesh=new THREE.Mesh(g,m);mesh.name=name;mesh.position.copy(pos);mesh.castShadow=mesh.receiveShadow=true;return mesh};
     head.add(makeMesh('head',0xfbbf24,new THREE.Vector3(0,0.12,0),new THREE.Vector3(0.18,0.18,0.18)));
     chest.add(makeMesh('torso',0xfb923c,new THREE.Vector3(0,0.12,0),new THREE.Vector3(0.3,0.25,0.18)));
     hips.add(makeMesh('hips',0xfb923c,new THREE.Vector3(0,0,0),new THREE.Vector3(0.25,0.12,0.18)));
@@ -377,16 +381,12 @@ function createDefaultCharacter(){
     la.add(makeMesh('leftArm',0x60a5fa,new THREE.Vector3(0,-0.1,0),new THREE.Vector3(0.07,0.25,0.07)));
     rl.add(makeMesh('rightLeg',0xa78bfa,new THREE.Vector3(0,-0.15,0),new THREE.Vector3(0.08,0.35,0.08)));
     ll.add(makeMesh('leftLeg',0x34d399,new THREE.Vector3(0,-0.15,0),new THREE.Vector3(0.08,0.35,0.08)));
-
     primaryMaterials=[];character.traverse(ch=>{if(ch.isMesh){const ms=Array.isArray(ch.material)?ch.material:[ch.material];primaryMaterials.push(...ms)}});
     scene.add(character);
     if(showSkeleton){skeletonHelper=new THREE.SkeletonHelper(character);scene.add(skeletonHelper)}
     buildBoneVisuals();
-
-    // Asset parts
     assetParts={hair:[],clothing:[],body:[],accessories:[],other:[]};
     character.traverse(ch=>{if(!ch.isMesh)return;const nm=ch.name.toLowerCase();if(nm.includes('hair'))assetParts.hair.push(ch);else if(nm.includes('skirt')||nm.includes('shirt')||nm.includes('pant')||nm.includes('dress')||nm.includes('cloth'))assetParts.clothing.push(ch);else if(nm.includes('body')||nm.includes('skin')||nm.includes('face')||nm.includes('head')||nm.includes('torso'))assetParts.body.push(ch);else if(nm.includes('accessor')||nm.includes('glass')||nm.includes('hat'))assetParts.accessories.push(ch);else assetParts.other.push(ch)});
-
     updateBoneUI();updatePartsUI();updatePoseUI();updateTextureHUD();setupAnimGrid();
     document.getElementById('status-dot').className='w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
     document.getElementById('asset-name').innerText='Default';
@@ -401,6 +401,22 @@ function onResize(){camera.aspect=window.innerWidth/window.innerHeight;camera.up
 function getPose(){const p={};Object.keys(skeletonBones).forEach(k=>{const b=skeletonBones[k];if(b)p[k]={rx:b.rotation.x,ry:b.rotation.y,rz:b.rotation.z}});return p}
 function applyPoseToBones(pose,blend){Object.keys(pose).forEach(k=>{const b=skeletonBones[k];if(!b)return;const p=pose[k];if(blend>=1)b.rotation.set(p.rx,p.ry,p.rz);else{b.rotation.x+=(p.rx-b.rotation.x)*blend;b.rotation.y+=(p.ry-b.rotation.y)*blend;b.rotation.z+=(p.rz-b.rotation.z)*blend}});if(skeletonHelper)skeletonHelper.update()}
 function pushHistory(){const state=JSON.stringify(getPose());if(timelineHistory[historyIdx]!==state){timelineHistory=timelineHistory.slice(0,historyIdx+1);timelineHistory.push(state);historyIdx++;if(timelineHistory.length>50)timelineHistory.shift()}}
+
+// ---------- CAMERA CONTROLS ----------
+function setupCameraControls(){
+    document.getElementById('cam-center').addEventListener('click',()=>{
+        cameraAngleX=0.3;cameraAngleY=0.35;cameraDistance=4.5;
+        showToast('View centered');
+    });
+    document.getElementById('cam-1st').addEventListener('click',()=>{
+        cameraAngleX=0;cameraAngleY=0.15;cameraDistance=0.8;
+        showToast('1st person');
+    });
+    document.getElementById('cam-3rd').addEventListener('click',()=>{
+        cameraAngleX=0.3;cameraAngleY=0.45;cameraDistance=5.5;
+        showToast('3rd person');
+    });
+}
 
 // ---------- BONE UI ----------
 function updateBoneUI(){
@@ -461,18 +477,16 @@ function applyTexAction(a,isUndo){const ms=Array.isArray(a.part.material)?a.part
 // ---------- ANIM GRID ----------
 function setupAnimGrid(){
     const g=document.getElementById('anim-grid');g.innerHTML='';
-    // Show baked-in animations from GLB first
     if(gltfAnimations.length){
         gltfAnimations.forEach(anim=>{
             const d=document.createElement('div');d.className='anim-grid-item '+(currentAnim===anim.name?'active':'');d.innerHTML=`<span style="font-size:10px">🎬</span><br><span>${anim.name}</span>`;d.onclick=()=>{currentAnim=anim.name;setupAnimGrid();document.getElementById('current-anim-label').textContent=anim.name;playGLBAnim(anim)};g.appendChild(d);
         });
     }
-    // Then presets
     animPresets.forEach(p=>{
         const d=document.createElement('div');d.className=`anim-grid-item ${p.id===currentAnim?'active':''}`;d.innerHTML=`<span style="font-size:11px">${p.i}</span><br><span>${p.n}</span>`;d.onclick=()=>{currentAnim=p.id;setupAnimGrid();document.getElementById('current-anim-label').textContent=p.n;timelinePlaying=false};g.appendChild(d);
     });
 }
-function playGLBAnim(anim){/* handled by animation mixer in load */}
+function playGLBAnim(anim){/* handled by animation mixer */}
 
 // ---------- TIMELINE ----------
 function setupTimeline(){
@@ -552,6 +566,9 @@ function setupBoneInteraction(){const r=new THREE.Raycaster(),m=new THREE.Vector
 
 // ---------- CONTROLS ----------
 function setupControls(){
+    // Camera controls
+    setupCameraControls();
+
     document.getElementById('btn-toggle-skeleton').addEventListener('click',()=>{showSkeleton=!showSkeleton;if(showSkeleton&&character&&!skeletonHelper){skeletonHelper=new THREE.SkeletonHelper(character);scene.add(skeletonHelper)}boneNodes.forEach(n=>n.visible=showSkeleton);boneLines.forEach(l=>l.visible=showSkeleton);if(!showSkeleton&&skeletonHelper){scene.remove(skeletonHelper);skeletonHelper=null}});
     document.getElementById('btn-angle-spheres').addEventListener('click',()=>{showAngleSpheres=!showAngleSpheres;toggleAngleSpheres()});
     document.getElementById('btn-skeleton-map').addEventListener('click',()=>{document.getElementById('skeleton-map-modal').style.display='flex';renderSkeletonMap()});
@@ -559,6 +576,7 @@ function setupControls(){
     document.getElementById('btn-toggle-texture-hud').addEventListener('click',()=>document.getElementById('texture-hud').classList.toggle('hidden'));
     document.getElementById('btn-toggle-hair').addEventListener('click',()=>{showHair=!showHair;character?.traverse(ch=>{if(ch.isMesh&&(ch.name||'').toLowerCase().includes('hair'))ch.visible=showHair})});
     document.getElementById('btn-neon-grid').addEventListener('click',()=>document.getElementById('neon-grid').classList.toggle('active'));
+    document.getElementById('btn-static-grid').addEventListener('click',()=>document.getElementById('static-grid').classList.toggle('active'));
     document.getElementById('btn-cut').addEventListener('click',()=>{if(selectedPart){const p=selectedPart.parent;if(p){p.remove(selectedPart);selectedPart=null;updatePartsUI();showToast('Cut')}}else showToast('Select a part first')});
     document.getElementById('btn-export-model').addEventListener('click',()=>{if(!character)return;const ex=new THREE.GLTFExporter();ex.parse(character,r=>{const blob=new Blob([r],{type:'application/octet-stream'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='avatar.glb';a.click()},{binary:true})});
     document.getElementById('gltf-upload').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadGLB(URL.createObjectURL(f),f.name)});
@@ -626,7 +644,6 @@ function loadGLB(url,name){
         primaryMaterials=[];allBones=[];springBones=[];assetParts={hair:[],clothing:[],body:[],accessories:[],other:[]};textureLibrary=[];undoStack=[];redoStack=[];gltfAnimations=[];
         Object.keys(skeletonBones).forEach(k=>{skeletonBones[k]=null;boneRemapSelections[k]=''});
         character.traverse(ch=>{if(ch.isMesh){ch.castShadow=ch.receiveShadow=true;if(ch.material){const ms=Array.isArray(ch.material)?ch.material:[ch.material];primaryMaterials.push(...ms)}const nm=ch.name.toLowerCase();if(nm.includes('hair')||nm.includes('beard')||nm.includes('fur'))assetParts.hair.push(ch);else if(nm.includes('skirt')||nm.includes('shirt')||nm.includes('pant')||nm.includes('dress')||nm.includes('cloth'))assetParts.clothing.push(ch);else if(nm.includes('body')||nm.includes('skin')||nm.includes('face')||nm.includes('head')||nm.includes('torso'))assetParts.body.push(ch);else if(nm.includes('accessor')||nm.includes('glass')||nm.includes('hat'))assetParts.accessories.push(ch);else assetParts.other.push(ch)}if(ch.isBone||ch.type==='Bone'){allBones.push(ch);mapBoneToGroup(ch)}if(ch.name&&(ch.name.toLowerCase().includes('hair')||ch.name.toLowerCase().includes('skirt')||ch.name.toLowerCase().includes('cloth')))springBones.push({bone:ch,baseRotation:ch.rotation.clone()})});
-        // Store animations
         if(gltf.animations&&gltf.animations.length){
             gltfAnimations=gltf.animations.map(a=>({name:a.name||'Animation',clip:a}));
             showToast(`Loaded ${gltfAnimations.length} animations`);
@@ -645,12 +662,9 @@ function extractTextures(){if(!character)return;const seen=new Set();character.t
 function animate(){
     requestAnimationFrame(animate);
     const delta=Math.min(0.05,clock.getDelta()),time=Date.now()*.001;
-    // Recording
     if(isRecording&&character){recTimer+=delta;if(recTimer<10){const pose=getPose();timelineKeyframes.push({time:recTimer,pose});timelineKeyframes.sort((a,b)=>a.time-b.time);updateTLUI();pushHistory()}}
-    // Playback
     if(timelinePlaying&&timelineKeyframes.length>=2){replayTime+=delta*replaySpeed;const max=timelineKeyframes[timelineKeyframes.length-1].time||10;if(replayTime>=max){if(timelineLoop)replayTime=0;else{timelinePlaying=false;document.getElementById('tl-play').innerHTML='<i class="fa-solid fa-play"></i>'}}applyTimelineFrame(replayTime);updateTLUI()}
     else if(character&&!timelinePlaying&&!isRecording){const pose=getAnimPose(time,currentAnim);applyPoseToBones(pose,.15)}
-    // Physics
     if(character){
         if(gameMode&&joystickActive){const sp=0.08;charPos.x+=joyVec.x*sp;charPos.z+=joyVec.y*sp;}
         if(charPos.y>0||charVel.y!==0){charPos.y+=charVel.y;charVel.y-=.018;if(charPos.y<=0){charPos.y=0;charVel.y=0}}character.position.copy(charPos);
@@ -669,7 +683,7 @@ function getAnimPose(t,id){const p={};const s=(k,rx,ry,rz)=>p[k]={rx,ry,rz};swit
 function stopGlitch(){document.getElementById('glitch-overlay').style.opacity='0';if(glitchInterval){clearInterval(glitchInterval);glitchInterval=null}}
 
 // ---------- BOOT ----------
-window.onload=function(){init();switchTab('tab-pose');updateBoneUI();updatePartsUI();updateTextureHUD();setupAnimGrid();updateTLUI();showToast('ULTIMATE AniMAstAR ready')};
+window.onload=function(){init();switchTab('tab-pose');updateBoneUI();updatePartsUI();updateTextureHUD();setupAnimGrid();updateTLUI();showToast('ULTIMATE AniMAstAR — Final')};
 window.switchTab=switchTab;window.closeModal=closeModal;window.editPartScale=editPartScale;window.fxPart=fxPart;window.toggleParts=toggleParts;window.applyTexToPart=applyTexToPart;
 </script>
 </body>
