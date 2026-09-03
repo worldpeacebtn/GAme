@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CYBERDOLL // FRANKENSTEIN LAB</title>
+    <title>CYBERDOLL // FRANKENSTEIN LAB v2</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #06060e;
-            --glass: rgba(12,12,24,0.35);
+            --glass: rgba(12,12,24,0.4);
             --border-glow: rgba(255,0,110,0.3);
             --border-cyan: rgba(0,229,255,0.3);
             --pink: #ff006e;
@@ -24,33 +24,42 @@
         body { background:var(--bg); color:var(--text); font-family:var(--font-body); overflow:hidden; height:100vh; width:100vw; position:fixed; touch-action:none; }
         #viewport { position:fixed; inset:0; cursor:grab; z-index:1; }
         #viewport canvas { width:100%; height:100%; display:block; }
-        /* Top bar – transparent */
+
+        /* Top bar */
         #topbar { position:fixed; top:8px; left:8px; right:8px; display:flex; justify-content:space-between; align-items:center; z-index:120; pointer-events:none; }
         .logo { font-family:var(--font-display); font-size:12px; font-weight:900; background:linear-gradient(135deg,var(--pink),var(--cyan)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; pointer-events:auto; }
         .logo span { font-size:7px; letter-spacing:2px; display:block; -webkit-text-fill-color:var(--muted); }
         .btn-round { width:var(--btn-size); height:var(--btn-size); border-radius:50%; border:1px solid var(--border-glow); background:rgba(10,10,20,0.4); color:var(--cyan); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; transition:0.2s; pointer-events:auto; backdrop-filter:blur(2px); }
         .btn-round:hover, .btn-round.active { background:rgba(255,0,110,0.2); border-color:var(--pink); }
-        /* Circular floating menu – bottom right */
-        #floating-menu { position:fixed; right:10px; bottom:20px; display:flex; flex-direction:column; gap:8px; z-index:110; pointer-events:none; }
+
+        /* Floating menu (circular) */
+        #floating-menu { position:fixed; right:10px; bottom:20px; display:flex; flex-direction:column; gap:8px; z-index:110; pointer-events:none; transition: opacity 0.3s, transform 0.3s; }
+        #floating-menu.hidden { opacity:0; pointer-events:none; transform: translateX(20px); }
         .fm-btn { width:var(--btn-size); height:var(--btn-size); border-radius:50%; border:1px solid var(--border-glow); background:rgba(10,10,20,0.4); color:var(--cyan); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; pointer-events:auto; transition:0.2s; backdrop-filter:blur(2px); position:relative; }
         .fm-btn.active { background:rgba(255,0,110,0.25); border-color:var(--pink); box-shadow:0 0 12px rgba(255,0,110,0.4); }
         .fm-btn .label { position:absolute; right:calc(100% + 8px); top:50%; transform:translateY(-50%); background:rgba(10,10,20,0.7); border:1px solid var(--border-glow); padding:2px 6px; border-radius:8px; font-size:8px; white-space:nowrap; color:var(--text); opacity:0; pointer-events:none; transition:0.2s; }
         .fm-btn:hover .label { opacity:1; }
-        /* Mini library strip – bottom center, always visible */
+
+        /* Toggle button for menu */
+        #menu-toggle { position:fixed; right:10px; bottom:calc(20px + var(--btn-size)*6 + 30px); z-index:120; width:var(--btn-size); height:var(--btn-size); border-radius:50%; background:rgba(10,10,20,0.4); border:1px solid var(--border-glow); color:var(--cyan); cursor:pointer; backdrop-filter:blur(2px); }
+
+        /* Mini library strip */
         #mini-library { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); display:flex; gap:4px; padding:4px 6px; background:rgba(12,12,24,0.3); border-radius:16px; border:1px solid rgba(255,0,110,0.2); z-index:100; max-width:70vw; overflow-x:auto; pointer-events:auto; backdrop-filter:blur(2px); }
-        .mini-item { width:34px; height:34px; border-radius:8px; border:1px solid rgba(0,229,255,0.2); background:rgba(255,255,255,0.03); display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:14px; cursor:pointer; }
+        .mini-item { width:34px; height:34px; border-radius:8px; border:1px solid rgba(0,229,255,0.2); background:rgba(255,255,255,0.03); display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:14px; cursor:pointer; flex-shrink:0; }
         .mini-item .lbl { font-size:5px; color:var(--muted); text-transform:uppercase; }
         .mini-item.active { border-color:var(--pink); background:rgba(255,0,110,0.15); }
+
         /* Panel */
-        #panel-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.2); z-index:150; opacity:0; pointer-events:none; transition:0.2s; }
+        #panel-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.15); z-index:150; opacity:0; pointer-events:none; transition:0.2s; }
         #panel-overlay.visible { opacity:1; pointer-events:auto; }
-        #bottom-panel { position:fixed; bottom:0; left:0; right:0; max-height:55vh; background:rgba(14,10,26,0.75); border-top:1px solid var(--border-glow); border-radius:14px 14px 0 0; z-index:200; transform:translateY(100%); transition:0.25s; backdrop-filter:blur(8px); padding-bottom:env(safe-area-inset-bottom); }
+        #bottom-panel { position:fixed; bottom:0; left:0; right:0; max-height:55vh; background:rgba(14,10,26,0.85); border-top:1px solid var(--border-glow); border-radius:14px 14px 0 0; z-index:200; transform:translateY(100%); transition:0.25s; backdrop-filter:blur(8px); padding-bottom:env(safe-area-inset-bottom); }
         #bottom-panel.open { transform:translateY(0); }
         .panel-header { display:flex; align-items:center; justify-content:space-between; padding:5px 12px; border-bottom:1px solid rgba(255,0,110,0.1); }
         .panel-title { font-family:var(--font-display); font-size:10px; letter-spacing:1px; color:var(--pink); }
         .panel-close { width:24px; height:24px; border-radius:50%; border:1px solid rgba(255,0,110,0.3); background:none; color:var(--text); cursor:pointer; }
         .panel-content { padding:8px 12px; overflow-y:auto; max-height:calc(55vh - 40px); scrollbar-width:none; }
         .panel-content::-webkit-scrollbar{display:none;}
+
         /* Grids */
         .char-grid, .part-grid { display:flex; flex-wrap:nowrap; gap:6px; overflow-x:auto; padding:4px 0; }
         .char-card, .part-card { flex:0 0 55px; display:flex; flex-direction:column; align-items:center; gap:2px; padding:4px; border-radius:8px; border:1px solid rgba(255,0,110,0.2); background:rgba(255,255,255,0.02); cursor:pointer; }
@@ -77,7 +86,7 @@
     </style>
 </head>
 <body>
-    <div id="loading-overlay">
+    <div id="loading-overlay" style="position:fixed; inset:0; background:rgba(6,6,14,0.9); z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; transition:opacity 0.5s;">
         <div class="loader-ring" style="width:40px;height:40px;border-radius:50%;border:2px solid transparent;border-top-color:var(--pink);border-right-color:var(--cyan);animation:spin 0.7s linear infinite;"></div>
         <div style="font-family:var(--font-display);font-size:9px;letter-spacing:2px;color:var(--cyan);">INITIALIZING</div>
         <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
@@ -91,6 +100,8 @@
         </div>
     </div>
     <div id="viewport"></div>
+    <!-- Toggle menu button -->
+    <button id="menu-toggle" title="Toggle Menu">👁️</button>
     <!-- Floating circular menu -->
     <div id="floating-menu">
         <button class="fm-btn" data-tab="chars" title="Characters">👤<span class="label">Characters</span></button>
@@ -140,57 +151,88 @@
             transformMode: 'position',
             transformAxis: 'x',
             libraryCat: null,
+            menuVisible: true,
         };
 
         // Three setup
         const container = document.getElementById('viewport');
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x06060e);
-        scene.fog = new THREE.Fog(0x06060e, 6, 20);
-        const camera = new THREE.PerspectiveCamera(55, container.clientWidth/container.clientHeight, 0.05, 100);
-        camera.position.set(0, 1.5, 4);
-        camera.lookAt(0, 1.1, 0);
-        const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:false });
+        scene.background = new THREE.Color(0x0a0a1a); // Lighter background
+        scene.fog = new THREE.Fog(0x0a0a1a, 6, 25);
+
+        const camera = new THREE.PerspectiveCamera(55, container.clientWidth / container.clientHeight, 0.05, 100);
+        camera.position.set(0, 1.8, 4);
+        camera.lookAt(0, 1.0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderer.setSize(container.clientWidth, container.clientHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.1;
+        renderer.toneMappingExposure = 1.2;
+        renderer.setClearColor(0x0a0a1a, 1); // Explicit clear color
         container.appendChild(renderer.domElement);
 
-        // Lights
-        scene.add(new THREE.AmbientLight(0x1a1a2e, 1.0));
-        const keyLight = new THREE.DirectionalLight(0xffccee, 2.2);
-        keyLight.position.set(2,3,3); keyLight.castShadow=true; keyLight.shadow.mapSize.width=1024; keyLight.shadow.mapSize.height=1024;
+        // Enhanced lighting to avoid black scene
+        const ambientLight = new THREE.AmbientLight(0x404060, 1.5);
+        scene.add(ambientLight);
+        const hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x444466, 1.0);
+        scene.add(hemisphereLight);
+        const keyLight = new THREE.DirectionalLight(0xffeedd, 2.5);
+        keyLight.position.set(2, 4, 3);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.width = 1024;
+        keyLight.shadow.mapSize.height = 1024;
+        keyLight.shadow.camera.near = 0.5;
+        keyLight.shadow.camera.far = 20;
+        keyLight.shadow.camera.left = -6;
+        keyLight.shadow.camera.right = 6;
+        keyLight.shadow.camera.top = 6;
+        keyLight.shadow.camera.bottom = -6;
         scene.add(keyLight);
-        scene.add(new THREE.DirectionalLight(0x00e5ff, 3.0).position.set(-2,1,-2));
-        scene.add(new THREE.DirectionalLight(0x8338ec, 1.5).position.set(0,0.5,2));
-        const glowLight = new THREE.PointLight(0xff006e, 1.5, 6);
-        glowLight.position.set(0,0,0.5); scene.add(glowLight);
-        const gridHelper = new THREE.GridHelper(12,50,0x1a1a3a,0x0a0a1a);
-        gridHelper.position.y=-0.8; scene.add(gridHelper);
+        const rimLight = new THREE.DirectionalLight(0x00e5ff, 2.0);
+        rimLight.position.set(-2, 1, -2);
+        scene.add(rimLight);
+        const fillLight = new THREE.DirectionalLight(0x8338ec, 1.2);
+        fillLight.position.set(0, 0.5, 2);
+        scene.add(fillLight);
+        const glowLight = new THREE.PointLight(0xff006e, 2.0, 8);
+        glowLight.position.set(0, 0.5, 0.5);
+        scene.add(glowLight);
+
+        // Ground
+        const gridHelper = new THREE.GridHelper(12, 50, 0x2a2a4a, 0x1a1a2a);
+        gridHelper.position.y = -0.8;
+        scene.add(gridHelper);
 
         // Particles
         const particlesGeo = new THREE.BufferGeometry();
-        const pPos = new Float32Array(150*3); for(let i=0;i<150*3;i++) pPos[i]=(Math.random()-0.5)*14;
-        particlesGeo.setAttribute('position', new THREE.BufferAttribute(pPos,3));
-        const particles = new THREE.Points(particlesGeo, new THREE.PointsMaterial({color:0x00e5ff,size:0.012,transparent:true,opacity:0.4,blending:THREE.AdditiveBlending,depthWrite:false}));
+        const pPos = new Float32Array(150 * 3);
+        for (let i = 0; i < 150 * 3; i++) pPos[i] = (Math.random() - 0.5) * 14;
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+        const particles = new THREE.Points(particlesGeo, new THREE.PointsMaterial({ color: 0x00e5ff, size: 0.012, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false }));
         scene.add(particles);
 
         const characterGroup = new THREE.Group();
         scene.add(characterGroup);
 
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.target.set(0,1.1,0);
-        controls.enableDamping=true; controls.dampingFactor=0.06;
-        controls.minDistance=0.8; controls.maxDistance=15;
-        controls.maxPolarAngle=Math.PI*0.85; controls.minPolarAngle=Math.PI*0.15;
+        controls.target.set(0, 1.0, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.06;
+        controls.minDistance = 0.8;
+        controls.maxDistance = 15;
+        controls.maxPolarAngle = Math.PI * 0.85;
+        controls.minPolarAngle = Math.PI * 0.15;
         controls.update();
 
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
-        let pointerDown=false, pointerMoved=false, swipeStart={x:0,y:0}, swipeActive=false;
+        let pointerDown = false,
+            pointerMoved = false,
+            swipeStart = { x: 0, y: 0 },
+            swipeActive = false;
 
         // Loaders
         const dracoLoader = new DRACOLoader();
@@ -199,217 +241,627 @@
         gltfLoader.setDRACOLoader(dracoLoader);
 
         // Categorization
-        const CAT_ICONS = {body:'🧍',head:'👤',hair:'💇',eyes:'👁️',mouth:'👄',ears:'👂',nose:'👃',arms:'💪',hands:'✋',legs:'🦵',feet:'🦶',top:'👕',bottom:'👖',dress:'👗',shoes:'👟',socks:'🧦',underwear:'🩲',gloves:'🧤',hats:'🎩',accessories:'💍',other:'📦'};
-        const CAT_KEYWORDS = {body:['body','skin','torso','chest','waist','hip','pelvis','belly','core','abdomen','trunk'],head:['head','face','skull','neck','jaw','chin','forehead','cheek','cranium','temple'],hair:['hair','fringe','bangs','ponytail','braid','strand','curl','lock','mane','quiff','sideburn','weave','toupee','wig','bob','bun'],eyes:['eye','brow','lash','pupil','iris','cornea','sclera','eyeball','eyelid','eyelash','orbit'],mouth:['mouth','lip','teeth','tooth','tongue','gum','oral','dental','incisor','molar','canine'],ears:['ear','lobe','auricle','eardrum','cochlea'],nose:['nose','nostril','bridge','septum','nasal'],arms:['arm','elbow','wrist','shoulder','forearm','upperarm','bicep','tricep','clavicle','scapula','humerus','radius','ulna'],hands:['hand','palm','finger','thumb','knuckle','fingertip','phalanx','metacarpal'],legs:['leg','ankle','knee','thigh','calf','shin','femur','tibia','fibula','patella','quad','hamstring'],feet:['foot','feet','toe','heel','sole','ankle','metatarsal','tarsal'],top:['top','shirt','jacket','coat','blouse','sweater','vest','hoodie','cardigan','tee','tank','crop','jersey','pullover','knitwear','blazer','anorak'],bottom:['bottom','pants','skirt','shorts','jeans','trousers','slacks','culottes','capri','legging','chino','denim','sweatpant'],dress:['dress','gown','robe','frock','sundress','kimono','sarong','tunic','kaftan'],shoes:['shoe','boot','sneaker','heel','sandal','loafer','pump','flat','slipper','flipflop','trainer','mule','clog','espadrille'],socks:['sock','stocking','legging','tight','hosiery','nylon','kneesock','anklet','tights'],underwear:['underwear','bra','panty','brief','boxer','thong','lingerie','slip','undershirt','underpant','camisole','jockstrap'],gloves:['glove','mitten','gauntlet','fingerless','mitt'],hats:['hat','cap','beanie','hood','beret','fedora','helmet','crown','tiara','visor','beanie','headband','bonnet','toque'],accessories:['accessory','jewelry','necklace','earring','ring','bracelet','scarf','collar','tie','bow','belt','watch','glasses','choker','chain','pin','brooch','pendant','amulet','medallion','anklet','cufflink','bangle']};
+        const CAT_ICONS = { body: '🧍', head: '👤', hair: '💇', eyes: '👁️', mouth: '👄', ears: '👂', nose: '👃', arms: '💪', hands: '✋', legs: '🦵', feet: '🦶', top: '👕', bottom: '👖', dress: '👗', shoes: '👟', socks: '🧦', underwear: '🩲', gloves: '🧤', hats: '🎩', accessories: '💍', other: '📦' };
+        const CAT_KEYWORDS = {
+            body: ['body', 'skin', 'torso', 'chest', 'waist', 'hip', 'pelvis', 'belly', 'core', 'abdomen', 'trunk'],
+            head: ['head', 'face', 'skull', 'neck', 'jaw', 'chin', 'forehead', 'cheek', 'cranium', 'temple'],
+            hair: ['hair', 'fringe', 'bangs', 'ponytail', 'braid', 'strand', 'curl', 'lock', 'mane', 'quiff', 'sideburn', 'weave', 'toupee', 'wig', 'bob', 'bun'],
+            eyes: ['eye', 'brow', 'lash', 'pupil', 'iris', 'cornea', 'sclera', 'eyeball', 'eyelid', 'eyelash', 'orbit'],
+            mouth: ['mouth', 'lip', 'teeth', 'tooth', 'tongue', 'gum', 'oral', 'dental', 'incisor', 'molar', 'canine'],
+            ears: ['ear', 'lobe', 'auricle', 'eardrum', 'cochlea'],
+            nose: ['nose', 'nostril', 'bridge', 'septum', 'nasal'],
+            arms: ['arm', 'elbow', 'wrist', 'shoulder', 'forearm', 'upperarm', 'bicep', 'tricep', 'clavicle', 'scapula', 'humerus', 'radius', 'ulna'],
+            hands: ['hand', 'palm', 'finger', 'thumb', 'knuckle', 'fingertip', 'phalanx', 'metacarpal'],
+            legs: ['leg', 'ankle', 'knee', 'thigh', 'calf', 'shin', 'femur', 'tibia', 'fibula', 'patella', 'quad', 'hamstring'],
+            feet: ['foot', 'feet', 'toe', 'heel', 'sole', 'ankle', 'metatarsal', 'tarsal'],
+            top: ['top', 'shirt', 'jacket', 'coat', 'blouse', 'sweater', 'vest', 'hoodie', 'cardigan', 'tee', 'tank', 'crop', 'jersey', 'pullover', 'knitwear', 'blazer', 'anorak'],
+            bottom: ['bottom', 'pants', 'skirt', 'shorts', 'jeans', 'trousers', 'slacks', 'culottes', 'capri', 'legging', 'chino', 'denim', 'sweatpant'],
+            dress: ['dress', 'gown', 'robe', 'frock', 'sundress', 'kimono', 'sarong', 'tunic', 'kaftan'],
+            shoes: ['shoe', 'boot', 'sneaker', 'heel', 'sandal', 'loafer', 'pump', 'flat', 'slipper', 'flipflop', 'trainer', 'mule', 'clog', 'espadrille'],
+            socks: ['sock', 'stocking', 'legging', 'tight', 'hosiery', 'nylon', 'kneesock', 'anklet', 'tights'],
+            underwear: ['underwear', 'bra', 'panty', 'brief', 'boxer', 'thong', 'lingerie', 'slip', 'undershirt', 'underpant', 'camisole', 'jockstrap'],
+            gloves: ['glove', 'mitten', 'gauntlet', 'fingerless', 'mitt'],
+            hats: ['hat', 'cap', 'beanie', 'hood', 'beret', 'fedora', 'helmet', 'crown', 'tiara', 'visor', 'beanie', 'headband', 'bonnet', 'toque'],
+            accessories: ['accessory', 'jewelry', 'necklace', 'earring', 'ring', 'bracelet', 'scarf', 'collar', 'tie', 'bow', 'belt', 'watch', 'glasses', 'choker', 'chain', 'pin', 'brooch', 'pendant', 'amulet', 'medallion', 'anklet', 'cufflink', 'bangle']
+        };
 
-        function categorize(name,pos){const n=(name||'').toLowerCase();for(const[cat,kws]of Object.entries(CAT_KEYWORDS)){for(const kw of kws){if(n.includes(kw))return cat;}}if(pos){const y=pos.y;if(y>1.7)return'hats';if(y>1.5)return'hair';if(y>1.3)return'head';if(y>1.15)return'eyes';if(y>0.9)return'top';if(y>0.55)return'bottom';if(y>0.3)return'legs';if(y>0.05)return'feet';if(y>-0.2)return'shoes';}return'other';}
+        function categorize(name, pos) {
+            const n = (name || '').toLowerCase();
+            for (const [cat, kws] of Object.entries(CAT_KEYWORDS)) {
+                for (const kw of kws) { if (n.includes(kw)) return cat; }
+            }
+            if (pos) {
+                const y = pos.y;
+                if (y > 1.7) return 'hats';
+                if (y > 1.5) return 'hair';
+                if (y > 1.3) return 'head';
+                if (y > 1.15) return 'eyes';
+                if (y > 0.9) return 'top';
+                if (y > 0.55) return 'bottom';
+                if (y > 0.3) return 'legs';
+                if (y > 0.05) return 'feet';
+                if (y > -0.2) return 'shoes';
+            }
+            return 'other';
+        }
 
         // Fix texture color space
-        function fixTextureColorSpace(root){
-            root.traverse((node)=>{
-                if(node.isMesh || node.isSkinnedMesh){
-                    const mats=Array.isArray(node.material)?node.material:[node.material];
-                    mats.forEach(mat=>{
-                        if(mat.map){
+        function fixTextureColorSpace(root) {
+            root.traverse((node) => {
+                if (node.isMesh || node.isSkinnedMesh) {
+                    const mats = Array.isArray(node.material) ? node.material : [node.material];
+                    mats.forEach(mat => {
+                        if (mat.map) {
                             mat.map.colorSpace = THREE.SRGBColorSpace;
                             mat.color.set(0xffffff);
-                            mat.needsUpdate=true;
+                            mat.needsUpdate = true;
                         }
                     });
                 }
             });
         }
 
-        function genId(){return'c_'+Date.now()+'_'+Math.random().toString(36).substr(2,5);}
-        function parseChar(gltf,fileName,id){
+        function genId() { return 'c_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5); }
+
+        function parseChar(gltf, fileName, id) {
             fixTextureColorSpace(gltf.scene);
-            const parts={},bones=[],animations=[],allMeshes=[];
-            gltf.scene.traverse(n=>{if(n.isMesh||n.isSkinnedMesh)allMeshes.push(n);});
-            const groups=new Map();
-            for(const mesh of allMeshes){
-                let parentName=mesh.parent?mesh.parent.name:'';
-                const combined=`${mesh.name||''} ${parentName||''}`.toLowerCase();
-                const wPos=new THREE.Box3().setFromObject(mesh).getCenter(new THREE.Vector3());
-                let cat=categorize(combined,wPos);
-                if(mesh.parent&&mesh.parent.name&&mesh.parent.name.length>0){const pc=categorize(mesh.parent.name,null);if(pc!=='other')cat=pc;}
-                if(!groups.has(cat))groups.set(cat,{id:`${id}_${cat}`,name:cat,category:cat,meshes:[],sourceCharId:id,sourceCharName:fileName});
-                const g=groups.get(cat);g.meshes.push(mesh);
-                if(mesh.material){const mats=Array.isArray(mesh.material)?mesh.material:[mesh.material];for(const m of mats){if(!g.materials)g.materials=[];g.materials.push(m);}}
+            const parts = {},
+                bones = [],
+                animations = [],
+                allMeshes = [];
+            gltf.scene.traverse(n => { if (n.isMesh || n.isSkinnedMesh) allMeshes.push(n); });
+            const groups = new Map();
+            for (const mesh of allMeshes) {
+                let parentName = mesh.parent ? mesh.parent.name : '';
+                const combined = `${mesh.name||''} ${parentName||''}`.toLowerCase();
+                const wPos = new THREE.Box3().setFromObject(mesh).getCenter(new THREE.Vector3());
+                let cat = categorize(combined, wPos);
+                if (mesh.parent && mesh.parent.name && mesh.parent.name.length > 0) {
+                    const pc = categorize(mesh.parent.name, null);
+                    if (pc !== 'other') cat = pc;
+                }
+                if (!groups.has(cat)) groups.set(cat, { id: `${id}_${cat}`, name: cat, category: cat, meshes: [], sourceCharId: id, sourceCharName: fileName });
+                const g = groups.get(cat);
+                g.meshes.push(mesh);
+                if (mesh.material) {
+                    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                    for (const m of mats) { if (!g.materials) g.materials = [];
+                        g.materials.push(m); }
+                }
             }
-            for(const[cat,g]of groups){if(g.meshes.length){g.materials=Array.from(new Set(g.materials||[]));parts[cat]=g;}}
-            const boneSet=new Set();gltf.scene.traverse(n=>{if(n.isBone||n.type==='Bone')boneSet.add(n);});
-            for(const b of boneSet)bones.push({name:b.name,parent:b.parent&&b.parent.isBone?b.parent.name:null});
-            bones.sort((a,b)=>(a.parent?1:0)-(b.parent?1:0));
-            if(gltf.animations)for(const clip of gltf.animations)animations.push({name:clip.name||'anim_'+animations.length,duration:clip.duration||0,clip});
-            return{id,name:fileName.replace(/\.(glb|gltf)$/i,''),fileName,gltf,parts,bones,animations,meshCount:allMeshes.length,offset:new THREE.Vector3(0,0,0)};
+            for (const [cat, g] of groups) { if (g.meshes.length) { g.materials = Array.from(new Set(g.materials || []));
+                    parts[cat] = g; } }
+            const boneSet = new Set();
+            gltf.scene.traverse(n => { if (n.isBone || n.type === 'Bone') boneSet.add(n); });
+            for (const b of boneSet) bones.push({ name: b.name, parent: b.parent && b.parent.isBone ? b.parent.name : null });
+            bones.sort((a, b) => (a.parent ? 1 : 0) - (b.parent ? 1 : 0));
+            if (gltf.animations) for (const clip of gltf.animations) animations.push({ name: clip.name || 'anim_' + animations.length, duration: clip.duration || 0, clip });
+            return { id, name: fileName.replace(/\.(glb|gltf)$/i, ''), fileName, gltf, parts, bones, animations, meshCount: allMeshes.length, offset: new THREE.Vector3(0, 0, 0) };
         }
 
-        function addCharacter(gltf,fileName){const id=genId();const cd=parseChar(gltf,fileName,id);state.characters.push(cd);state.charOffsets[id]={x:0,y:0,z:0};state.activeCharId=id;updateBadge();return cd;}
-        function removeCharacter(id){const idx=state.characters.findIndex(c=>c.id===id);if(idx===-1)return;const c=state.characters[idx];if(c.gltf?.scene)characterGroup.remove(c.gltf.scene);state.characters.splice(idx,1);delete state.charOffsets[id];if(state.activeCharId===id)state.activeCharId=state.characters.length?state.characters[0].id:null;if(state.selectedPart?.charId===id)state.selectedPart=null;updateBadge();updateScene();renderPanel();updateMiniLibrary();}
-        function getActiveChar(){return state.characters.find(c=>c.id===state.activeCharId)||null;}
-        function updateBadge(){const b=document.getElementById('upload-badge');if(b){if(state.characters.length){b.style.display='flex';b.textContent=state.characters.length}else b.style.display='none';}}
+        function addCharacter(gltf, fileName) { const id = genId(); const cd = parseChar(gltf, fileName, id);
+            state.characters.push(cd);
+            state.charOffsets[id] = { x: 0, y: 0, z: 0 };
+            state.activeCharId = id;
+            updateBadge(); return cd; }
 
-        // Default human base mesh
-        function createDefaultHuman(){
-            const group=new THREE.Group();
-            group.name='base_human';
+        function removeCharacter(id) { const idx = state.characters.findIndex(c => c.id === id); if (idx === -1) return; const c = state.characters[idx]; if (c.gltf?.scene) characterGroup.remove(c.gltf.scene);
+            state.characters.splice(idx, 1);
+            delete state.charOffsets[id]; if (state.activeCharId === id) state.activeCharId = state.characters.length ? state.characters[0].id : null; if (state.selectedPart?.charId === id) state.selectedPart = null;
+            updateBadge();
+            updateScene();
+            renderPanel();
+            updateMiniLibrary(); }
+
+        function getActiveChar() { return state.characters.find(c => c.id === state.activeCharId) || null; }
+
+        function updateBadge() { const badge = document.querySelector('#topbar .badge'); if (badge) { if (state.characters.length) { badge.style.display = 'flex';
+                    badge.textContent = state.characters.length; } else badge.style.display = 'none'; } }
+
+        // Default human base mesh (optimized, with better materials)
+        function createDefaultHuman() {
+            const group = new THREE.Group();
+            group.name = 'base_human';
+            const skinMat = new THREE.MeshStandardMaterial({ color: 0xd4a373, roughness: 0.5, metalness: 0.0 });
+            const darkMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.6 });
             // Body
-            const bodyGeo=new THREE.CylinderGeometry(0.4,0.35,1.2,8); bodyGeo.translate(0,0.6,0);
-            const bodyMat=new THREE.MeshStandardMaterial({color:0xd4a373,roughness:0.7});
-            const body=new THREE.Mesh(bodyGeo,bodyMat); body.name='body'; body.position.y=0.4; group.add(body);
+            const bodyGeo = new THREE.CylinderGeometry(0.35, 0.3, 1.2, 12);
+            bodyGeo.translate(0, 0.6, 0);
+            const body = new THREE.Mesh(bodyGeo, skinMat);
+            body.name = 'body';
+            body.position.y = 0.4;
+            group.add(body);
             // Head
-            const headGeo=new THREE.SphereGeometry(0.25,12,12); const headMat=new THREE.MeshStandardMaterial({color:0xd4a373,roughness:0.7});
-            const head=new THREE.Mesh(headGeo,headMat); head.name='head'; head.position.y=1.5; group.add(head);
-            // Hair (simple)
-            const hairGeo=new THREE.CylinderGeometry(0.26,0.26,0.2,8); const hairMat=new THREE.MeshStandardMaterial({color:0x222222});
-            const hair=new THREE.Mesh(hairGeo,hairMat); hair.name='hair'; hair.position.y=1.65; group.add(hair);
+            const headGeo = new THREE.SphereGeometry(0.22, 12, 12);
+            const head = new THREE.Mesh(headGeo, skinMat);
+            head.name = 'head';
+            head.position.y = 1.55;
+            group.add(head);
+            // Hair
+            const hairGeo = new THREE.SphereGeometry(0.24, 8, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+            const hair = new THREE.Mesh(hairGeo, darkMat);
+            hair.name = 'hair';
+            hair.position.y = 1.6;
+            hair.scale.set(1, 0.5, 1);
+            group.add(hair);
+            // Eyes (simple dots)
+            const eyeGeo = new THREE.SphereGeometry(0.03, 6, 6);
+            const eyeMat = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeL.name = 'eye_left';
+            eyeL.position.set(-0.08, 1.55, 0.18);
+            group.add(eyeL);
+            const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeR.name = 'eye_right';
+            eyeR.position.set(0.08, 1.55, 0.18);
+            group.add(eyeR);
             // Arms
-            const armGeo=new THREE.CylinderGeometry(0.15,0.15,1.0,6); armGeo.translate(0,0.5,0);
-            const armL=new THREE.Mesh(armGeo,bodyMat); armL.name='arm_left'; armL.position.set(-0.6,1.2,0); group.add(armL);
-            const armR=new THREE.Mesh(armGeo,bodyMat); armR.name='arm_right'; armR.position.set(0.6,1.2,0); group.add(armR);
+            const armGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.9, 8);
+            armGeo.translate(0, 0.45, 0);
+            const armL = new THREE.Mesh(armGeo, skinMat);
+            armL.name = 'arm_left';
+            armL.position.set(-0.55, 1.1, 0);
+            group.add(armL);
+            const armR = new THREE.Mesh(armGeo, skinMat);
+            armR.name = 'arm_right';
+            armR.position.set(0.55, 1.1, 0);
+            group.add(armR);
+            // Hands
+            const handGeo = new THREE.SphereGeometry(0.1, 6, 6);
+            const handL = new THREE.Mesh(handGeo, skinMat);
+            handL.name = 'hand_left';
+            handL.position.set(-0.55, 0.65, 0);
+            group.add(handL);
+            const handR = new THREE.Mesh(handGeo, skinMat);
+            handR.name = 'hand_right';
+            handR.position.set(0.55, 0.65, 0);
+            group.add(handR);
             // Legs
-            const legGeo=new THREE.CylinderGeometry(0.2,0.2,0.9,6); legGeo.translate(0,0.45,0);
-            const legL=new THREE.Mesh(legGeo,bodyMat); legL.name='leg_left'; legL.position.set(-0.25,0.9,0); group.add(legL);
-            const legR=new THREE.Mesh(legGeo,bodyMat); legR.name='leg_right'; legR.position.set(0.25,0.9,0); group.add(legR);
+            const legGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.8, 8);
+            legGeo.translate(0, 0.4, 0);
+            const legL = new THREE.Mesh(legGeo, skinMat);
+            legL.name = 'leg_left';
+            legL.position.set(-0.2, 0.8, 0);
+            group.add(legL);
+            const legR = new THREE.Mesh(legGeo, skinMat);
+            legR.name = 'leg_right';
+            legR.position.set(0.2, 0.8, 0);
+            group.add(legR);
+            // Feet
+            const footGeo = new THREE.BoxGeometry(0.2, 0.1, 0.3);
+            const footL = new THREE.Mesh(footGeo, darkMat);
+            footL.name = 'foot_left';
+            footL.position.set(-0.2, 0.1, 0.05);
+            group.add(footL);
+            const footR = new THREE.Mesh(footGeo, darkMat);
+            footR.name = 'foot_right';
+            footR.position.set(0.2, 0.1, 0.05);
+            group.add(footR);
             return group;
         }
 
-        function addDefaultCharacter(){
-            const gltf={scene:createDefaultHuman(),animations:[],};
-            const id=genId();
-            const cd=parseChar(gltf,'base_human.glb',id);
-            cd.name='Standard Human';
-            cd.fileName='base_human.glb';
+        function addDefaultCharacter() {
+            const gltf = { scene: createDefaultHuman(), animations: [] };
+            const id = genId();
+            const cd = parseChar(gltf, 'base_human.glb', id);
+            cd.name = 'Standard Human';
+            cd.fileName = 'base_human.glb';
             state.characters.push(cd);
-            state.charOffsets[id]={x:0,y:0,z:0};
-            state.activeCharId=id;
+            state.charOffsets[id] = { x: 0, y: 0, z: 0 };
+            state.activeCharId = id;
             updateBadge();
             return cd;
         }
 
-        function updateScene(){
-            while(characterGroup.children.length)characterGroup.remove(characterGroup.children[0]);
-            if(state.animationMixer){state.animationMixer.stopAllAction();state.animationMixer=null;state.animationAction=null;state.animationPlaying=false;}
-            const active=getActiveChar();
-            if(active?.gltf?.scene){
+        function updateScene() {
+            while (characterGroup.children.length) characterGroup.remove(characterGroup.children[0]);
+            if (state.animationMixer) { state.animationMixer.stopAllAction();
+                state.animationMixer = null;
+                state.animationAction = null;
+                state.animationPlaying = false; }
+            const active = getActiveChar();
+            if (active?.gltf?.scene) {
                 characterGroup.add(active.gltf.scene);
-                const off=state.charOffsets[active.id]||{x:0,y:0,z:0};
-                active.gltf.scene.position.set(off.x,off.y,off.z);
-                active.gltf.scene.rotation.set(0,0,0); active.gltf.scene.scale.set(1,1,1);
-                if(active.animations.length)state.animationMixer=new THREE.AnimationMixer(active.gltf.scene);
-                document.getElementById('char-name-overlay').textContent=active.name.toUpperCase();
-            }else{document.getElementById('char-name-overlay').textContent='NO CHARACTER';}
-            if(state.charLayout==='multi'){
-                let idx=0;
-                for(const c of state.characters){
-                    if(c.id===active?.id)continue;
-                    if(c.gltf?.scene){characterGroup.add(c.gltf.scene);const off=state.charOffsets[c.id]||{x:0,y:0,z:0};c.gltf.scene.position.set(off.x+(idx+1)*1.8,off.y,off.z);c.gltf.scene.scale.set(1,1,1);idx++;}
+                const off = state.charOffsets[active.id] || { x: 0, y: 0, z: 0 };
+                active.gltf.scene.position.set(off.x, off.y, off.z);
+                active.gltf.scene.rotation.set(0, 0, 0);
+                active.gltf.scene.scale.set(1, 1, 1);
+                if (active.animations.length) state.animationMixer = new THREE.AnimationMixer(active.gltf.scene);
+                document.getElementById('char-name-overlay')?.textContent = active.name.toUpperCase();
+            } else if (document.getElementById('char-name-overlay')) { document.getElementById('char-name-overlay').textContent = 'NO CHARACTER'; }
+            if (state.charLayout === 'multi') {
+                let idx = 0;
+                for (const c of state.characters) {
+                    if (c.id === active?.id) continue;
+                    if (c.gltf?.scene) {
+                        characterGroup.add(c.gltf.scene);
+                        const off = state.charOffsets[c.id] || { x: 0, y: 0, z: 0 };
+                        c.gltf.scene.position.set(off.x + (idx + 1) * 1.8, off.y, off.z);
+                        c.gltf.scene.scale.set(1, 1, 1);
+                        idx++;
+                    }
                 }
             }
-            state.selectedPart=null;
+            state.selectedPart = null;
             updateMiniLibrary();
         }
 
-        function selectPartByMesh(mesh){
-            const ac=getActiveChar();if(!ac)return;
-            for(const[cat,part]of Object.entries(ac.parts)){if(part.meshes.includes(mesh)){state.selectedPart={charId:ac.id,partId:part.id,partName:cat,meshes:part.meshes,category:cat};showToast(`Selected: ${cat.toUpperCase()}`);if(state.panelOpen)renderPanel();updateMiniLibrary();return;}}
+        function selectPartByMesh(mesh) {
+            const ac = getActiveChar();
+            if (!ac) return;
+            for (const [cat, part] of Object.entries(ac.parts)) {
+                if (part.meshes.includes(mesh)) {
+                    state.selectedPart = { charId: ac.id, partId: part.id, partName: cat, meshes: part.meshes, category: cat };
+                    showToast(`Selected: ${cat.toUpperCase()}`);
+                    if (state.panelOpen) renderPanel();
+                    updateMiniLibrary();
+                    return;
+                }
+            }
         }
 
-        function swapPartFromLibrary(srcCharId,srcCat){
-            const ac=getActiveChar();if(!ac||!ac.parts[srcCat])return;
-            const sc=state.characters.find(c=>c.id===srcCharId);if(!sc||!sc.parts[srcCat])return;
-            for(const m of ac.parts[srcCat].meshes){if(m.parent)m.parent.remove(m);}
-            const newMeshes=[];
-            for(const m of sc.parts[srcCat].meshes){const clone=m.clone(true);ac.gltf.scene.add(clone);clone.position.copy(m.position);clone.rotation.copy(m.rotation);clone.scale.copy(m.scale);newMeshes.push(clone);}
-            ac.parts[srcCat]={...ac.parts[srcCat],meshes:newMeshes,sourceCharId:srcCharId,sourceCharName:sc.name};
-            showToast(`Swapped ${srcCat} from ${sc.name}`);updateScene();renderPanel();updateMiniLibrary();
+        function swapPartFromLibrary(srcCharId, srcCat) {
+            const ac = getActiveChar();
+            if (!ac || !ac.parts[srcCat]) return;
+            const sc = state.characters.find(c => c.id === srcCharId);
+            if (!sc || !sc.parts[srcCat]) return;
+            for (const m of ac.parts[srcCat].meshes) { if (m.parent) m.parent.remove(m); }
+            const newMeshes = [];
+            for (const m of sc.parts[srcCat].meshes) {
+                const clone = m.clone(true);
+                ac.gltf.scene.add(clone);
+                clone.position.copy(m.position);
+                clone.rotation.copy(m.rotation);
+                clone.scale.copy(m.scale);
+                newMeshes.push(clone);
+            }
+            ac.parts[srcCat] = { ...ac.parts[srcCat], meshes: newMeshes, sourceCharId: srcCharId, sourceCharName: sc.name };
+            showToast(`Swapped ${srcCat} from ${sc.name}`);
+            updateScene();
+            renderPanel();
+            updateMiniLibrary();
         }
 
-        // Transform with circular knobs
-        function applyTransform(prop,axis,value){if(!state.selectedPart)return;for(const mesh of state.selectedPart.meshes){if(prop==='position')mesh.position[axis]=parseFloat(value);if(prop==='rotation')mesh.rotation[axis]=parseFloat(value);if(prop==='scale')mesh.scale[axis]=parseFloat(value);}}
-        function getTransformValue(prop,axis){if(!state.selectedPart||!state.selectedPart.meshes.length)return 0;const m=state.selectedPart.meshes[0];if(prop==='position')return m.position[axis]?.toFixed(2)||0;if(prop==='rotation')return m.rotation[axis]?.toFixed(2)||0;if(prop==='scale')return m.scale[axis]?.toFixed(2)||0;return 0;}
+        // Transform
+        function applyTransform(prop, axis, value) {
+            if (!state.selectedPart) return;
+            for (const mesh of state.selectedPart.meshes) {
+                if (prop === 'position') mesh.position[axis] = parseFloat(value);
+                if (prop === 'rotation') mesh.rotation[axis] = parseFloat(value);
+                if (prop === 'scale') mesh.scale[axis] = parseFloat(value);
+            }
+        }
 
-        function createCircularKnob(container,label,initialValue,min,max,step,onChange){
-            const wrapper=document.createElement('div');wrapper.style.display='flex';wrapper.style.alignItems='center';wrapper.style.gap='4px';wrapper.style.margin='2px 0';
-            const labelEl=document.createElement('span');labelEl.textContent=label;labelEl.style.fontSize='7px';labelEl.style.minWidth='20px';
-            const knob=document.createElement('div');knob.className='circular-knob';
-            const dot=document.createElement('div');dot.className='knob-dot';knob.appendChild(dot);
-            const valueDisplay=document.createElement('span');valueDisplay.className='val-display';valueDisplay.textContent=initialValue;
-            wrapper.appendChild(labelEl);wrapper.appendChild(knob);wrapper.appendChild(valueDisplay);container.appendChild(wrapper);
-            let isDragging=false,startY=0,currentVal=parseFloat(initialValue);
-            function updateDot(){const ratio=(currentVal-min)/(max-min);const angle=ratio*270-135;dot.style.transform=`translate(-50%,0) rotate(${angle}deg)`;}
-            function setValue(val,notify=true){val=Math.min(max,Math.max(min,val));currentVal=val;valueDisplay.textContent=val.toFixed(2);updateDot();if(notify&&onChange)onChange(val);}
+        function getTransformValue(prop, axis) {
+            if (!state.selectedPart || !state.selectedPart.meshes.length) return 0;
+            const m = state.selectedPart.meshes[0];
+            if (prop === 'position') return m.position[axis]?.toFixed(2) || 0;
+            if (prop === 'rotation') return m.rotation[axis]?.toFixed(2) || 0;
+            if (prop === 'scale') return m.scale[axis]?.toFixed(2) || 0;
+            return 0;
+        }
+
+        function createCircularKnob(container, label, initialValue, min, max, step, onChange) {
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'center';
+            wrapper.style.gap = '4px';
+            wrapper.style.margin = '2px 0';
+            const labelEl = document.createElement('span');
+            labelEl.textContent = label;
+            labelEl.style.fontSize = '7px';
+            labelEl.style.minWidth = '20px';
+            const knob = document.createElement('div');
+            knob.className = 'circular-knob';
+            const dot = document.createElement('div');
+            dot.className = 'knob-dot';
+            knob.appendChild(dot);
+            const valueDisplay = document.createElement('span');
+            valueDisplay.className = 'val-display';
+            valueDisplay.textContent = initialValue;
+            wrapper.appendChild(labelEl);
+            wrapper.appendChild(knob);
+            wrapper.appendChild(valueDisplay);
+            container.appendChild(wrapper);
+            let isDragging = false,
+                startY = 0,
+                currentVal = parseFloat(initialValue);
+
+            function updateDot() { const ratio = (currentVal - min) / (max - min); const angle = ratio * 270 - 135;
+                dot.style.transform = `translate(-50%,0) rotate(${angle}deg)`; }
+
+            function setValue(val, notify = true) { val = Math.min(max, Math.max(min, val));
+                currentVal = val;
+                valueDisplay.textContent = val.toFixed(2);
+                updateDot(); if (notify && onChange) onChange(val); }
             updateDot();
-            knob.addEventListener('pointerdown',e=>{isDragging=true;startY=e.clientY;knob.setPointerCapture(e.pointerId);e.preventDefault();});
-            knob.addEventListener('pointermove',e=>{if(isDragging){const dy=startY-e.clientY;const sensitivity=(max-min)/150;setValue(currentVal+dy*sensitivity);startY=e.clientY;}});
-            knob.addEventListener('pointerup',()=>{isDragging=false;});
-            knob.addEventListener('wheel',e=>{e.preventDefault();const delta=e.deltaY>0?-step:step;setValue(currentVal+delta);},{passive:false});
-            return{setValue,getValue:()=>currentVal};
+            knob.addEventListener('pointerdown', e => { isDragging = true;
+                startY = e.clientY;
+                knob.setPointerCapture(e.pointerId);
+                e.preventDefault(); });
+            knob.addEventListener('pointermove', e => { if (isDragging) { const dy = startY - e.clientY; const sensitivity = (max - min) / 150;
+                    setValue(currentVal + dy * sensitivity);
+                    startY = e.clientY; } });
+            knob.addEventListener('pointerup', () => { isDragging = false; });
+            knob.addEventListener('wheel', e => { e.preventDefault(); const delta = e.deltaY > 0 ? -step : step;
+                setValue(currentVal + delta); }, { passive: false });
+            return { setValue, getValue: () => currentVal };
         }
 
-        function renderTransformPanel(c,ac){
-            if(!state.selectedPart){c.innerHTML='<div class="empty-state"><div class="empty-icon">⚙️</div><div class="empty-text">Tap a part in 3D view to transform it.</div></div>';return;}
-            const modes=['position','rotation','scale'];const labels={position:'Pos',rotation:'Rot',scale:'Scl'};
-            let html=`<div style="font-size:8px;color:var(--cyan);margin-bottom:4px;">${state.selectedPart.partName.toUpperCase()} — ${labels[state.transformMode]}</div>`;
-            html+=`<div style="display:flex;gap:4px;margin-bottom:4px;">`;
-            for(const m of modes)html+=`<button class="tf-btn ${state.transformMode===m?'active':''}" data-mode="${m}">${labels[m]}</button>`;
-            html+=`</div>`;
-            const axes=['x','y','z'];
-            for(const ax of axes){const val=getTransformValue(state.transformMode,ax);const min=state.transformMode==='scale'?0.1:0;const max=state.transformMode==='scale'?3:5;const step=state.transformMode==='rotation'?0.1:0.01;html+=`<div class="knob-row" data-axis="${ax}" data-val="${val}" data-min="${min}" data-max="${max}" data-step="${step}"></div>`;}
-            html+=`<button class="cat-pill active" id="tf-reset" style="margin-top:4px;">Reset</button>`;
-            c.innerHTML=html;
-            c.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{state.transformMode=b.dataset.mode;renderPanel();}));
-            c.querySelectorAll('.knob-row').forEach(row=>{const axis=row.dataset.axis;const val=parseFloat(row.dataset.val);const min=parseFloat(row.dataset.min);const max=parseFloat(row.dataset.max);const step=parseFloat(row.dataset.step);createCircularKnob(row,axis.toUpperCase(),val,min,max,step,(newVal)=>applyTransform(state.transformMode,axis,newVal));});
-            c.querySelector('#tf-reset')?.addEventListener('click',()=>{for(const mesh of state.selectedPart.meshes){mesh.position.set(0,0,0);mesh.rotation.set(0,0,0);mesh.scale.set(1,1,1);}renderPanel();showToast('Reset');});
+        function renderTransformPanel(c, ac) {
+            if (!state.selectedPart) { c.innerHTML = '<div class="empty-state"><div class="empty-icon">⚙️</div><div class="empty-text">Tap a part in 3D view to transform it.</div></div>'; return; }
+            const modes = ['position', 'rotation', 'scale'];
+            const labels = { position: 'Pos', rotation: 'Rot', scale: 'Scl' };
+            let html = `<div style="font-size:8px;color:var(--cyan);margin-bottom:4px;">${state.selectedPart.partName.toUpperCase()} — ${labels[state.transformMode]}</div>`;
+            html += `<div style="display:flex;gap:4px;margin-bottom:4px;">`;
+            for (const m of modes) html += `<button class="tf-btn ${state.transformMode===m?'active':''}" data-mode="${m}">${labels[m]}</button>`;
+            html += `</div>`;
+            const axes = ['x', 'y', 'z'];
+            for (const ax of axes) {
+                const val = getTransformValue(state.transformMode, ax);
+                const min = state.transformMode === 'scale' ? 0.1 : 0;
+                const max = state.transformMode === 'scale' ? 3 : 5;
+                const step = state.transformMode === 'rotation' ? 0.1 : 0.01;
+                html += `<div class="knob-row" data-axis="${ax}" data-val="${val}" data-min="${min}" data-max="${max}" data-step="${step}"></div>`;
+            }
+            html += `<button class="cat-pill active" id="tf-reset" style="margin-top:4px;">Reset</button>`;
+            c.innerHTML = html;
+            c.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => { state.transformMode = b.dataset.mode;
+                renderPanel(); }));
+            c.querySelectorAll('.knob-row').forEach(row => {
+                const axis = row.dataset.axis;
+                const val = parseFloat(row.dataset.val);
+                const min = parseFloat(row.dataset.min);
+                const max = parseFloat(row.dataset.max);
+                const step = parseFloat(row.dataset.step);
+                createCircularKnob(row, axis.toUpperCase(), val, min, max, step, (newVal) => applyTransform(state.transformMode, axis, newVal));
+            });
+            c.querySelector('#tf-reset')?.addEventListener('click', () => {
+                for (const mesh of state.selectedPart.meshes) { mesh.position.set(0, 0, 0);
+                    mesh.rotation.set(0, 0, 0);
+                    mesh.scale.set(1, 1, 1); }
+                renderPanel();
+                showToast('Reset');
+            });
         }
 
-        function exportChar(){const ac=getActiveChar();if(!ac)return showToast('No character');showToast('Exporting...');const exporter=new GLTFExporter();exporter.parse(ac.gltf.scene,(res)=>{const blob=res instanceof ArrayBuffer?new Blob([res],{type:'application/octet-stream'}):new Blob([JSON.stringify(res)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${ac.name}_edited.glb`;a.click();URL.revokeObjectURL(url);showToast('Exported!');},(e)=>{console.error(e);showToast('Export failed');},{binary:true});}
+        function exportChar() { const ac = getActiveChar(); if (!ac) return showToast('No character');
+            showToast('Exporting...'); const exporter = new GLTFExporter();
+            exporter.parse(ac.gltf.scene, (res) => { const blob = res instanceof ArrayBuffer ? new Blob([res], { type: 'application/octet-stream' }) : new Blob([JSON.stringify(res)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a');
+                a.href = url;
+                a.download = `${ac.name}_edited.glb`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast('Exported!'); }, (e) => { console.error(e);
+                showToast('Export failed'); }, { binary: true }); }
 
-        function loadFiles(files){const valid=Array.from(files).filter(f=>/\.(glb|gltf)$/i.test(f.name));if(!valid.length)return showToast('Use .glb or .gltf');showLoading(true);let done=0;for(const f of valid){const reader=new FileReader();reader.onload=e=>{gltfLoader.load(e.target.result,gltf=>{addCharacter(gltf,f.name);done++;if(done===valid.length){showLoading(false);updateScene();renderPanel();updateMiniLibrary();showToast(`Loaded ${done} model(s)`)}else{updateScene();renderPanel();updateMiniLibrary();}},undefined,err=>{console.error(err);done++;showToast(`Failed: ${f.name}`);if(done===valid.length){showLoading(false);updateScene();renderPanel();updateMiniLibrary();}});};reader.readAsDataURL(f);}}
-        function showLoading(s){document.getElementById('loading-overlay').style.opacity=s?'1':'0';document.getElementById('loading-overlay').style.pointerEvents=s?'auto':'none';}
+        function loadFiles(files) { const valid = Array.from(files).filter(f => /\.(glb|gltf)$/i.test(f.name)); if (!valid.length) return showToast('Use .glb or .gltf');
+            showLoading(true); let done = 0; for (const f of valid) { const reader = new FileReader();
+                reader.onload = e => { gltfLoader.load(e.target.result, gltf => { addCharacter(gltf, f.name);
+                        done++; if (done === valid.length) { showLoading(false);
+                            updateScene();
+                            renderPanel();
+                            updateMiniLibrary();
+                            showToast(`Loaded ${done} model(s)`); } else { updateScene();
+                            renderPanel();
+                            updateMiniLibrary(); } }, undefined, err => { console.error(err);
+                        done++;
+                        showToast(`Failed: ${f.name}`); if (done === valid.length) { showLoading(false);
+                            updateScene();
+                            renderPanel();
+                            updateMiniLibrary(); } }); };
+                reader.readAsDataURL(f); } }
 
-        let toastT;function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),1800);}
+        function showLoading(s) { const overlay = document.getElementById('loading-overlay'); if (s) { overlay.style.opacity = '1';
+                overlay.style.pointerEvents = 'auto'; } else { overlay.style.opacity = '0';
+                overlay.style.pointerEvents = 'none'; } }
 
-        function openPanel(tab){state.activeTab=tab;state.panelOpen=true;document.getElementById('bottom-panel').classList.add('open');document.getElementById('panel-overlay').classList.add('visible');document.querySelectorAll('.fm-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));renderPanel();}
-        function closePanel(){state.panelOpen=false;document.getElementById('bottom-panel').classList.remove('open');document.getElementById('panel-overlay').classList.remove('visible');}
+        let toastT;
 
-        function renderPanel(){const c=document.getElementById('panel-content');const title=document.getElementById('panel-title');const ac=getActiveChar();switch(state.activeTab){case'chars':title.textContent='CHARACTERS';renderCharsPanel(c,ac);break;case'library':title.textContent='PART LIBRARY';renderLibraryPanel(c,ac);break;case'transform':title.textContent='TRANSFORM';renderTransformPanel(c,ac);break;case'textures':title.textContent='TEXTURES';renderTexturesPanel(c,ac);break;case'anims':title.textContent='ANIMATIONS';renderAnimsPanel(c,ac);break;case'bones':title.textContent='SKELETON';renderBonesPanel(c,ac);break;}}
+        function showToast(msg) { const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(toastT);
+            toastT = setTimeout(() => t.classList.remove('show'), 1800); }
 
-        function renderCharsPanel(c,ac){if(!state.characters.length){c.innerHTML=`<div class="empty-state"><div class="empty-icon">👤</div><div class="empty-text">Upload GLB files or load default base.</div><div class="upload-zone" id="empty-upload"><div style="font-size:16px;">📁</div><div style="font-size:8px;">UPLOAD MODEL</div></div><button class="cat-pill" id="add-default">+ Default Base</button></div>`;c.querySelector('#empty-upload')?.addEventListener('click',()=>document.getElementById('file-input').click());c.querySelector('#add-default')?.addEventListener('click',()=>{addDefaultCharacter();updateScene();renderPanel();updateMiniLibrary();showToast('Standard Human added');});return;}let html=`<div class="char-grid">`;html+=state.characters.map(ch=>`<div class="char-card ${ch.id===state.activeCharId?'active':''}" data-id="${ch.id}"><div class="char-avatar">${ch.meshCount>0?'👤':'❓'}</div><div class="char-name">${ch.name}</div><button class="delete-btn" data-del="${ch.id}" style="position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:6px;">✕</button></div>`).join('');html+=`<div class="char-card" id="add-char" style="border-style:dashed;"><div class="char-avatar" style="background:rgba(255,255,255,0.05);">➕</div><div class="char-name">Add</div></div></div>`;html+=`<div style="margin-top:6px;display:flex;gap:4px;align-items:center;"><span style="font-size:7px;">Layout:</span><button class="cat-pill ${state.charLayout==='single'?'active':''}" id="layout-single">Single</button><button class="cat-pill ${state.charLayout==='multi'?'active':''}" id="layout-multi">Side-by-Side</button></div>`;c.innerHTML=html;c.querySelectorAll('.char-card[data-id]').forEach(el=>el.addEventListener('click',e=>{if(e.target.dataset.del)return;state.activeCharId=el.dataset.id;state.selectedPart=null;updateScene();renderPanel();updateMiniLibrary();showToast(getActiveChar()?.name||'');}));c.querySelectorAll('.delete-btn').forEach(b=>b.addEventListener('click',e=>{e.stopPropagation();removeCharacter(b.dataset.del);showToast('Removed');}));c.querySelector('#add-char')?.addEventListener('click',()=>document.getElementById('file-input').click());c.querySelector('#layout-single')?.addEventListener('click',()=>{state.charLayout='single';updateScene();renderPanel();updateMiniLibrary();});c.querySelector('#layout-multi')?.addEventListener('click',()=>{state.charLayout='multi';updateScene();renderPanel();updateMiniLibrary();});}
+        function openPanel(tab) { state.activeTab = tab;
+            state.panelOpen = true;
+            document.getElementById('bottom-panel').classList.add('open');
+            document.getElementById('panel-overlay').classList.add('visible');
+            document.querySelectorAll('.fm-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            renderPanel(); }
 
-        function renderLibraryPanel(c,ac){if(!ac){c.innerHTML='<div class="empty-state"><div class="empty-icon">🗂️</div><div class="empty-text">Load a character first.</div></div>';return;}const allCats=new Set();for(const ch of state.characters)for(const cat of Object.keys(ch.parts))allCats.add(cat);const cats=Array.from(allCats).sort();if(!cats.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">No parts found.</div></div>';return;}let html=`<div class="cat-pills">`;html+=`<button class="cat-pill ${!state.libraryCat?'active':''}" id="lib-all">All</button>`;html+=cats.map(cat=>`<button class="cat-pill ${state.libraryCat===cat?'active':''}" data-libcat="${cat}">${CAT_ICONS[cat]||'📦'} ${cat}</button>`).join('');html+=`</div><div class="part-grid" style="margin-top:4px;">`;for(const ch of state.characters){for(const[cat,part]of Object.entries(ch.parts)){if(state.libraryCat&&cat!==state.libraryCat)continue;html+=`<div class="part-card" data-srcchar="${ch.id}" data-srccat="${cat}" title="Apply to current"><div class="part-icon">${CAT_ICONS[cat]||'📦'}</div><div class="part-name">${cat}</div><div class="part-source">${ch.name.substring(0,6)}</div></div>`;}}html+=`</div>`;c.innerHTML=html;c.querySelectorAll('.cat-pill').forEach(p=>p.addEventListener('click',()=>{state.libraryCat=p.dataset.libcat||null;renderPanel();}));c.querySelectorAll('.part-card[data-srcchar]').forEach(card=>card.addEventListener('click',()=>{swapPartFromLibrary(card.dataset.srcchar,card.dataset.srccat);closePanel();}));}
+        function closePanel() { state.panelOpen = false;
+            document.getElementById('bottom-panel').classList.remove('open');
+            document.getElementById('panel-overlay').classList.remove('visible'); }
 
-        function renderTexturesPanel(c,ac){if(!ac){c.innerHTML='<div class="empty-state"><div class="empty-icon">🎨</div><div class="empty-text">Load a character.</div></div>';return;}if(!state.selectedPart){c.innerHTML='<div class="empty-state"><div class="empty-icon">🎨</div><div class="empty-text">Select a part in 3D to edit materials.</div></div>';return;}const mats=new Set();for(const m of state.selectedPart.meshes){const ms=Array.isArray(m.material)?m.material:[m.material];for(const mat of ms)mats.add(mat);}const matArr=Array.from(mats);let html=`<div style="font-size:8px;color:var(--cyan);margin-bottom:4px;">${state.selectedPart.partName.toUpperCase()} — ${matArr.length} material(s)</div>`;matArr.forEach((mat,i)=>{html+=`<div style="padding:4px;border-radius:6px;border:1px solid rgba(255,0,110,0.15);margin-bottom:3px;background:rgba(255,255,255,0.02);"><div style="font-size:7px;color:var(--text-secondary);margin-bottom:2px;">MAT ${i+1}</div><div class="slider-row"><label>Color</label><input type="color" class="mat-color" data-i="${i}" value="${mat.color?'#'+mat.color.getHexString():'#ffffff'}"></div><div class="slider-row"><label>Rough</label><input type="range" min="0" max="1" step="0.01" value="${mat.roughness??0.5}" class="mat-rough" data-i="${i}"><span class="val-display">${(mat.roughness??0.5).toFixed(2)}</span></div><div class="slider-row"><label>Metal</label><input type="range" min="0" max="1" step="0.01" value="${mat.metalness??0}" class="mat-metal" data-i="${i}"><span class="val-display">${(mat.metalness??0).toFixed(2)}</span></div><div class="slider-row"><label>Glow</label><input type="range" min="0" max="3" step="0.05" value="${mat.emissiveIntensity??0}" class="mat-emis" data-i="${i}"><span class="val-display">${(mat.emissiveIntensity??0).toFixed(2)}</span></div></div>`;});html+=`<button class="cat-pill active" id="mat-reset" style="margin-top:4px;">Reset All</button>`;c.innerHTML=html;c.querySelectorAll('.mat-color').forEach(el=>el.addEventListener('input',()=>{const i=parseInt(el.dataset.i);if(matArr[i]?.color){matArr[i].color.set(el.value);matArr[i].needsUpdate=true;}}));c.querySelectorAll('.mat-rough').forEach(el=>el.addEventListener('input',()=>{const i=parseInt(el.dataset.i);if(matArr[i]){matArr[i].roughness=parseFloat(el.value);matArr[i].needsUpdate=true;el.nextElementSibling.textContent=parseFloat(el.value).toFixed(2);}}));c.querySelectorAll('.mat-metal').forEach(el=>el.addEventListener('input',()=>{const i=parseInt(el.dataset.i);if(matArr[i]){matArr[i].metalness=parseFloat(el.value);matArr[i].needsUpdate=true;el.nextElementSibling.textContent=parseFloat(el.value).toFixed(2);}}));c.querySelectorAll('.mat-emis').forEach(el=>el.addEventListener('input',()=>{const i=parseInt(el.dataset.i);if(matArr[i]){matArr[i].emissiveIntensity=parseFloat(el.value);matArr[i].needsUpdate=true;el.nextElementSibling.textContent=parseFloat(el.value).toFixed(2);}}));c.querySelector('#mat-reset')?.addEventListener('click',()=>{for(const m of state.selectedPart.meshes){const ms=Array.isArray(m.material)?m.material:[m.material];for(const mat of ms){mat.color.set(0xffffff);mat.roughness=0.5;mat.metalness=0;mat.emissiveIntensity=0;mat.needsUpdate=true;}}renderPanel();showToast('Reset');});}
+        function renderPanel() { const c = document.getElementById('panel-content'); const title = document.getElementById('panel-title'); const ac = getActiveChar(); switch (state.activeTab) { case 'chars': title.textContent = 'CHARACTERS';
+                renderCharsPanel(c, ac); break; case 'library': title.textContent = 'PART LIBRARY';
+                renderLibraryPanel(c, ac); break; case 'transform': title.textContent = 'TRANSFORM';
+                renderTransformPanel(c, ac); break; case 'textures': title.textContent = 'TEXTURES';
+                renderTexturesPanel(c, ac); break; case 'anims': title.textContent = 'ANIMATIONS';
+                renderAnimsPanel(c, ac); break; case 'bones': title.textContent = 'SKELETON';
+                renderBonesPanel(c, ac); break; } }
 
-        function renderAnimsPanel(c,ac){if(!ac){c.innerHTML='<div class="empty-state"><div class="empty-icon">🎬</div><div class="empty-text">Load a character.</div></div>';return;}if(!ac.animations.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">🎬</div><div class="empty-text">No baked animations detected.</div></div>';return;}let html='';for(const a of ac.animations){const playing=state.animationPlaying&&state.animationAction?.getClip?.()===a.clip;html+=`<div class="anim-row ${playing?'active':''}" data-anim="${a.name}"><button class="anim-play-btn">${playing?'⏸':'▶'}</button><span class="anim-name">${a.name}</span><span style="font-size:6px;color:var(--muted);">${a.duration.toFixed(1)}s</span></div>`;}if(state.animationPlaying)html+=`<button class="cat-pill active" id="anim-stop">Stop</button>`;c.innerHTML=html;c.querySelectorAll('[data-anim]').forEach(el=>el.addEventListener('click',()=>{const a=ac.animations.find(x=>x.name===el.dataset.anim);if(a&&state.animationMixer){if(state.animationAction&&state.animationPlaying){state.animationAction.stop();state.animationPlaying=false;state.animationAction=null;}else{state.animationAction=state.animationMixer.clipAction(a.clip);state.animationAction.reset();state.animationAction.play();state.animationPlaying=true;}renderPanel();}}));c.querySelector('#anim-stop')?.addEventListener('click',()=>{if(state.animationAction){state.animationAction.stop();state.animationPlaying=false;state.animationAction=null;}renderPanel();});}
+        function renderCharsPanel(c, ac) { if (!state.characters.length) { c.innerHTML = `<div class="empty-state"><div class="empty-icon">👤</div><div class="empty-text">Upload GLB files or load default base.</div><div class="upload-zone" id="empty-upload"><div style="font-size:16px;">📁</div><div style="font-size:8px;">UPLOAD MODEL</div></div><button class="cat-pill" id="add-default">+ Default Base</button></div>`;
+                c.querySelector('#empty-upload')?.addEventListener('click', () => document.getElementById('file-input').click());
+                c.querySelector('#add-default')?.addEventListener('click', () => { addDefaultCharacter();
+                    updateScene();
+                    renderPanel();
+                    updateMiniLibrary();
+                    showToast('Standard Human added'); }); return; } let html = `<div class="char-grid">`;
+            html += state.characters.map(ch => `<div class="char-card ${ch.id===state.activeCharId?'active':''}" data-id="${ch.id}"><div class="char-avatar">${ch.meshCount>0?'👤':'❓'}</div><div class="char-name">${ch.name}</div><button class="delete-btn" data-del="${ch.id}" style="position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:6px;">✕</button></div>`).join('');
+            html += `<div class="char-card" id="add-char" style="border-style:dashed;"><div class="char-avatar" style="background:rgba(255,255,255,0.05);">➕</div><div class="char-name">Add</div></div></div>`;
+            html += `<div style="margin-top:6px;display:flex;gap:4px;align-items:center;"><span style="font-size:7px;">Layout:</span><button class="cat-pill ${state.charLayout==='single'?'active':''}" id="layout-single">Single</button><button class="cat-pill ${state.charLayout==='multi'?'active':''}" id="layout-multi">Side-by-Side</button></div>`;
+            c.innerHTML = html;
+            c.querySelectorAll('.char-card[data-id]').forEach(el => el.addEventListener('click', e => { if (e.target.dataset.del) return;
+                state.activeCharId = el.dataset.id;
+                state.selectedPart = null;
+                updateScene();
+                renderPanel();
+                updateMiniLibrary();
+                showToast(getActiveChar()?.name || ''); }));
+            c.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', e => { e.stopPropagation();
+                removeCharacter(b.dataset.del);
+                showToast('Removed'); }));
+            c.querySelector('#add-char')?.addEventListener('click', () => document.getElementById('file-input').click());
+            c.querySelector('#layout-single')?.addEventListener('click', () => { state.charLayout = 'single';
+                updateScene();
+                renderPanel();
+                updateMiniLibrary(); });
+            c.querySelector('#layout-multi')?.addEventListener('click', () => { state.charLayout = 'multi';
+                updateScene();
+                renderPanel();
+                updateMiniLibrary(); }); }
 
-        function renderBonesPanel(c,ac){if(!ac){c.innerHTML='<div class="empty-state"><div class="empty-icon">🦴</div><div class="empty-text">Load a character.</div></div>';return;}if(!ac.bones.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">🦴</div><div class="empty-text">No bones found.</div></div>';return;}const map=new Map();for(const b of ac.bones)map.set(b.name,{...b,children:[]});const roots=[];for(const b of ac.bones){if(b.parent&&map.has(b.parent))map.get(b.parent).children.push(map.get(b.name));else roots.push(map.get(b.name));}function build(b,d=0){let h=`<li style="padding-left:${d*3}px;">🦴 ${b.name}</li>`;if(b.children.length){h+='<ul>';for(const ch of b.children)h+=build(ch,d+1);h+='</ul>';}return h;}let tree='<ul class="bone-tree">';for(const r of roots)tree+=build(r);tree+='</ul>';c.innerHTML=`<div style="font-size:8px;color:var(--cyan);margin-bottom:3px;">${ac.bones.length} BONES</div>${tree}`;}
+        function renderLibraryPanel(c, ac) { if (!ac) { c.innerHTML = '<div class="empty-state"><div class="empty-icon">🗂️</div><div class="empty-text">Load a character first.</div></div>'; return; } const allCats = new Set(); for (const ch of state.characters) for (const cat of Object.keys(ch.parts)) allCats.add(cat); const cats = Array.from(allCats).sort(); if (!cats.length) { c.innerHTML = '<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">No parts found.</div></div>'; return; } let html = `<div class="cat-pills">`;
+            html += `<button class="cat-pill ${!state.libraryCat?'active':''}" id="lib-all">All</button>`;
+            html += cats.map(cat => `<button class="cat-pill ${state.libraryCat===cat?'active':''}" data-libcat="${cat}">${CAT_ICONS[cat]||'📦'} ${cat}</button>`).join('');
+            html += `</div><div class="part-grid" style="margin-top:4px;">`; for (const ch of state.characters) { for (const [cat, part] of Object.entries(ch.parts)) { if (state.libraryCat && cat !== state.libraryCat) continue;
+                    html += `<div class="part-card" data-srcchar="${ch.id}" data-srccat="${cat}" title="Apply to current"><div class="part-icon">${CAT_ICONS[cat]||'📦'}</div><div class="part-name">${cat}</div><div class="part-source">${ch.name.substring(0,6)}</div></div>`; } }
+            html += `</div>`;
+            c.innerHTML = html;
+            c.querySelectorAll('.cat-pill').forEach(p => p.addEventListener('click', () => { state.libraryCat = p.dataset.libcat || null;
+                renderPanel(); }));
+            c.querySelectorAll('.part-card[data-srcchar]').forEach(card => card.addEventListener('click', () => { swapPartFromLibrary(card.dataset.srcchar, card.dataset.srccat);
+                closePanel(); })); }
 
-        function updateMiniLibrary(){const ml=document.getElementById('mini-library');const ac=getActiveChar();if(!ac){ml.innerHTML='';return;}let html='';for(const[cat,part]of Object.entries(ac.parts)){const activeClass=state.selectedPart?.category===cat?'active':'';html+=`<div class="mini-item ${activeClass}" data-mini-cat="${cat}" title="${cat}">${CAT_ICONS[cat]||'📦'}<span class="lbl">${cat}</span></div>`;}const otherChars=state.characters.filter(ch=>ch.id!==ac.id);for(const ch of otherChars){const firstCat=Object.keys(ch.parts)[0];if(firstCat)html+=`<div class="mini-item" data-swap-char="${ch.id}" data-swap-cat="${firstCat}" title="Swap ${firstCat} from ${ch.name}">👤<span class="lbl">${ch.name.substring(0,4)}</span></div>`;}ml.innerHTML=html;ml.querySelectorAll('.mini-item[data-mini-cat]').forEach(el=>el.addEventListener('click',()=>{const cat=el.dataset.miniCat;if(ac.parts[cat]){state.selectedPart={charId:ac.id,partId:ac.parts[cat].id,partName:cat,meshes:ac.parts[cat].meshes,category:cat};showToast(`Selected: ${cat}`);updateMiniLibrary();if(state.panelOpen&&state.activeTab==='transform')renderPanel();}}));ml.querySelectorAll('.mini-item[data-swap-char]').forEach(el=>el.addEventListener('click',()=>{swapPartFromLibrary(el.dataset.swapChar,el.dataset.swapCat);}));}
+        function renderTexturesPanel(c, ac) { if (!ac) { c.innerHTML = '<div class="empty-state"><div class="empty-icon">🎨</div><div class="empty-text">Load a character.</div></div>'; return; } if (!state.selectedPart) { c.innerHTML = '<div class="empty-state"><div class="empty-icon">🎨</div><div class="empty-text">Select a part in 3D to edit materials.</div></div>'; return; } const mats = new Set(); for (const m of state.selectedPart.meshes) { const ms = Array.isArray(m.material) ? m.material : [m.material]; for (const mat of ms) mats.add(mat); } const matArr = Array.from(mats); let html = `<div style="font-size:8px;color:var(--cyan);margin-bottom:4px;">${state.selectedPart.partName.toUpperCase()} — ${matArr.length} material(s)</div>`;
+            matArr.forEach((mat, i) => { html += `<div style="padding:4px;border-radius:6px;border:1px solid rgba(255,0,110,0.15);margin-bottom:3px;background:rgba(255,255,255,0.02);"><div style="font-size:7px;color:var(--text-secondary);margin-bottom:2px;">MAT ${i+1}</div><div class="slider-row"><label>Color</label><input type="color" class="mat-color" data-i="${i}" value="${mat.color?'#'+mat.color.getHexString():'#ffffff'}"></div><div class="slider-row"><label>Rough</label><input type="range" min="0" max="1" step="0.01" value="${mat.roughness??0.5}" class="mat-rough" data-i="${i}"><span class="val-display">${(mat.roughness??0.5).toFixed(2)}</span></div><div class="slider-row"><label>Metal</label><input type="range" min="0" max="1" step="0.01" value="${mat.metalness??0}" class="mat-metal" data-i="${i}"><span class="val-display">${(mat.metalness??0).toFixed(2)}</span></div><div class="slider-row"><label>Glow</label><input type="range" min="0" max="3" step="0.05" value="${mat.emissiveIntensity??0}" class="mat-emis" data-i="${i}"><span class="val-display">${(mat.emissiveIntensity??0).toFixed(2)}</span></div></div>`; });
+            html += `<button class="cat-pill active" id="mat-reset" style="margin-top:4px;">Reset All</button>`;
+            c.innerHTML = html;
+            c.querySelectorAll('.mat-color').forEach(el => el.addEventListener('input', () => { const i = parseInt(el.dataset.i); if (matArr[i]?.color) { matArr[i].color.set(el.value);
+                    matArr[i].needsUpdate = true; } }));
+            c.querySelectorAll('.mat-rough').forEach(el => el.addEventListener('input', () => { const i = parseInt(el.dataset.i); if (matArr[i]) { matArr[i].roughness = parseFloat(el.value);
+                    matArr[i].needsUpdate = true;
+                    el.nextElementSibling.textContent = parseFloat(el.value).toFixed(2); } }));
+            c.querySelectorAll('.mat-metal').forEach(el => el.addEventListener('input', () => { const i = parseInt(el.dataset.i); if (matArr[i]) { matArr[i].metalness = parseFloat(el.value);
+                    matArr[i].needsUpdate = true;
+                    el.nextElementSibling.textContent = parseFloat(el.value).toFixed(2); } }));
+            c.querySelectorAll('.mat-emis').forEach(el => el.addEventListener('input', () => { const i = parseInt(el.dataset.i); if (matArr[i]) { matArr[i].emissiveIntensity = parseFloat(el.value);
+                    matArr[i].needsUpdate = true;
+                    el.nextElementSibling.textContent = parseFloat(el.value).toFixed(2); } }));
+            c.querySelector('#mat-reset')?.addEventListener('click', () => { for (const m of state.selectedPart.meshes) { const ms = Array.isArray(m.material) ? m.material : [m.material]; for (const mat of ms) { mat.color.set(0xffffff);
+                        mat.roughness = 0.5;
+                        mat.metalness = 0;
+                        mat.emissiveIntensity = 0;
+                        mat.needsUpdate = true; } }
+                renderPanel();
+                showToast('Reset'); }); }
+
+        function renderAnimsPanel(c, ac) { if (!ac) { c.innerHTML = '<div class="empty-state"><div class="empty-icon">🎬</div><div class="empty-text">Load a character.</div></div>'; return; } if (!ac.animations.length) { c.innerHTML = '<div class="empty-state"><div class="empty-icon">🎬</div><div class="empty-text">No baked animations detected.</div></div>'; return; } let html = ''; for (const a of ac.animations) { const playing = state.animationPlaying && state.animationAction?.getClip?.() === a.clip;
+                html += `<div class="anim-row ${playing?'active':''}" data-anim="${a.name}"><button class="anim-play-btn">${playing?'⏸':'▶'}</button><span class="anim-name">${a.name}</span><span style="font-size:6px;color:var(--muted);">${a.duration.toFixed(1)}s</span></div>`; } if (state.animationPlaying) html += `<button class="cat-pill active" id="anim-stop">Stop</button>`;
+            c.innerHTML = html;
+            c.querySelectorAll('[data-anim]').forEach(el => el.addEventListener('click', () => { const a = ac.animations.find(x => x.name === el.dataset.anim); if (a && state.animationMixer) { if (state.animationAction && state.animationPlaying) { state.animationAction.stop();
+                        state.animationPlaying = false;
+                        state.animationAction = null; } else { state.animationAction = state.animationMixer.clipAction(a.clip);
+                        state.animationAction.reset();
+                        state.animationAction.play();
+                        state.animationPlaying = true; }
+                    renderPanel(); } }));
+            c.querySelector('#anim-stop')?.addEventListener('click', () => { if (state.animationAction) { state.animationAction.stop();
+                    state.animationPlaying = false;
+                    state.animationAction = null; }
+                renderPanel(); }); }
+
+        function renderBonesPanel(c, ac) { if (!ac) { c.innerHTML = '<div class="empty-state"><div class="empty-icon">🦴</div><div class="empty-text">Load a character.</div></div>'; return; } if (!ac.bones.length) { c.innerHTML = '<div class="empty-state"><div class="empty-icon">🦴</div><div class="empty-text">No bones found.</div></div>'; return; } const map = new Map(); for (const b of ac.bones) map.set(b.name, { ...b, children: [] }); const roots = []; for (const b of ac.bones) { if (b.parent && map.has(b.parent)) map.get(b.parent).children.push(map.get(b.name)); else roots.push(map.get(b.name)); } function build(b, d = 0) { let h = `<li style="padding-left:${d*3}px;">🦴 ${b.name}</li>`; if (b.children.length) { h += '<ul>'; for (const ch of b.children) h += build(ch, d + 1);
+                h += '</ul>'; } return h; } let tree = '<ul class="bone-tree">'; for (const r of roots) tree += build(r);
+            tree += '</ul>';
+            c.innerHTML = `<div style="font-size:8px;color:var(--cyan);margin-bottom:3px;">${ac.bones.length} BONES</div>${tree}`; }
+
+        function updateMiniLibrary() { const ml = document.getElementById('mini-library'); const ac = getActiveChar(); if (!ac) { ml.innerHTML = ''; return; } let html = ''; for (const [cat, part] of Object.entries(ac.parts)) { const activeClass = state.selectedPart?.category === cat ? 'active' : '';
+                html += `<div class="mini-item ${activeClass}" data-mini-cat="${cat}" title="${cat}">${CAT_ICONS[cat]||'📦'}<span class="lbl">${cat}</span></div>`; } const otherChars = state.characters.filter(ch => ch.id !== ac.id); for (const ch of otherChars) { const firstCat = Object.keys(ch.parts)[0]; if (firstCat) html += `<div class="mini-item" data-swap-char="${ch.id}" data-swap-cat="${firstCat}" title="Swap ${firstCat} from ${ch.name}">👤<span class="lbl">${ch.name.substring(0,4)}</span></div>`; }
+            ml.innerHTML = html;
+            ml.querySelectorAll('.mini-item[data-mini-cat]').forEach(el => el.addEventListener('click', () => { const cat = el.dataset.miniCat; if (ac.parts[cat]) { state.selectedPart = { charId: ac.id, partId: ac.parts[cat].id, partName: cat, meshes: ac.parts[cat].meshes, category: cat };
+                    showToast(`Selected: ${cat}`);
+                    updateMiniLibrary(); if (state.panelOpen && state.activeTab === 'transform') renderPanel(); } }));
+            ml.querySelectorAll('.mini-item[data-swap-char]').forEach(el => el.addEventListener('click', () => { swapPartFromLibrary(el.dataset.swapChar, el.dataset.swapCat); })); }
 
         // Event listeners
-        document.getElementById('btn-upload').addEventListener('click',()=>document.getElementById('file-input').click());
-        document.getElementById('file-input').addEventListener('change',e=>{if(e.target.files.length)loadFiles(e.target.files);e.target.value='';});
-        document.getElementById('btn-export').addEventListener('click',exportChar);
-        document.getElementById('btn-layout').addEventListener('click',()=>{state.charLayout=state.charLayout==='single'?'multi':'single';updateScene();renderPanel();updateMiniLibrary();showToast(`Layout: ${state.charLayout}`);});
-        document.querySelectorAll('.fm-btn').forEach(b=>b.addEventListener('click',()=>{const t=b.dataset.tab;if(state.panelOpen&&state.activeTab===t)closePanel();else openPanel(t);}));
-        document.getElementById('panel-close').addEventListener('click',closePanel);
-        document.getElementById('panel-overlay').addEventListener('click',closePanel);
+        document.getElementById('btn-upload').addEventListener('click', () => document.getElementById('file-input').click());
+        document.getElementById('file-input').addEventListener('change', e => { if (e.target.files.length) loadFiles(e.target.files);
+            e.target.value = ''; });
+        document.getElementById('btn-export').addEventListener('click', exportChar);
+        document.getElementById('btn-layout').addEventListener('click', () => { state.charLayout = state.charLayout === 'single' ? 'multi' : 'single';
+            updateScene();
+            renderPanel();
+            updateMiniLibrary();
+            showToast(`Layout: ${state.charLayout}`); });
+        document.querySelectorAll('.fm-btn').forEach(b => b.addEventListener('click', () => { const t = b.dataset.tab; if (state.panelOpen && state.activeTab === t) closePanel(); else openPanel(t); }));
+        document.getElementById('panel-close').addEventListener('click', closePanel);
+        document.getElementById('panel-overlay').addEventListener('click', closePanel);
+        // Menu toggle
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+            const menu = document.getElementById('floating-menu');
+            state.menuVisible = !state.menuVisible;
+            menu.classList.toggle('hidden', !state.menuVisible);
+            document.getElementById('menu-toggle').textContent = state.menuVisible ? '👁️' : '🙈';
+        });
 
-        renderer.domElement.addEventListener('pointerdown',e=>{pointerDown=true;pointerMoved=false;swipeStart={x:e.clientX,y:e.clientY};swipeActive=true;});
-        renderer.domElement.addEventListener('pointermove',e=>{if(pointerDown){const dx=e.clientX-swipeStart.x,dy=e.clientY-swipeStart.y;if(Math.abs(dx)>8||Math.abs(dy)>8)pointerMoved=true;}});
-        renderer.domElement.addEventListener('pointerup',e=>{if(pointerDown&&!pointerMoved){const rect=renderer.domElement.getBoundingClientRect();pointer.x=((e.clientX-rect.left)/rect.width)*2-1;pointer.y=-((e.clientY-rect.top)/rect.height)*2+1;raycaster.setFromCamera(pointer,camera);const ac=getActiveChar();if(ac?.gltf){const meshes=[];ac.gltf.scene.traverse(n=>{if(n.isMesh||n.isSkinnedMesh)meshes.push(n)});const hits=raycaster.intersectObjects(meshes,true);if(hits.length)selectPartByMesh(hits[0].object);}}if(swipeActive){const dx=e.clientX-swipeStart.x,dy=e.clientY-swipeStart.y;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){const chars=state.characters;if(chars.length>1){const idx=chars.findIndex(c=>c.id===state.activeCharId);if(dx<0&&idx<chars.length-1){state.activeCharId=chars[idx+1].id;updateScene();renderPanel();updateMiniLibrary();showToast(chars[idx+1].name);}else if(dx>0&&idx>0){state.activeCharId=chars[idx-1].id;updateScene();renderPanel();updateMiniLibrary();showToast(chars[idx-1].name);}}}else if(Math.abs(dy)>50&&dy<0&&!state.panelOpen){openPanel(state.activeTab||'chars');}}pointerDown=false;swipeActive=false;});
-        document.addEventListener('keydown',e=>{if(e.key==='o')document.getElementById('file-input').click();if(e.key==='e')exportChar();if(e.key==='Escape')closePanel();});
-        window.addEventListener('resize',()=>{camera.aspect=container.clientWidth/container.clientHeight;camera.updateProjectionMatrix();renderer.setSize(container.clientWidth,container.clientHeight);});
-        document.addEventListener('dragover',e=>e.preventDefault());
-        document.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer.files.length)loadFiles(e.dataTransfer.files);});
+        renderer.domElement.addEventListener('pointerdown', e => { pointerDown = true;
+            pointerMoved = false;
+            swipeStart = { x: e.clientX, y: e.clientY };
+            swipeActive = true; });
+        renderer.domElement.addEventListener('pointermove', e => { if (pointerDown) { const dx = e.clientX - swipeStart.x,
+                    dy = e.clientY - swipeStart.y; if (Math.abs(dx) > 8 || Math.abs(dy) > 8) pointerMoved = true; } });
+        renderer.domElement.addEventListener('pointerup', e => {
+            if (pointerDown && !pointerMoved) {
+                const rect = renderer.domElement.getBoundingClientRect();
+                pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(pointer, camera);
+                const ac = getActiveChar();
+                if (ac?.gltf) {
+                    const meshes = [];
+                    ac.gltf.scene.traverse(n => { if (n.isMesh || n.isSkinnedMesh) meshes.push(n) });
+                    const hits = raycaster.intersectObjects(meshes, true);
+                    if (hits.length) selectPartByMesh(hits[0].object);
+                }
+            }
+            if (swipeActive) {
+                const dx = e.clientX - swipeStart.x,
+                    dy = e.clientY - swipeStart.y;
+                if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                    const chars = state.characters;
+                    if (chars.length > 1) {
+                        const idx = chars.findIndex(c => c.id === state.activeCharId);
+                        if (dx < 0 && idx < chars.length - 1) { state.activeCharId = chars[idx + 1].id;
+                            updateScene();
+                            renderPanel();
+                            updateMiniLibrary();
+                            showToast(chars[idx + 1].name); } else if (dx > 0 && idx > 0) { state.activeCharId = chars[idx - 1].id;
+                            updateScene();
+                            renderPanel();
+                            updateMiniLibrary();
+                            showToast(chars[idx - 1].name); }
+                    }
+                } else if (Math.abs(dy) > 50 && dy < 0 && !state.panelOpen) { openPanel(state.activeTab || 'chars'); }
+            }
+            pointerDown = false;
+            swipeActive = false;
+        });
+        document.addEventListener('keydown', e => { if (e.key === 'o') document.getElementById('file-input').click(); if (e.key === 'e') exportChar(); if (e.key === 'Escape') closePanel(); });
+        window.addEventListener('resize', () => { camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight); });
+        document.addEventListener('dragover', e => e.preventDefault());
+        document.addEventListener('drop', e => { e.preventDefault(); if (e.dataTransfer.files.length) loadFiles(e.dataTransfer.files); });
 
-        function animate(){requestAnimationFrame(animate);controls.update();if(state.animationMixer)state.animationMixer.update(0.016);particles.rotation.y+=0.0004;glowLight.intensity=1.2+Math.sin(Date.now()*0.002)*0.4;renderer.render(scene,camera);}
+        function animate() { requestAnimationFrame(animate);
+            controls.update(); if (state.animationMixer) state.animationMixer.update(0.016);
+            particles.rotation.y += 0.0004;
+            glowLight.intensity = 1.5 + Math.sin(Date.now() * 0.002) * 0.6;
+            renderer.render(scene, camera); }
 
-        // Init: add default human if none
-        if(state.characters.length===0){addDefaultCharacter();}
-        updateScene();renderPanel();updateMiniLibrary();setTimeout(()=>showLoading(false),600);animate();
+        // Initial setup: add default human, hide loading overlay after short delay
+        if (state.characters.length === 0) { addDefaultCharacter(); }
+        updateScene();
+        renderPanel();
+        updateMiniLibrary();
+        setTimeout(() => showLoading(false), 500);
+        animate();
         showToast('CYBERDOLL // FRANKENSTEIN LAB READY');
+        console.log('Initialized with default human. If canvas black, try reloading or check WebGL support.');
     </script>
 </body>
 </html>
