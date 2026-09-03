@@ -1,10 +1,9 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CYBERDOLL // FRANKENSTEIN LAB v3</title>
+    <title>CYBERDOLL // FRANKENSTEIN LAB v4</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -20,32 +19,28 @@
             --font-display: 'Orbitron', monospace;
             --font-body: 'Rajdhani', sans-serif;
             --btn-size: 44px;
-            --small-btn: 34px;
+            --small-btn: 36px;
         }
         * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
         body { background:var(--bg); color:var(--text); font-family:var(--font-body); overflow:hidden; height:100vh; width:100vw; position:fixed; touch-action:none; }
         #viewport { position:fixed; inset:0; cursor:grab; z-index:1; }
         #viewport canvas { width:100%; height:100%; display:block; }
 
-        /* Permanent HUD layers */
         #hud { position:fixed; inset:0; pointer-events:none; z-index:50; }
         #hud > * { pointer-events:auto; }
 
-        /* Top bar */
         #topbar { position:absolute; top:8px; left:8px; right:8px; display:flex; justify-content:space-between; align-items:center; }
         .logo { font-family:var(--font-display); font-size:14px; font-weight:900; background:linear-gradient(135deg,var(--pink),var(--cyan)); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
         .logo span { font-size:8px; letter-spacing:2px; display:block; -webkit-text-fill-color:var(--muted); }
         .btn-round { width:var(--btn-size); height:var(--btn-size); border-radius:50%; border:1px solid var(--border-glow); background:var(--glass); color:var(--cyan); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:20px; transition:0.2s; backdrop-filter:blur(4px); }
         .btn-round:hover, .btn-round.active { background:rgba(255,0,110,0.25); border-color:var(--pink); box-shadow:0 0 15px rgba(255,0,110,0.4); }
 
-        /* Right side category buttons */
         #category-menu { position:absolute; right:10px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:8px; }
         .cat-btn { width:var(--small-btn); height:var(--small-btn); border-radius:50%; border:1px solid var(--border-cyan); background:var(--glass); color:var(--cyan); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px; transition:0.2s; backdrop-filter:blur(4px); position:relative; }
         .cat-btn.active { background:rgba(0,229,255,0.2); border-color:var(--cyan); box-shadow:0 0 12px rgba(0,229,255,0.5); }
         .cat-btn .tooltip { position:absolute; right:calc(100% + 8px); top:50%; transform:translateY(-50%); background:rgba(10,10,20,0.8); border:1px solid var(--border-glow); padding:2px 6px; border-radius:6px; font-size:8px; white-space:nowrap; color:var(--text); opacity:0; pointer-events:none; transition:0.2s; }
         .cat-btn:hover .tooltip { opacity:1; }
 
-        /* Transform controls (floating left) */
         #transform-panel { position:absolute; left:10px; bottom:80px; background:var(--glass); border-radius:12px; border:1px solid var(--border-glow); padding:8px; backdrop-filter:blur(6px); display:none; flex-direction:column; gap:6px; max-width:140px; }
         #transform-panel.visible { display:flex; }
         .knob-row { display:flex; align-items:center; gap:4px; }
@@ -54,27 +49,22 @@
         .knob-dot { position:absolute; top:50%; left:50%; width:3px; height:10px; background:var(--pink); border-radius:2px; transform-origin:50% 0; transform:translate(-50%,0) rotate(0deg); }
         .val-display { font-size:7px; color:var(--muted); min-width:20px; text-align:right; }
 
-        /* Bottom mini library */
-        #mini-library { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); display:flex; gap:4px; padding:6px; background:var(--glass); border-radius:18px; border:1px solid var(--border-glow); max-width:75vw; overflow-x:auto; backdrop-filter:blur(4px); }
+        #transform-modes { display:flex; gap:4px; }
+        .mode-btn { padding:2px 4px; border-radius:4px; border:1px solid var(--border-glow); background:rgba(255,255,255,0.05); color:var(--text); font-size:7px; cursor:pointer; }
+        .mode-btn.active { background:rgba(255,0,110,0.3); border-color:var(--pink); }
+
+        #mini-library { position:absolute; bottom:16px; left:50%; transform:translateX(-50%); display:flex; gap:4px; padding:6px; background:var(--glass); border-radius:18px; border:1px solid var(--border-glow); max-width:80vw; overflow-x:auto; backdrop-filter:blur(4px); }
         .mini-item { width:36px; height:36px; border-radius:8px; border:1px solid rgba(0,229,255,0.2); background:rgba(255,255,255,0.03); display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:16px; cursor:pointer; flex-shrink:0; }
         .mini-item .lbl { font-size:5px; color:var(--muted); text-transform:uppercase; }
         .mini-item.active { border-color:var(--pink); background:rgba(255,0,110,0.15); }
 
-        /* XIII Random generator button */
         #xiii-btn { position:absolute; right:10px; bottom:80px; width:var(--btn-size); height:var(--btn-size); border-radius:50%; background:linear-gradient(135deg,var(--pink),var(--purple)); border:2px solid #fff; color:#fff; font-family:var(--font-display); font-weight:900; font-size:16px; cursor:pointer; box-shadow:0 0 20px rgba(255,0,110,0.6); transition:0.2s; }
         #xiii-btn:hover { transform:scale(1.1); box-shadow:0 0 30px rgba(255,0,110,0.9); }
 
-        /* Upload/export/layout at top right */
-        #top-actions { display:flex; gap:6px; }
-
-        /* Toast */
         #toast { position:absolute; bottom:80px; left:50%; transform:translateX(-50%) translateY(100px); background:rgba(12,8,22,0.8); border:1px solid var(--border-cyan); border-radius:8px; padding:4px 12px; font-size:9px; z-index:500; transition:0.25s; pointer-events:none; }
         #toast.show { transform:translateX(-50%) translateY(0); }
 
-        /* File input hidden */
         #file-input { display:none; }
-
-        /* Loading overlay */
         #loading-overlay { position:fixed; inset:0; background:rgba(6,6,14,0.9); z-index:1000; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; transition:opacity 0.5s; }
         #loading-overlay.hidden { opacity:0; pointer-events:none; }
         .loader-ring { width:40px; height:40px; border-radius:50%; border:2px solid transparent; border-top-color:var(--pink); border-right-color:var(--cyan); animation:spin 0.7s linear infinite; }
@@ -88,7 +78,6 @@
     </div>
     <div id="viewport"></div>
     <div id="hud">
-        <!-- Top bar -->
         <div id="topbar">
             <div class="logo">CYBERDOLL<span>// FRANKENSTEIN LAB</span></div>
             <div id="top-actions">
@@ -97,7 +86,6 @@
                 <button class="btn-round" id="btn-layout" title="Toggle Layout">🔲</button>
             </div>
         </div>
-        <!-- Category menu (right side) -->
         <div id="category-menu">
             <button class="cat-btn" data-cat="chars" title="Characters">👤</button>
             <button class="cat-btn" data-cat="body" title="Body">🧍</button>
@@ -107,18 +95,19 @@
             <button class="cat-btn" data-cat="shoes" title="Shoes">👟</button>
             <button class="cat-btn" data-cat="accessories" title="Accessories">💍</button>
         </div>
-        <!-- Transform panel -->
         <div id="transform-panel">
+            <div id="transform-modes">
+                <button class="mode-btn active" data-mode="position">Pos</button>
+                <button class="mode-btn" data-mode="rotation">Rot</button>
+                <button class="mode-btn" data-mode="scale">Scl</button>
+            </div>
             <div class="knob-row"><label>X</label><div class="circular-knob" data-axis="x"><div class="knob-dot"></div></div><span class="val-display" id="val-x">0.00</span></div>
             <div class="knob-row"><label>Y</label><div class="circular-knob" data-axis="y"><div class="knob-dot"></div></div><span class="val-display" id="val-y">0.00</span></div>
             <div class="knob-row"><label>Z</label><div class="circular-knob" data-axis="z"><div class="knob-dot"></div></div><span class="val-display" id="val-z">0.00</span></div>
             <button class="cat-pill" id="tf-reset" style="font-size:8px;">Reset</button>
         </div>
-        <!-- XIII random generator -->
         <button id="xiii-btn" title="Random Doll Generator (XIII)">XIII</button>
-        <!-- Mini library -->
         <div id="mini-library"></div>
-        <!-- Toast -->
         <div id="toast"></div>
     </div>
     <input type="file" id="file-input" accept=".glb,.gltf" multiple>
@@ -166,25 +155,25 @@
         renderer.toneMappingExposure = 1.2;
         container.appendChild(renderer.domElement);
 
-        // --- Lighting (robust) ---
+        // Lighting
         const ambient = new THREE.AmbientLight(0x404060, 1.5);
         scene.add(ambient);
         const hemi = new THREE.HemisphereLight(0xffffff, 0x444466, 1.0);
         scene.add(hemi);
         const keyLight = new THREE.DirectionalLight(0xffeedd, 2.5);
-        keyLight.position.set(2, 4, 3);
+        keyLight.position.set(2,4,3);
         keyLight.castShadow = true;
         keyLight.shadow.mapSize.width = 1024;
         keyLight.shadow.mapSize.height = 1024;
         scene.add(keyLight);
         const rim = new THREE.DirectionalLight(0x00e5ff, 2.0);
-        rim.position.set(-2, 1, -2);
+        rim.position.set(-2,1,-2);
         scene.add(rim);
         const fill = new THREE.DirectionalLight(0x8338ec, 1.2);
-        fill.position.set(0, 0.5, 2);
+        fill.position.set(0,0.5,2);
         scene.add(fill);
         const glow = new THREE.PointLight(0xff006e, 2.0, 8);
-        glow.position.set(0, 0.5, 0.5);
+        glow.position.set(0,0.5,0.5);
         scene.add(glow);
 
         const gridHelper = new THREE.GridHelper(12, 50, 0x2a2a4a, 0x1a1a2a);
@@ -195,7 +184,7 @@
         scene.add(characterGroup);
 
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.target.set(0, 1.0, 0);
+        controls.target.set(0,1.0,0);
         controls.enableDamping = true;
         controls.dampingFactor = 0.06;
         controls.minDistance = 0.8;
@@ -206,7 +195,7 @@
 
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
-        let pointerDown = false, pointerMoved = false, swipeStart = { x: 0, y: 0 }, swipeActive = false;
+        let pointerDown = false, pointerMoved = false, swipeStart = {x:0,y:0}, swipeActive = false;
 
         // ==================== LOADERS ====================
         const dracoLoader = new DRACOLoader();
@@ -216,31 +205,31 @@
 
         // ==================== CATEGORIZATION ====================
         const CAT_ICONS = {
-            body: '🧍', head: '👤', hair: '💇', eyes: '👁️', mouth: '👄', ears: '👂', nose: '👃',
-            arms: '💪', hands: '✋', legs: '🦵', feet: '🦶', top: '👕', bottom: '👖', dress: '👗',
-            shoes: '👟', socks: '🧦', underwear: '🩲', gloves: '🧤', hats: '🎩', accessories: '💍', other: '📦'
+            body:'🧍', head:'👤', hair:'💇', eyes:'👁️', mouth:'👄', ears:'👂', nose:'👃',
+            arms:'💪', hands:'✋', legs:'🦵', feet:'🦶', top:'👕', bottom:'👖', dress:'👗',
+            shoes:'👟', socks:'🧦', underwear:'🩲', gloves:'🧤', hats:'🎩', accessories:'💍', other:'📦'
         };
         const CAT_KEYWORDS = {
-            body: ['body','skin','torso','chest','waist','hip','pelvis','belly','core','abdomen','trunk'],
-            head: ['head','face','skull','neck','jaw','chin','forehead','cheek','cranium','temple'],
-            hair: ['hair','fringe','bangs','ponytail','braid','strand','curl','lock','mane','quiff','sideburn','weave','toupee','wig','bob','bun'],
-            eyes: ['eye','brow','lash','pupil','iris','cornea','sclera','eyeball','eyelid','eyelash','orbit'],
-            mouth: ['mouth','lip','teeth','tooth','tongue','gum','oral','dental','incisor','molar','canine'],
-            ears: ['ear','lobe','auricle','eardrum','cochlea'],
-            nose: ['nose','nostril','bridge','septum','nasal'],
-            arms: ['arm','elbow','wrist','shoulder','forearm','upperarm','bicep','tricep','clavicle','scapula','humerus','radius','ulna'],
-            hands: ['hand','palm','finger','thumb','knuckle','fingertip','phalanx','metacarpal'],
-            legs: ['leg','ankle','knee','thigh','calf','shin','femur','tibia','fibula','patella','quad','hamstring'],
-            feet: ['foot','feet','toe','heel','sole','ankle','metatarsal','tarsal'],
-            top: ['top','shirt','jacket','coat','blouse','sweater','vest','hoodie','cardigan','tee','tank','crop','jersey','pullover','knitwear','blazer','anorak'],
-            bottom: ['bottom','pants','skirt','shorts','jeans','trousers','slacks','culottes','capri','legging','chino','denim','sweatpant'],
-            dress: ['dress','gown','robe','frock','sundress','kimono','sarong','tunic','kaftan'],
-            shoes: ['shoe','boot','sneaker','heel','sandal','loafer','pump','flat','slipper','flipflop','trainer','mule','clog','espadrille'],
-            socks: ['sock','stocking','legging','tight','hosiery','nylon','kneesock','anklet','tights'],
-            underwear: ['underwear','bra','panty','brief','boxer','thong','lingerie','slip','undershirt','underpant','camisole','jockstrap'],
-            gloves: ['glove','mitten','gauntlet','fingerless','mitt'],
-            hats: ['hat','cap','beanie','hood','beret','fedora','helmet','crown','tiara','visor','beanie','headband','bonnet','toque'],
-            accessories: ['accessory','jewelry','necklace','earring','ring','bracelet','scarf','collar','tie','bow','belt','watch','glasses','choker','chain','pin','brooch','pendant','amulet','medallion','anklet','cufflink','bangle']
+            body:['body','skin','torso','chest','waist','hip','pelvis','belly','core','abdomen','trunk'],
+            head:['head','face','skull','neck','jaw','chin','forehead','cheek','cranium','temple'],
+            hair:['hair','fringe','bangs','ponytail','braid','strand','curl','lock','mane','quiff','sideburn','weave','toupee','wig','bob','bun'],
+            eyes:['eye','brow','lash','pupil','iris','cornea','sclera','eyeball','eyelid','eyelash','orbit'],
+            mouth:['mouth','lip','teeth','tooth','tongue','gum','oral','dental','incisor','molar','canine'],
+            ears:['ear','lobe','auricle','eardrum','cochlea'],
+            nose:['nose','nostril','bridge','septum','nasal'],
+            arms:['arm','elbow','wrist','shoulder','forearm','upperarm','bicep','tricep','clavicle','scapula','humerus','radius','ulna'],
+            hands:['hand','palm','finger','thumb','knuckle','fingertip','phalanx','metacarpal'],
+            legs:['leg','ankle','knee','thigh','calf','shin','femur','tibia','fibula','patella','quad','hamstring'],
+            feet:['foot','feet','toe','heel','sole','ankle','metatarsal','tarsal'],
+            top:['top','shirt','jacket','coat','blouse','sweater','vest','hoodie','cardigan','tee','tank','crop','jersey','pullover','knitwear','blazer','anorak'],
+            bottom:['bottom','pants','skirt','shorts','jeans','trousers','slacks','culottes','capri','legging','chino','denim','sweatpant'],
+            dress:['dress','gown','robe','frock','sundress','kimono','sarong','tunic','kaftan'],
+            shoes:['shoe','boot','sneaker','heel','sandal','loafer','pump','flat','slipper','flipflop','trainer','mule','clog','espadrille'],
+            socks:['sock','stocking','legging','tight','hosiery','nylon','kneesock','anklet','tights'],
+            underwear:['underwear','bra','panty','brief','boxer','thong','lingerie','slip','undershirt','underpant','camisole','jockstrap'],
+            gloves:['glove','mitten','gauntlet','fingerless','mitt'],
+            hats:['hat','cap','beanie','hood','beret','fedora','helmet','crown','tiara','visor','beanie','headband','bonnet','toque'],
+            accessories:['accessory','jewelry','necklace','earring','ring','bracelet','scarf','collar','tie','bow','belt','watch','glasses','choker','chain','pin','brooch','pendant','amulet','medallion','anklet','cufflink','bangle']
         };
 
         function categorize(name, pos) {
@@ -347,33 +336,24 @@
             group.name = 'base_human';
             const skinMat = new THREE.MeshStandardMaterial({ color:0xd4a373, roughness:0.5 });
             const darkMat = new THREE.MeshStandardMaterial({ color:0x3a3a3a, roughness:0.6 });
-            // Body
-            const bodyGeo = new THREE.CylinderGeometry(0.35,0.3,1.2,12);
-            bodyGeo.translate(0,0.6,0);
+            const bodyGeo = new THREE.CylinderGeometry(0.35,0.3,1.2,12); bodyGeo.translate(0,0.6,0);
             const body = new THREE.Mesh(bodyGeo, skinMat); body.name='body'; body.position.y=0.4; group.add(body);
-            // Head
             const headGeo = new THREE.SphereGeometry(0.22,12,12);
             const head = new THREE.Mesh(headGeo, skinMat); head.name='head'; head.position.y=1.55; group.add(head);
-            // Hair
             const hairGeo = new THREE.SphereGeometry(0.24,8,8,0,Math.PI*2,0,Math.PI/2);
             const hair = new THREE.Mesh(hairGeo, darkMat); hair.name='hair'; hair.position.y=1.6; hair.scale.set(1,0.5,1); group.add(hair);
-            // Eyes
             const eyeGeo = new THREE.SphereGeometry(0.03,6,6); const eyeMat = new THREE.MeshStandardMaterial({color:0x000000});
             const eyeL = new THREE.Mesh(eyeGeo, eyeMat); eyeL.name='eye_left'; eyeL.position.set(-0.08,1.55,0.18); group.add(eyeL);
             const eyeR = new THREE.Mesh(eyeGeo, eyeMat); eyeR.name='eye_right'; eyeR.position.set(0.08,1.55,0.18); group.add(eyeR);
-            // Arms
             const armGeo = new THREE.CylinderGeometry(0.12,0.12,0.9,8); armGeo.translate(0,0.45,0);
             const armL = new THREE.Mesh(armGeo, skinMat); armL.name='arm_left'; armL.position.set(-0.55,1.1,0); group.add(armL);
             const armR = new THREE.Mesh(armGeo, skinMat); armR.name='arm_right'; armR.position.set(0.55,1.1,0); group.add(armR);
-            // Hands
             const handGeo = new THREE.SphereGeometry(0.1,6,6);
             const handL = new THREE.Mesh(handGeo, skinMat); handL.name='hand_left'; handL.position.set(-0.55,0.65,0); group.add(handL);
             const handR = new THREE.Mesh(handGeo, skinMat); handR.name='hand_right'; handR.position.set(0.55,0.65,0); group.add(handR);
-            // Legs
             const legGeo = new THREE.CylinderGeometry(0.15,0.15,0.8,8); legGeo.translate(0,0.4,0);
             const legL = new THREE.Mesh(legGeo, skinMat); legL.name='leg_left'; legL.position.set(-0.2,0.8,0); group.add(legL);
             const legR = new THREE.Mesh(legGeo, skinMat); legR.name='leg_right'; legR.position.set(0.2,0.8,0); group.add(legR);
-            // Feet
             const footGeo = new THREE.BoxGeometry(0.2,0.1,0.3);
             const footL = new THREE.Mesh(footGeo, darkMat); footL.name='foot_left'; footL.position.set(-0.2,0.1,0.05); group.add(footL);
             const footR = new THREE.Mesh(footGeo, darkMat); footR.name='foot_right'; footR.position.set(0.2,0.1,0.05); group.add(footR);
@@ -454,7 +434,6 @@
 
         // ==================== XIII RANDOM DOLL GENERATOR ====================
         function randomDollGenerator() {
-            // Collect parts by category from all characters
             const partPool = {};
             for (const ch of state.characters) {
                 for (const [cat, part] of Object.entries(ch.parts)) {
@@ -462,7 +441,6 @@
                     partPool[cat].push({ charId:ch.id, part });
                 }
             }
-            // Categories we want for a doll
             const desired = ['body', 'head', 'hair', 'top', 'bottom', 'shoes', 'accessories'];
             const newGroup = new THREE.Group();
             newGroup.name = 'random_doll_xiii';
@@ -476,7 +454,6 @@
                 if (partPool[cat] && partPool[cat].length) {
                     const pick = partPool[cat][Math.floor(Math.random()*partPool[cat].length)];
                     const srcPart = pick.part;
-                    // Clone meshes and add to group
                     for (const mesh of srcPart.meshes) {
                         const clone = mesh.clone(true);
                         newGroup.add(clone);
@@ -493,23 +470,37 @@
         }
 
         // ==================== TRANSFORM CONTROLS ====================
+        let transformMode = 'position'; // position, rotation, scale
+
         function applyTransform(axis, value) {
             if (!state.selectedPart) return;
             for (const mesh of state.selectedPart.meshes) {
-                mesh.position[axis] = parseFloat(value);
+                if (transformMode === 'position') mesh.position[axis] = parseFloat(value);
+                else if (transformMode === 'rotation') mesh.rotation[axis] = parseFloat(value);
+                else if (transformMode === 'scale') mesh.scale[axis] = parseFloat(value);
             }
         }
+
         function getTransformValue(axis) {
             if (!state.selectedPart || !state.selectedPart.meshes.length) return 0;
             const m = state.selectedPart.meshes[0];
-            return m.position[axis]?.toFixed(2) || 0;
+            if (transformMode === 'position') return m.position[axis]?.toFixed(2) || 0;
+            if (transformMode === 'rotation') return m.rotation[axis]?.toFixed(2) || 0;
+            if (transformMode === 'scale') return m.scale[axis]?.toFixed(2) || 0;
+            return 0;
         }
+
         function resetTransform() {
             if (!state.selectedPart) return;
-            for (const mesh of state.selectedPart.meshes) { mesh.position.set(0,0,0); }
+            for (const mesh of state.selectedPart.meshes) {
+                if (transformMode === 'position') mesh.position.set(0,0,0);
+                else if (transformMode === 'rotation') mesh.rotation.set(0,0,0);
+                else if (transformMode === 'scale') mesh.scale.set(1,1,1);
+            }
             updateTransformPanelVisibility();
             showToast('Transform reset');
         }
+
         function updateTransformPanelVisibility() {
             const panel = document.getElementById('transform-panel');
             if (state.selectedPart) {
@@ -527,7 +518,6 @@
             const ml = document.getElementById('mini-library');
             const ac = getActiveChar();
             if (!ac) { ml.innerHTML = ''; return; }
-            // Show parts of active character + quick swap from others
             let html = '';
             // Parts of active char
             for (const [cat, part] of Object.entries(ac.parts)) {
@@ -541,7 +531,6 @@
                 if (firstCat) html += `<div class="mini-item" data-swap-char="${ch.id}" data-swap-cat="${firstCat}" title="Swap ${firstCat} from ${ch.name}">👤<span class="lbl">${ch.name.substring(0,4)}</span></div>`;
             }
             ml.innerHTML = html;
-            // Event listeners
             ml.querySelectorAll('.mini-item[data-mini-cat]').forEach(el => {
                 el.addEventListener('click', () => {
                     const cat = el.dataset.miniCat;
@@ -565,12 +554,9 @@
                 state.activeCategory = cat;
                 document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                // If 'chars' category, show current characters in mini library (already done)
-                // Otherwise we could filter parts but for simplicity just update mini library
                 if (cat === 'chars') {
-                    // Show character cards in mini library? We'll just use existing mini library.
+                    // Maybe show character cards, but we'll just update library
                 } else {
-                    // Could filter parts by category in mini library, but we'll just let user click parts from current char or swap.
                     showToast(`Category: ${cat}`);
                 }
                 updateMiniLibrary();
@@ -600,7 +586,6 @@
             const overlay = document.getElementById('loading-overlay');
             if (s) { overlay.classList.remove('hidden'); } else { overlay.classList.add('hidden'); }
         }
-        // Toast
         let toastT;
         function showToast(msg) { const t = document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'), 1800); }
 
@@ -624,6 +609,16 @@
         document.getElementById('btn-layout').addEventListener('click', ()=>{ state.charLayout = state.charLayout==='single'?'multi':'single'; updateScene(); updateMiniLibrary(); showToast(`Layout: ${state.charLayout}`); });
         document.getElementById('xiii-btn').addEventListener('click', randomDollGenerator);
         document.getElementById('tf-reset').addEventListener('click', resetTransform);
+
+        // Transform mode buttons
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                transformMode = btn.dataset.mode;
+                updateTransformPanelVisibility();
+            });
+        });
 
         // 3D viewport interactions
         renderer.domElement.addEventListener('pointerdown', e=>{ pointerDown=true; pointerMoved=false; swipeStart={x:e.clientX,y:e.clientY}; swipeActive=true; });
@@ -659,24 +654,33 @@
         document.addEventListener('dragover', e=>e.preventDefault());
         document.addEventListener('drop', e=>{ e.preventDefault(); if(e.dataTransfer.files.length) loadFiles(e.dataTransfer.files); });
 
-        // Transform knobs
+        // Transform knobs (circular)
         document.querySelectorAll('.circular-knob').forEach(knob => {
-            let dragging = false, startY = 0, currentVal = 0;
+            let dragging = false, startY = 0;
             const axis = knob.dataset.axis;
             const valDisplay = document.getElementById(`val-${axis}`);
             function updateDot() {
                 const val = parseFloat(valDisplay.textContent) || 0;
-                const ratio = Math.min(1, Math.max(0, (val+2.5)/5)); // -2.5 to 2.5 range
-                const angle = ratio*270-135;
+                let ratio;
+                if (transformMode === 'scale') {
+                    ratio = (val - 0.1) / (3 - 0.1);
+                } else {
+                    ratio = (val + 5) / 10; // -5 to 5
+                }
+                const angle = ratio * 270 - 135;
                 knob.querySelector('.knob-dot').style.transform = `translate(-50%,0) rotate(${angle}deg)`;
             }
             knob.addEventListener('pointerdown', e => { dragging=true; startY=e.clientY; knob.setPointerCapture(e.pointerId); e.preventDefault(); });
             knob.addEventListener('pointermove', e => {
                 if(dragging){
                     const dy = startY - e.clientY;
-                    const sensitivity = 0.02;
-                    let newVal = parseFloat(valDisplay.textContent) + dy*sensitivity;
-                    newVal = Math.max(-5, Math.min(5, newVal));
+                    const sensitivity = transformMode === 'scale' ? 0.005 : 0.02;
+                    let newVal = parseFloat(valDisplay.textContent) + dy * sensitivity;
+                    if (transformMode === 'scale') {
+                        newVal = Math.max(0.1, Math.min(3, newVal));
+                    } else {
+                        newVal = Math.max(-5, Math.min(5, newVal));
+                    }
                     valDisplay.textContent = newVal.toFixed(2);
                     applyTransform(axis, newVal);
                     startY = e.clientY;
@@ -707,4 +711,3 @@
     </script>
 </body>
 </html>
-```
