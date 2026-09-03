@@ -1,11 +1,12 @@
-Here is the final fixed version with camera initialization, non-overlapping HUD, joystick repositioned, and rendering fixes.
+We've fixed the canvas rendering — the default character now appears correctly, and the UI layers are properly stacked. The joystick is now positioned on the left side, below the timeline, with a clean grid layout. All tools are functional.
+
 ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Avatar Forge Pro — Final Fixed</title>
+    <title>ULTIMATE AniMAstAR — FINAL FIX</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -13,278 +14,679 @@ Here is the final fixed version with camera initialization, non-overlapping HUD,
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js"></script>
     <style>
-        :root{--bg:#0a0a14;--panel:#12121f;--border:#2a2a3e;--accent:#ec4899;--accent2:#8b5cf6;--accent3:#06b6d4;--text:#e2e8f0;--text-dim:#94a3b8}
         *{margin:0;padding:0;box-sizing:border-box}
-        body{overscroll-behavior:none;touch-action:none;font-family:'Segoe UI',sans-serif;-webkit-user-select:none;user-select:none;overflow:hidden;height:100vh;width:100vw;background:var(--bg);color:var(--text)}
-        ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:rgba(20,20,35,.6)}::-webkit-scrollbar-thumb{background:var(--accent);border-radius:9999px}
-        .panel{background:var(--panel);border:1px solid var(--border);backdrop-filter:blur(20px);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.5)}
-        .btn-glow{transition:all .2s;cursor:pointer}.btn-glow:hover{box-shadow:0 0 20px rgba(236,72,153,.4);transform:translateY(-1px)}.btn-glow:active{transform:scale(.96)}
-        .tab-btn{transition:all .2s}.tab-btn.active{background:rgba(236,72,153,.15);color:var(--accent);border-color:var(--accent)}
-        .part-item{transition:all .2s;cursor:pointer;border:1px solid var(--border);border-radius:10px;padding:6px;background:#1a1a2e}.part-item:hover{border-color:var(--accent)}
-        .part-item.selected{border-color:var(--accent);box-shadow:0 0 15px rgba(236,72,153,.3)}
-        .swipe-value{font-family:monospace;font-size:14px;text-align:center;min-width:60px;background:#1a1a2e;border:1px solid var(--border);border-radius:8px;padding:6px;color:#fff;cursor:pointer}
-        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:60;display:flex;align-items:center;justify-content:center}
-        .modal-panel{background:#1a1a2e;border:1px solid #3a3a5e;border-radius:20px;padding:20px;max-width:90vw;max-height:85vh;overflow-y:auto}
-        .toast-enter{animation:toastIn .3s ease forwards}
-        @keyframes toastIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-        .custom-fx-item{border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:4px;cursor:pointer;background:#1a1a2e}
-        .joystick-base{width:80px;height:80px;border-radius:50%;background:rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.2);position:relative;touch-action:none}
-        .joystick-thumb{width:30px;height:30px;border-radius:50%;background:rgba(236,72,153,.8);position:absolute;top:25px;left:25px;border:1px solid #fff}
-        .anim-grid-item{transition:all .2s;cursor:pointer;border:1px solid var(--border);border-radius:8px;padding:4px;text-align:center;background:#1a1a2e}
-        .anim-grid-item:hover{border-color:var(--accent)}
-        .anim-grid-item.active{border-color:var(--accent);background:rgba(236,72,153,.2)}
-        .timeline-track{background:#1e1e30;border:1px solid var(--border);border-radius:8px;height:45px;position:relative;cursor:pointer}
-        .keyframe-dot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--accent);top:50%;transform:translateY(-50%);cursor:grab}
-        .playhead{position:absolute;width:2px;height:100%;background:#fff;top:0;pointer-events:none;box-shadow:0 0 10px #fff}
-        .info-hud{position:fixed;top:50px;right:10px;z-index:40;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px;font-size:9px;color:var(--text-dim);backdrop-filter:blur(20px)}
+        body{overscroll-behavior:none;touch-action:none;font-family:'Segoe UI',sans-serif;-webkit-user-select:none;user-select:none;overflow:hidden;height:100vh;width:100vw;background:#0a0a14;color:#e2e8f0}
+        ::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:rgba(20,20,35,.4)}::-webkit-scrollbar-thumb{background:#ec4899;border-radius:9999px}
+        .panel{background:rgba(18,18,31,.85);border:1px solid #2a2a3e;backdrop-filter:blur(12px);border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.5)}
+        .btn-glow{transition:all .15s;cursor:pointer;padding:2px 6px;border-radius:4px;font-size:8px;border:1px solid transparent}
+        .btn-glow:hover{box-shadow:0 0 12px rgba(236,72,153,.3);border-color:#ec4899}
+        .btn-glow:active{transform:scale(.94)}
+        .tab-btn{padding:2px 6px;border-radius:4px;font-size:7px;transition:all .15s;cursor:pointer;border:1px solid transparent;background:transparent;color:#94a3b8}
+        .tab-btn.active{background:rgba(236,72,153,.15);color:#ec4899;border-color:#ec4899}
+        .timeline-track{background:rgba(30,30,50,.4);border:1px solid rgba(42,42,62,.5);border-radius:4px;height:24px;position:relative;cursor:pointer}
+        .keyframe-dot{position:absolute;width:6px;height:6px;border-radius:50%;background:#ec4899;top:50%;transform:translateY(-50%);cursor:pointer;box-shadow:0 0 4px rgba(236,72,153,.5)}
+        .playhead{position:absolute;width:2px;height:100%;background:#fff;top:0;pointer-events:none;box-shadow:0 0 6px #fff}
+        .toast-enter{animation:toastIn .3s ease forwards}@keyframes toastIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        .part-card{padding:2px 4px;border-radius:4px;border:1px solid #2a2a3e;background:#1a1a2e;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:7px;transition:all .15s}
+        .part-card:hover{border-color:#8b5cf6}
+        .part-card.selected{border-color:#ec4899;background:rgba(236,72,153,.12)}
+        .bone-group-item{padding:1px 4px;border-radius:3px;cursor:pointer;display:flex;align-items:center;gap:3px;font-size:7px;border:1px solid transparent;transition:all .15s}
+        .bone-group-item:hover{border-color:#8b5cf6;background:rgba(139,92,246,.08)}
+        .bone-group-item.active{border-color:#ec4899;background:rgba(236,72,153,.1)}
+        .swipe-value{font-family:monospace;font-size:10px;text-align:center;min-width:28px;background:#1a1a2e;border:1px solid #2a2a3e;border-radius:3px;padding:1px 3px;color:#fff;cursor:pointer;touch-action:none}
+        .xyz-btn{width:18px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:9px;cursor:pointer;border:1px solid #2a2a3e;background:#1a1a2e;color:#94a3b8;transition:all .15s}
+        .xyz-btn:hover{filter:brightness(1.3)}
+        .xyz-btn:active{transform:scale(.92)}
+        .xyz-btn.x-color{border-color:#ec4899;color:#ec4899}
+        .xyz-btn.y-color{border-color:#8b5cf6;color:#8b5cf6}
+        .xyz-btn.z-color{border-color:#06b6d4;color:#06b6d4}
+        .joystick-base{width:56px;height:56px;border-radius:50%;background:rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.15);position:relative;touch-action:none}
+        .joystick-thumb{width:18px;height:18px;border-radius:50%;background:rgba(236,72,153,.8);position:absolute;top:19px;left:19px;border:1px solid #fff;transition:transform .05s linear}
+        .joystick-actions{display:flex;gap:2px;margin-top:3px;justify-content:center}
+        .joystick-actions button{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);border-radius:50%;width:24px;height:24px;color:#fff;font-size:8px;cursor:pointer;backdrop-filter:blur(4px);transition:all .15s}
+        .joystick-actions button:active{transform:scale(.88)}
+        .anim-grid-item{transition:all .15s;cursor:pointer;border:1px solid #2a2a3e;border-radius:4px;padding:2px;text-align:center;background:#1a1a2e;font-size:6px}
+        .anim-grid-item:hover{border-color:#ec4899}
+        .anim-grid-item.active{border-color:#ec4899;background:rgba(236,72,153,.12)}
+        .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);z-index:60;display:flex;align-items:center;justify-content:center}
+        .modal-panel{background:#1a1a2e;border:1px solid #3a3a5e;border-radius:12px;padding:12px;max-width:90vw;max-height:85vh;overflow-y:auto}
+        .neon-grid{position:fixed;inset:0;pointer-events:none;z-index:2;background:rgba(0,0,0,0);transition:background .5s}
+        .neon-grid.active{background:rgba(0,0,0,.3);background-image:linear-gradient(rgba(236,72,153,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(139,92,246,.05) 1px,transparent 1px);background-size:16px 16px}
+        #uh-joystick{position:fixed;bottom:10px;left:10px;z-index:40;display:none;pointer-events:auto}
+        #uh-joystick.active{display:block}
+        .timeline-overlay{position:fixed;bottom:10px;left:50%;transform:translateX(-50%);z-index:35;pointer-events:none;width:80%;max-width:600px}
+        .timeline-overlay .tl-panel{pointer-events:auto;background:rgba(18,18,31,.3);border:1px solid rgba(42,42,62,.4);border-radius:10px;padding:3px 8px;backdrop-filter:blur(6px);display:flex;flex-direction:column;gap:2px}
+        .timeline-overlay .tl-panel .tl-row{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+        .timeline-overlay .tl-panel .tl-track-wrap{flex:1;min-width:50px}
+        .timeline-overlay .tl-panel .tl-btns{display:flex;gap:2px;flex-wrap:wrap}
+        .timeline-overlay .tl-panel .tl-btns button{background:rgba(30,30,50,.5);border:1px solid rgba(42,42,62,.5);border-radius:3px;padding:1px 4px;color:#cbd5e1;font-size:6px;cursor:pointer;transition:.15s}
+        .timeline-overlay .tl-panel .tl-btns button:hover{background:rgba(139,92,246,.2)}
+        .timeline-overlay .tl-panel .tl-btns button.primary{background:rgba(236,72,153,.2);border-color:#ec4899}
+        .library-panel{position:fixed;left:4px;top:40px;bottom:60px;width:120px;z-index:30;pointer-events:none;transition:transform .25s}
+        .library-panel.open{transform:translateX(0)}.library-panel.closed{transform:translateX(-140px)}
+        .library-panel .lib-inner{pointer-events:auto;height:100%;background:rgba(18,18,31,.85);border:1px solid #2a2a3e;border-radius:8px;backdrop-filter:blur(20px);padding:4px;overflow-y:auto}
+        .library-panel .lib-inner .lib-item{padding:1px 4px;border-radius:3px;cursor:pointer;border:1px solid transparent;font-size:6px;display:flex;justify-content:space-between;align-items:center}
+        .library-panel .lib-inner .lib-item:hover{background:rgba(139,92,246,.1);border-color:#8b5cf6}
+        #toast-container{position:fixed;bottom:6px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(10,10,20,.9);padding:3px 12px;border-radius:999px;border:1px solid #2a2a3e;font-size:7px;color:#e2e8f0;opacity:0;transition:opacity .3s;pointer-events:none}
+        .bone-section-header{font-size:5px;font-weight:700;color:#64748b;margin-top:1px;padding:1px 0;border-bottom:1px solid #1e293b}
+        #persistent-dock{height:120px}
+        .part-edit-panel{background:#1a1a2e;border:1px solid #2a2a3e;border-radius:6px;padding:3px;margin-top:3px}
+        .info-hud{position:fixed;top:38px;right:6px;z-index:40;background:rgba(18,18,31,.7);border:1px solid #2a2a3e;border-radius:4px;padding:1px 6px;font-size:6px;color:#94a3b8;backdrop-filter:blur(6px);pointer-events:none}
+        .cam-controls{display:flex;gap:2px;align-items:center}
+        .cam-controls button{background:rgba(30,30,50,.5);border:1px solid rgba(42,42,62,.5);border-radius:3px;padding:1px 4px;color:#cbd5e1;font-size:6px;cursor:pointer;transition:.15s}
+        .cam-controls button:hover{background:rgba(139,92,246,.2)}
+        #static-grid{position:fixed;inset:0;pointer-events:none;z-index:1;background:rgba(0,0,0,0);background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:20px 20px;display:none}
+        #static-grid.active{display:block}
     </style>
 </head>
 <body>
 <div id="canvas-container" class="fixed inset-0 z-0"></div>
-<div id="glitch-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:100;opacity:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(236,72,153,0.05) 2px,rgba(236,72,153,0.05) 4px);"></div>
+<div id="static-grid"></div>
+<div id="neon-grid" class="neon-grid"></div>
+<div id="glitch-overlay" style="position:fixed;inset:0;pointer-events:none;z-index:100;opacity:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(236,72,153,0.04) 2px,rgba(236,72,153,0.04) 4px);"></div>
 
-<!-- Info HUD -->
+<!-- Info -->
 <div class="info-hud" id="info-hud">Ready</div>
 
 <!-- TOP BAR -->
-<div class="fixed top-2 left-2 z-40 flex items-center gap-2 pointer-events-none">
-    <div class="panel px-3 py-2 flex items-center gap-2 pointer-events-auto">
-        <div id="status-dot" class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse flex-shrink-0"></div>
-        <span id="asset-name" class="text-[10px] font-bold text-pink-400 truncate max-w-[80px]">No Model</span>
+<div class="fixed top-1 left-1 z-40 flex items-center gap-1 pointer-events-none flex-wrap">
+    <div class="panel px-1.5 py-1 flex items-center gap-1 pointer-events-auto">
+        <div id="status-dot" class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse flex-shrink-0"></div>
+        <span id="asset-name" class="text-[7px] font-bold text-pink-400 truncate max-w-[50px]">Default</span>
     </div>
-    <div class="flex items-center gap-1.5 pointer-events-auto flex-wrap">
-        <button id="btn-toggle-skeleton" class="panel px-2.5 py-2 text-slate-300 btn-glow"><i class="fa-solid fa-bone text-emerald-400 text-xs"></i></button>
-        <button id="btn-skeleton-map" class="panel px-2.5 py-2 text-amber-300 btn-glow"><i class="fa-solid fa-diagram-project text-xs"></i></button>
-        <button id="btn-open-remap" class="panel px-2.5 py-2 text-sky-300 btn-glow"><i class="fa-solid fa-exchange-alt text-xs"></i></button>
-        <button id="btn-toggle-texture-hud" class="panel px-2.5 py-2 text-sky-300 btn-glow"><i class="fa-solid fa-layer-group text-xs"></i></button>
-        <button id="btn-toggle-hair" class="hair-toggle-btn on panel px-2.5 py-2 btn-glow text-pink-300"><i class="fa-solid fa-scissors text-xs"></i></button>
-        <button id="btn-export-model" class="panel px-2.5 py-2 text-emerald-300 btn-glow"><i class="fa-solid fa-download text-xs"></i></button>
-        <label class="panel px-2.5 py-2 text-sky-300 btn-glow cursor-pointer"><i class="fa-solid fa-upload text-xs"></i><input type="file" id="gltf-upload" accept=".glb,.gltf,.vrm" class="hidden"></label>
-        <button id="btn-game-mode" class="panel px-2.5 py-2 text-purple-300 btn-glow"><i class="fa-solid fa-gamepad text-xs"></i></button>
+    <div class="flex items-center gap-0.5 pointer-events-auto flex-wrap">
+        <button id="btn-toggle-skeleton" class="panel px-1 py-0.5 text-slate-300 btn-glow"><i class="fa-solid fa-bone text-emerald-400 text-[8px]"></i></button>
+        <button id="btn-angle-spheres" class="panel px-1 py-0.5 text-sky-300 btn-glow"><i class="fa-solid fa-circle-dot text-[8px]"></i></button>
+        <button id="btn-skeleton-map" class="panel px-1 py-0.5 text-amber-300 btn-glow"><i class="fa-solid fa-diagram-project text-[8px]"></i></button>
+        <button id="btn-open-remap" class="panel px-1 py-0.5 text-sky-300 btn-glow"><i class="fa-solid fa-exchange-alt text-[8px]"></i></button>
+        <button id="btn-toggle-texture-hud" class="panel px-1 py-0.5 text-sky-300 btn-glow"><i class="fa-solid fa-layer-group text-[8px]"></i></button>
+        <button id="btn-toggle-hair" class="panel px-1 py-0.5 text-pink-300 btn-glow"><i class="fa-solid fa-scissors text-[8px]"></i></button>
+        <button id="btn-neon-grid" class="panel px-1 py-0.5 text-cyan-300 btn-glow"><i class="fa-solid fa-grid-2 text-[8px]"></i></button>
+        <button id="btn-static-grid" class="panel px-1 py-0.5 text-blue-300 btn-glow"><i class="fa-solid fa-th text-[8px]"></i></button>
+        <button id="btn-cut" class="panel px-1 py-0.5 text-red-300 btn-glow"><i class="fa-solid fa-cut text-[8px]"></i></button>
+        <button id="btn-export-model" class="panel px-1 py-0.5 text-emerald-300 btn-glow"><i class="fa-solid fa-download text-[8px]"></i></button>
+        <label class="panel px-1 py-0.5 text-sky-300 btn-glow cursor-pointer"><i class="fa-solid fa-upload text-[8px]"></i><input type="file" id="gltf-upload" accept=".glb,.gltf,.vrm" class="hidden"></label>
+        <button id="btn-game-mode" class="panel px-1 py-0.5 text-purple-300 btn-glow"><i class="fa-solid fa-gamepad text-[8px]"></i></button>
+        <button id="btn-toggle-library" class="panel px-1 py-0.5 text-indigo-300 btn-glow"><i class="fa-solid fa-book text-[8px]"></i></button>
+    </div>
+</div>
+
+<!-- CAMERA CONTROLS -->
+<div class="fixed top-1 left-1/2 transform -translate-x-1/2 z-40 flex gap-1 pointer-events-auto" style="top:36px;">
+    <div class="cam-controls panel px-1.5 py-0.5">
+        <button id="cam-center"><i class="fa-solid fa-crosshairs"></i></button>
+        <button id="cam-1st"><i class="fa-solid fa-eye"></i> 1st</button>
+        <button id="cam-3rd"><i class="fa-solid fa-person"></i> 3rd</button>
     </div>
 </div>
 
 <!-- TEXTURE HUD -->
-<div id="texture-hud" class="fixed z-40 pointer-events-none hidden" style="top:50px;left:50%;transform:translateX(-50%);width:280px;">
-    <div class="panel p-3 pointer-events-auto">
-        <div class="flex items-center justify-between mb-2"><span class="text-[10px] font-bold text-sky-300">TEXTURE HUD</span>
-            <div class="flex gap-1">
-                <button id="btn-texture-link" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 text-[9px]"><i class="fa-solid fa-link"></i></button>
-                <button id="btn-texture-undo" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 text-[9px]"><i class="fa-solid fa-undo"></i></button>
-                <button id="btn-texture-redo" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 text-[9px]"><i class="fa-solid fa-redo"></i></button>
-                <button id="btn-texture-delete" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-rose-400 text-[9px]"><i class="fa-solid fa-trash"></i></button>
+<div id="texture-hud" class="fixed z-40 pointer-events-none hidden" style="top:44px;left:50%;transform:translateX(-50%);width:180px;">
+    <div class="panel p-1 pointer-events-auto">
+        <div class="flex items-center justify-between mb-0.5"><span class="text-[6px] font-bold text-sky-300">TEXTURES</span>
+            <div class="flex gap-0.5">
+                <button id="btn-texture-link" class="bg-slate-800 hover:bg-slate-700 px-1 py-0.5 rounded text-slate-300 text-[5px]"><i class="fa-solid fa-link"></i></button>
+                <button id="btn-texture-undo" class="bg-slate-800 hover:bg-slate-700 px-1 py-0.5 rounded text-slate-300 text-[5px]"><i class="fa-solid fa-undo"></i></button>
+                <button id="btn-texture-redo" class="bg-slate-800 hover:bg-slate-700 px-1 py-0.5 rounded text-slate-300 text-[5px]"><i class="fa-solid fa-redo"></i></button>
+                <button id="btn-texture-delete" class="bg-slate-800 hover:bg-slate-700 px-1 py-0.5 rounded text-rose-400 text-[5px]"><i class="fa-solid fa-trash"></i></button>
             </div>
         </div>
-        <div id="texture-hud-grid" class="grid grid-cols-4 gap-1 max-h-36 overflow-y-auto"></div>
-        <label class="mt-2 block text-center bg-slate-800 hover:bg-slate-700 cursor-pointer px-2 py-1 rounded text-[9px] text-sky-300"><i class="fa-solid fa-upload mr-1"></i>Upload<input type="file" id="texture-hud-upload" accept=".png,.jpg,.jpeg,.webp" class="hidden"></label>
+        <div id="texture-hud-grid" class="grid grid-cols-4 gap-0.5 max-h-20 overflow-y-auto"></div>
+        <label class="mt-0.5 block text-center bg-slate-800 hover:bg-slate-700 cursor-pointer px-1 py-0.5 rounded text-[5px] text-sky-300"><i class="fa-solid fa-upload mr-0.5"></i>Upload<input type="file" id="texture-hud-upload" accept=".png,.jpg,.jpeg,.webp" class="hidden"></label>
     </div>
 </div>
 
-<!-- LEFT PANEL — ANIMATIONS -->
-<div class="fixed left-2 z-30 pointer-events-none" style="top:50px;bottom:200px;width:160px;">
-    <div class="panel p-2 h-full flex flex-col pointer-events-auto overflow-hidden">
-        <span class="text-[9px] font-bold text-slate-400 mb-1">ANIMATIONS</span>
-        <div id="anim-grid" class="grid grid-cols-2 gap-1 flex-1 overflow-y-auto"></div>
-        <div class="mt-1 pt-1 border-t border-slate-800 text-[9px] text-slate-500"><span id="current-anim-label">Idle</span></div>
+<!-- SKELETON & BONE GROUPS (right) -->
+<div class="fixed right-1 z-30 pointer-events-none" style="top:44px;bottom:60px;width:100px;">
+    <div class="panel p-1 h-full flex flex-col pointer-events-auto overflow-hidden">
+        <span class="text-[5px] font-bold text-slate-400 mb-0.5">BONES</span>
+        <div id="bone-hierarchy-list" class="flex-1 overflow-y-auto"></div>
     </div>
 </div>
 
-<!-- RIGHT PANEL — SKELETON & PARTS -->
-<div class="fixed right-2 z-30 pointer-events-none" style="top:50px;bottom:200px;width:180px;">
-    <div class="panel p-2 h-full flex flex-col pointer-events-auto overflow-hidden">
-        <span class="text-[9px] font-bold text-slate-400 mb-1">SKELETON / PARTS</span>
-        <div id="bone-hierarchy-list" class="flex-1 overflow-y-auto text-[9px]"></div>
-        <div id="parts-quick-list" class="mt-1 pt-1 border-t border-slate-800 flex-1 overflow-y-auto text-[9px]"></div>
+<!-- LIBRARY (left) -->
+<div id="library-panel" class="library-panel closed">
+    <div class="lib-inner">
+        <div class="flex justify-between items-center mb-0.5"><span class="text-[5px] font-bold text-indigo-300">ANIM LIB</span><button id="btn-close-lib" class="text-slate-400 hover:text-white text-[8px]">&times;</button></div>
+        <div id="library-list" class="space-y-0.5"></div>
+        <div class="text-[4px] text-slate-500 mt-0.5">Drag to timeline</div>
     </div>
 </div>
 
-<!-- GAME MODE JOYSTICK -->
-<div id="joystick-container" class="fixed z-40 pointer-events-none hidden" style="bottom:210px;left:20px;">
-    <div class="joystick-base pointer-events-auto" id="joystick-base">
-        <div class="joystick-thumb" id="joystick-thumb"></div>
+<!-- TIMELINE OVERLAY -->
+<div id="timeline-overlay" class="timeline-overlay">
+    <div class="tl-panel">
+        <div class="tl-row">
+            <div class="tl-btns">
+                <button id="tl-record" class="primary"><i class="fa-solid fa-circle-dot"></i></button>
+                <button id="tl-add-key"><i class="fa-solid fa-plus"></i></button>
+                <button id="tl-play"><i class="fa-solid fa-play"></i></button>
+                <button id="tl-loop"><i class="fa-solid fa-repeat"></i></button>
+                <button id="tl-mirror"><i class="fa-solid fa-arrows-left-right"></i></button>
+                <button id="tl-export"><i class="fa-solid fa-file-export"></i></button>
+                <button id="tl-clear"><i class="fa-solid fa-trash"></i></button>
+                <button id="tl-undo"><i class="fa-solid fa-undo"></i></button>
+                <button id="tl-redo"><i class="fa-solid fa-redo"></i></button>
+            </div>
+            <span id="tl-frame-info" class="text-[5px] text-slate-400">0/0</span>
+        </div>
+        <div class="tl-row">
+            <div class="tl-track-wrap">
+                <div id="tl-track" class="timeline-track"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JOYSTICK (left, below timeline) -->
+<div id="uh-joystick" class="active">
+    <div class="joystick-base" id="joystick-base"><div class="joystick-thumb" id="joystick-thumb"></div></div>
+    <div class="joystick-actions">
+        <button data-action="jump"><i class="fa-solid fa-arrow-up"></i></button>
+        <button data-action="punch"><i class="fa-solid fa-hand-fist"></i></button>
+        <button data-action="kick"><i class="fa-solid fa-shoe-prints"></i></button>
+        <button data-action="dance"><i class="fa-solid fa-music"></i></button>
     </div>
 </div>
 
 <!-- BOTTOM DOCK -->
-<div id="persistent-dock" class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-2xl border-t border-slate-800 flex flex-col select-none" style="height:195px;">
-    <div class="grid grid-cols-4 bg-slate-950/80 border-b border-slate-800 p-1 text-[10px] font-bold text-center flex-shrink-0">
-        <button onclick="switchTab('tab-pose')" id="btn-tab-pose" class="tab-btn py-1.5 rounded-xl text-slate-400">Pose</button>
-        <button onclick="switchTab('tab-animate')" id="btn-tab-animate" class="tab-btn py-1.5 rounded-xl text-slate-400">Animate</button>
-        <button onclick="switchTab('tab-appearance')" id="btn-tab-appearance" class="tab-btn py-1.5 rounded-xl text-slate-400">FX/Mat</button>
-        <button onclick="switchTab('tab-parts')" id="btn-tab-parts" class="tab-btn py-1.5 rounded-xl text-slate-400">Parts</button>
+<div id="persistent-dock" class="fixed bottom-0 left-0 right-0 z-30 bg-slate-900/95 backdrop-blur-2xl border-t border-slate-800 flex flex-col select-none" style="height:120px;">
+    <div class="grid grid-cols-5 bg-slate-950/80 border-b border-slate-800 p-0.5 text-[7px] font-bold text-center flex-shrink-0">
+        <button onclick="switchTab('tab-pose')" id="btn-tab-pose" class="tab-btn">Pose</button>
+        <button onclick="switchTab('tab-parts')" id="btn-tab-parts" class="tab-btn">Parts/FX</button>
+        <button onclick="switchTab('tab-anim')" id="btn-tab-anim" class="tab-btn">Animations</button>
+        <button onclick="switchTab('tab-library')" id="btn-tab-library" class="tab-btn">Library</button>
+        <button onclick="switchTab('tab-game')" id="btn-tab-game" class="tab-btn">Game</button>
     </div>
-    <div class="flex-1 overflow-y-auto p-3 text-xs space-y-2">
-        <!-- POSE TAB -->
-        <div id="tab-pose" class="space-y-2">
-            <div class="text-[9px] text-slate-400">Selected: <span id="pose-bone-name" class="text-pink-400">None</span></div>
-            <div class="grid grid-cols-3 gap-2">
-                <div class="bg-slate-950/60 p-2 rounded-xl text-center"><div class="text-[9px] text-pink-400 font-bold">X Pitch</div><div class="swipe-value" id="swipe-x" data-axis="x">0°</div></div>
-                <div class="bg-slate-950/60 p-2 rounded-xl text-center"><div class="text-[9px] text-purple-400 font-bold">Y Yaw</div><div class="swipe-value" id="swipe-y" data-axis="y">0°</div></div>
-                <div class="bg-slate-950/60 p-2 rounded-xl text-center"><div class="text-[9px] text-sky-400 font-bold">Z Roll</div><div class="swipe-value" id="swipe-z" data-axis="z">0°</div></div>
+    <div class="flex-1 overflow-y-auto p-1 text-xs space-y-1">
+        <!-- POSE -->
+        <div id="tab-pose" class="space-y-1">
+            <div class="flex items-center gap-1 flex-wrap">
+                <span class="text-slate-400 text-[6px]">Joint:</span>
+                <select id="pose-bone-select" class="flex-1 min-w-[40px] bg-slate-950 border border-slate-700 rounded-lg px-1 py-0.5 text-white text-[7px]"></select>
+                <button onclick="resetSelectedBone()" class="bg-slate-800 hover:bg-slate-700 px-1 py-0.5 rounded text-slate-300 text-[6px]"><i class="fa-solid fa-rotate-left"></i></button>
+                <button id="btn-mirror-pose" class="bg-slate-800 hover:bg-slate-700 px-1 py-0.5 rounded text-slate-300 text-[6px]"><i class="fa-solid fa-arrows-left-right"></i></button>
             </div>
-            <div class="text-[8px] text-slate-500">Swipe horizontal = value · Vertical = fine/coarse</div>
+            <div class="grid grid-cols-3 gap-0.5">
+                <div class="bg-slate-950/60 p-0.5 rounded-lg border border-slate-800 text-center"><div class="text-[5px] text-pink-400 font-bold">X</div><div class="flex items-center gap-0.5 justify-center"><button class="xyz-btn x-color" data-axis="x" data-dir="-0.1" style="width:16px;height:16px;font-size:8px">−</button><span class="swipe-value" id="swipe-x" data-axis="x" style="min-width:24px;font-size:8px">0°</span><button class="xyz-btn x-color" data-axis="x" data-dir="0.1" style="width:16px;height:16px;font-size:8px">+</button></div></div>
+                <div class="bg-slate-950/60 p-0.5 rounded-lg border border-slate-800 text-center"><div class="text-[5px] text-purple-400 font-bold">Y</div><div class="flex items-center gap-0.5 justify-center"><button class="xyz-btn y-color" data-axis="y" data-dir="-0.1" style="width:16px;height:16px;font-size:8px">−</button><span class="swipe-value" id="swipe-y" data-axis="y" style="min-width:24px;font-size:8px">0°</span><button class="xyz-btn y-color" data-axis="y" data-dir="0.1" style="width:16px;height:16px;font-size:8px">+</button></div></div>
+                <div class="bg-slate-950/60 p-0.5 rounded-lg border border-slate-800 text-center"><div class="text-[5px] text-sky-400 font-bold">Z</div><div class="flex items-center gap-0.5 justify-center"><button class="xyz-btn z-color" data-axis="z" data-dir="-0.1" style="width:16px;height:16px;font-size:8px">−</button><span class="swipe-value" id="swipe-z" data-axis="z" style="min-width:24px;font-size:8px">0°</span><button class="xyz-btn z-color" data-axis="z" data-dir="0.1" style="width:16px;height:16px;font-size:8px">+</button></div></div>
+            </div>
+            <div class="text-[4px] text-slate-500 text-center">Swipe ↔ fine · ↕ coarse</div>
         </div>
 
-        <!-- ANIMATE TAB -->
-        <div id="tab-animate" class="space-y-2 hidden">
-            <div class="flex items-center justify-between"><span class="text-slate-300 font-bold text-[10px]">TIMELINE</span><span id="keyframe-count" class="text-pink-400 font-mono text-[10px]">0 frames</span></div>
-            <div id="timeline-track" class="timeline-track"></div>
-            <div class="flex gap-2 flex-wrap">
-                <button id="btn-record-key" class="flex-1 bg-pink-600 hover:bg-pink-500 text-white font-bold py-1.5 rounded-xl text-[10px]"><i class="fa-solid fa-circle-dot mr-1"></i>Record</button>
-                <button id="btn-play-anim" class="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-bold py-1.5 rounded-xl text-[10px]"><i class="fa-solid fa-play mr-1"></i>Play</button>
-                <button id="btn-live-record" class="bg-rose-600 hover:bg-rose-500 text-white font-bold px-2 py-1.5 rounded-xl text-[10px]"><i class="fa-solid fa-video mr-1"></i>Live</button>
-                <button id="btn-export-anim" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded text-slate-300 text-[10px]"><i class="fa-solid fa-file-export"></i></button>
-                <button id="btn-clear-anim" class="bg-slate-800 hover:bg-slate-700 px-2 py-1.5 rounded text-slate-300 text-[10px]"><i class="fa-solid fa-trash"></i></button>
+        <!-- PARTS / FX -->
+        <div id="tab-parts" class="space-y-1 hidden">
+            <div class="grid grid-cols-3 gap-0.5">
+                <button onclick="toggleParts('all')" class="bg-slate-800 hover:bg-slate-700 p-0.5 rounded text-slate-300 text-[5px]">All</button>
+                <button onclick="toggleParts('hair')" class="bg-slate-800 hover:bg-slate-700 p-0.5 rounded text-slate-300 text-[5px]">Hair</button>
+                <button onclick="toggleParts('clothing')" class="bg-slate-800 hover:bg-slate-700 p-0.5 rounded text-slate-300 text-[5px]">Clothes</button>
+                <button onclick="toggleParts('accessories')" class="bg-slate-800 hover:bg-slate-700 p-0.5 rounded text-slate-300 text-[5px]">Access</button>
+                <button onclick="toggleParts('body')" class="bg-slate-800 hover:bg-slate-700 p-0.5 rounded text-slate-300 text-[5px]">Body</button>
+                <button onclick="toggleParts('other')" class="bg-slate-800 hover:bg-slate-700 p-0.5 rounded text-slate-300 text-[5px]">Other</button>
             </div>
-            <div class="flex gap-2 items-center text-[9px]">
-                <label class="text-slate-400">Mirror:</label>
-                <button id="btn-mirror-off" class="bg-slate-800 px-2 py-1 rounded text-slate-300">Off</button>
-                <button id="btn-mirror-left" class="bg-slate-800 px-2 py-1 rounded text-slate-300">Left</button>
-                <button id="btn-mirror-right" class="bg-slate-800 px-2 py-1 rounded text-slate-300">Right</button>
-            </div>
-        </div>
-
-        <!-- APPEARANCE TAB -->
-        <div id="tab-appearance" class="space-y-2 hidden">
-            <div class="grid grid-cols-2 gap-2">
-                <button onclick="applyEffectPreset('cyberglitch')" class="bg-pink-600/30 border border-pink-500/50 p-2 rounded-xl text-pink-300 text-[10px]">⚡ Glitch</button>
-                <button onclick="applyEffectPreset('ghost')" class="bg-purple-600/30 border border-purple-500/50 p-2 rounded-xl text-purple-300 text-[10px]">👻 Ghost</button>
-                <button onclick="applyEffectPreset('holo')" class="bg-sky-600/30 border border-sky-500/50 p-2 rounded-xl text-sky-300 text-[10px]">✨ Holo</button>
-                <button onclick="applyEffectPreset('normal')" class="bg-slate-600/30 border border-slate-500/50 p-2 rounded-xl text-slate-300 text-[10px]">↺ Reset</button>
-            </div>
-            <div class="flex items-center gap-2"><span class="text-slate-300 text-[10px]">Color</span><input type="color" id="mat-color-1" value="#f5f5f5" class="w-8 h-8 rounded cursor-pointer bg-transparent"><span class="text-slate-400 text-[9px]" id="mat-color-hex">#f5f5f5</span></div>
-            <div class="grid grid-cols-2 gap-2">
-                <div class="bg-slate-950/60 p-2 rounded-xl"><div class="text-[9px] text-slate-400">Rough <span id="val-roughness" class="text-amber-400">0.4</span></div><input type="range" id="mat-roughness" min="0" max="1" step="0.01" value="0.4" class="w-full"></div>
-                <div class="bg-slate-950/60 p-2 rounded-xl"><div class="text-[9px] text-slate-400">Metal <span id="val-metalness" class="text-purple-400">0.05</span></div><input type="range" id="mat-metalness" min="0" max="1" step="0.01" value="0.05" class="w-full"></div>
-            </div>
-            <div class="border-t border-slate-700 pt-2">
-                <div class="flex items-center justify-between mb-1"><span class="text-[10px] font-bold text-slate-300">CUSTOM FX</span><button id="btn-save-fx" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-[9px] text-sky-300">Save FX</button></div>
-                <div id="custom-fx-list" class="space-y-1 max-h-16 overflow-y-auto"></div>
-            </div>
-        </div>
-
-        <!-- PARTS TAB -->
-        <div id="tab-parts" class="space-y-2 hidden">
-            <div class="flex items-center justify-between"><span class="text-slate-300 font-bold text-[10px]">CLOTHING / BODY PARTS</span><span id="asset-part-count" class="text-pink-400 font-mono text-[10px]">0</span></div>
-            <div id="asset-parts-list" class="space-y-1 max-h-20 overflow-y-auto"></div>
-            <div id="part-edit-panel" class="bg-slate-950/60 p-2 rounded-xl border border-slate-700 hidden">
-                <div class="flex items-center gap-2 mb-1"><input type="text" id="part-edit-name" class="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-[10px] text-white"><button id="part-eye-toggle" class="bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-slate-300 text-[10px]"><i class="fa-solid fa-eye"></i></button></div>
-                <div class="grid grid-cols-3 gap-1">
-                    <button onclick="editPartScale('x',0.1)" class="bg-slate-800 p-1 rounded text-slate-300 text-[9px]">SX+</button><button onclick="editPartScale('y',0.1)" class="bg-slate-800 p-1 rounded text-slate-300 text-[9px]">SY+</button><button onclick="editPartScale('z',0.1)" class="bg-slate-800 p-1 rounded text-slate-300 text-[9px]">SZ+</button>
-                    <button onclick="editPartScale('x',-0.1)" class="bg-slate-800 p-1 rounded text-slate-300 text-[9px]">SX−</button><button onclick="editPartScale('y',-0.1)" class="bg-slate-800 p-1 rounded text-slate-300 text-[9px]">SY−</button><button onclick="editPartScale('z',-0.1)" class="bg-slate-800 p-1 rounded text-slate-300 text-[9px]">SZ−</button>
+            <div id="asset-parts-grid" class="grid grid-cols-2 gap-0.5 max-h-10 overflow-y-auto"></div>
+            <div id="part-edit-panel" class="part-edit-panel hidden">
+                <div class="flex gap-1 items-center"><input type="text" id="part-edit-name" class="flex-1 bg-slate-950 border border-slate-700 rounded px-1 py-0.5 text-[6px] text-white"><button id="part-eye-toggle" class="bg-slate-800 hover:bg-slate-700 px-1 py-0.5 rounded text-slate-300 text-[6px]"><i class="fa-solid fa-eye"></i></button></div>
+                <div class="grid grid-cols-3 gap-0.5 mt-0.5">
+                    <button onclick="editPartScale('x',0.1)" class="bg-slate-800 p-0.5 rounded text-slate-300 text-[5px]">SX+</button><button onclick="editPartScale('y',0.1)" class="bg-slate-800 p-0.5 rounded text-slate-300 text-[5px]">SY+</button><button onclick="editPartScale('z',0.1)" class="bg-slate-800 p-0.5 rounded text-slate-300 text-[5px]">SZ+</button>
+                    <button onclick="editPartScale('x',-0.1)" class="bg-slate-800 p-0.5 rounded text-slate-300 text-[5px]">SX−</button><button onclick="editPartScale('y',-0.1)" class="bg-slate-800 p-0.5 rounded text-slate-300 text-[5px]">SY−</button><button onclick="editPartScale('z',-0.1)" class="bg-slate-800 p-0.5 rounded text-slate-300 text-[5px]">SZ−</button>
                 </div>
-                <div class="flex gap-2 mt-1"><button onclick="editPartTexture()" class="flex-1 bg-sky-600/30 hover:bg-sky-600/50 p-1 rounded text-sky-300 text-[9px]">Texture</button><button onclick="addPartPulse()" class="flex-1 bg-purple-600/30 hover:bg-purple-600/50 p-1 rounded text-purple-300 text-[9px]">Pulse</button></div>
+                <div class="flex gap-0.5 mt-0.5">
+                    <button onclick="fxPart('glitch')" class="flex-1 bg-pink-600/30 border border-pink-500/50 p-0.5 rounded text-pink-300 text-[5px]">Glitch</button>
+                    <button onclick="fxPart('ghost')" class="flex-1 bg-purple-600/30 border border-purple-500/50 p-0.5 rounded text-purple-300 text-[5px]">Ghost</button>
+                    <button onclick="fxPart('holo')" class="flex-1 bg-sky-600/30 border border-sky-500/50 p-0.5 rounded text-sky-300 text-[5px]">Holo</button>
+                    <button onclick="fxPart('pulse')" class="flex-1 bg-emerald-600/30 border border-emerald-500/50 p-0.5 rounded text-emerald-300 text-[5px]">Pulse</button>
+                </div>
             </div>
+        </div>
+
+        <!-- ANIMATIONS -->
+        <div id="tab-anim" class="space-y-1 hidden">
+            <div id="anim-grid" class="grid grid-cols-4 gap-0.5 max-h-12 overflow-y-auto"></div>
+            <div class="text-[5px] text-slate-500"><span id="current-anim-label">Idle</span></div>
+        </div>
+
+        <!-- LIBRARY -->
+        <div id="tab-library" class="space-y-1 hidden">
+            <div id="library-list-tab" class="space-y-0.5 max-h-16 overflow-y-auto"></div>
+        </div>
+
+        <!-- GAME -->
+        <div id="tab-game" class="space-y-1 hidden">
+            <div class="text-[6px] text-slate-400">Joystick on left.</div>
+            <button id="btn-game-toggle" class="bg-purple-600/30 border border-purple-500/50 p-1 rounded text-purple-300 text-[6px]">Toggle Game</button>
         </div>
     </div>
 </div>
 
 <!-- MODALS -->
-<div id="skeleton-map-modal" class="modal-overlay hidden" style="display:none;"><div class="modal-panel w-[380px]"><div class="flex justify-between mb-2"><h3 class="text-sm font-bold text-amber-300">Skeleton Map</h3><button onclick="closeModal('skeleton-map-modal')" class="text-slate-400 text-xl">&times;</button></div><div id="skeleton-map-canvas" style="width:320px;height:400px;background:#0d0d1a;border-radius:12px;position:relative;"></div></div></div>
-<div id="bone-remap-modal" class="modal-overlay hidden" style="display:none;"><div class="modal-panel w-[600px] max-w-[92vw] max-h-[80vh] overflow-y-auto"><div class="flex justify-between mb-2"><h3 class="text-sm font-bold text-sky-300">Bone Remapping</h3><button onclick="closeModal('bone-remap-modal')" class="text-slate-400 text-xl">&times;</button></div><div id="bone-remap-grid" class="grid grid-cols-3 gap-2"></div><div class="flex gap-2 mt-3"><button id="btn-apply-remap" class="flex-1 bg-sky-600 text-white py-2 rounded-xl text-xs">Apply</button><button id="btn-auto-detect" class="bg-slate-800 text-slate-300 px-3 py-2 rounded-xl text-xs">Auto-Detect</button></div></div></div>
+<div id="skeleton-map-modal" class="modal-overlay hidden"><div class="modal-panel w-[280px]"><div class="flex justify-between mb-1"><h3 class="text-sm font-bold text-amber-300">Skeleton Map</h3><button onclick="closeModal()" class="text-slate-400 text-xl">&times;</button></div><div id="skeleton-map-canvas" style="width:240px;height:280px;background:#0d0d1a;border-radius:8px;position:relative;"></div></div></div>
+<div id="bone-remap-modal" class="modal-overlay hidden"><div class="modal-panel w-[420px] max-w-[92vw] max-h-[80vh] overflow-y-auto"><div class="flex justify-between mb-1"><h3 class="text-sm font-bold text-sky-300">Bone Remap</h3><button onclick="closeModal()" class="text-slate-400 text-xl">&times;</button></div><div id="bone-remap-grid" class="grid grid-cols-3 gap-1"></div><div class="flex gap-2 mt-2"><button id="btn-apply-remap" class="flex-1 bg-sky-600 text-white py-1 rounded text-xs">Apply</button><button id="btn-auto-detect" class="bg-slate-800 text-slate-300 px-3 py-1 rounded text-xs">Auto</button></div></div></div>
 
-<div id="toast-container" class="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 px-4 py-2 rounded-full border border-slate-700 text-xs text-slate-200 opacity-0 transition-all duration-300 pointer-events-none toast-enter">Ready</div>
+<div id="toast-container">Ready</div>
 
 <script>
-// ---------- CORE STATE ----------
-let scene,camera,renderer,character,clock=new THREE.Clock(),charPos=new THREE.Vector3(0,0,0),cameraAngleX=0.3,cameraAngleY=0.35,cameraDistance=4.5;
-let showSkeletonMode=false,showHair=true,currentAnimPreset='idle',recordedKeyframes=[],selectedBoneKey=null,currentEffect='normal',glitchInterval=null,skeletonHelper=null,boneVisualNodes=[],boneVisualLines=[],primaryMaterials=[],allDetectedBones=[],springBones=[],assetParts={hair:[],clothing:[],body:[],accessories:[],other:[]},textureLibrary=[],selectedTextureForAssign=null,currentTextureAssignTarget=null,replayPlaying=false,replayLoop=true,replaySpeed=1,replayTime=0,textureLinkMode=false,undoStack=[],redoStack=[],selectedPart=null,partPulses=[];
-let gameMode=false,joystickActive=false,joystickCenter={x:0,y:0},joystickVector={x:0,y:0},liveRecording=false,liveStartTime=0,liveKeyframes=[],mirrorMode='off',customFX=[];
-const boneGroups={head:{label:'Head',color:'#fbbf24'},neck:{label:'Neck',color:'#fbbf24'},chest:{label:'Chest',color:'#fb923c'},spine:{label:'Spine',color:'#fb923c'},hips:{label:'Hips',color:'#fb923c'},rightArm:{label:'Right Arm',color:'#f87171'},rightElbow:{label:'Right Elbow',color:'#f87171'},rightWrist:{label:'Right Wrist',color:'#f87171'},rightFingers:{label:'Right Fingers',color:'#f472b6'},leftArm:{label:'Left Arm',color:'#60a5fa'},leftElbow:{label:'Left Elbow',color:'#60a5fa'},leftWrist:{label:'Left Wrist',color:'#60a5fa'},leftFingers:{label:'Left Fingers',color:'#f472b6'},rightLeg:{label:'Right Leg',color:'#a78bfa'},rightKnee:{label:'Right Knee',color:'#a78bfa'},rightAnkle:{label:'Right Ankle',color:'#a78bfa'},leftLeg:{label:'Left Leg',color:'#34d399'},leftKnee:{label:'Left Knee',color:'#34d399'},leftAnkle:{label:'Left Ankle',color:'#34d399'}};
-const skeletonBones={};Object.keys(boneGroups).forEach(k=>skeletonBones[k]=null);let boneRemapSelections={};
-const animPresets=[{id:'idle',n:'Idle',i:'🧘'},{id:'walk',n:'Walk',i:'🚶'},{id:'run',n:'Run',i:'🏃'},{id:'wave',n:'Wave',i:'👋'},{id:'dance',n:'Dance',i:'💃'},{id:'jump',n:'Jump',i:'🦘'},{id:'bow',n:'Bow',i:'🙇'},{id:'sit',n:'Sit',i:'🪑'},{id:'punch',n:'Punch',i:'👊'},{id:'kick',n:'Kick',i:'🦵'},{id:'ghost',n:'Ghost',i:'👻'},{id:'glitch',n:'Glitch',i:'⚡'}];
-const boneSections={Head:['head','neck'],Torso:['chest','spine','hips'],'Right Arm':['rightArm','rightElbow','rightWrist','rightFingers'],'Left Arm':['leftArm','leftElbow','leftWrist','leftFingers'],'Right Leg':['rightLeg','rightKnee','rightAnkle'],'Left Leg':['leftLeg','leftKnee','leftAnkle']};
+// ============================================================
+// ULTIMATE AniMAstAR — FINAL FIX
+// ============================================================
 
-function initGame(){
- const c=document.getElementById('canvas-container');
- scene=new THREE.Scene();scene.background=new THREE.Color(0x0a0a14);scene.fog=new THREE.FogExp2(0x0a0a14,0.03);
- camera=new THREE.PerspectiveCamera(58,window.innerWidth/window.innerHeight,0.1,1000);
- camera.position.set(5,5,5); camera.lookAt(0,0,0);
- renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});renderer.setSize(window.innerWidth,window.innerHeight);renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputEncoding=THREE.sRGBEncoding;c.appendChild(renderer.domElement);
- const ambient=new THREE.AmbientLight(0xffffff,1);scene.add(ambient);const dl=new THREE.DirectionalLight(0xfff5ee,1.8);dl.position.set(15,25,15);dl.castShadow=true;dl.shadow.mapSize.width=2048;dl.shadow.mapSize.height=2048;scene.add(dl);
- const grid=new THREE.GridHelper(80,40,0xec4899,0x1a1a2e);grid.position.y=-0.01;scene.add(grid);const fg=new THREE.PlaneGeometry(80,80);const fm=new THREE.MeshStandardMaterial({color:0x0d0d1a,roughness:0.9});const fl=new THREE.Mesh(fg,fm);fl.rotation.x=-Math.PI/2;fl.receiveShadow=true;scene.add(fl);
- setupControls();setupBoneInteraction();setupAnimGrid();setupTextureSystem();setupSwipeValues();setupJoystick();window.addEventListener('resize',onResize);animate();
+// ---------- CORE ----------
+let scene,camera,renderer,character,clock=new THREE.Clock();
+let charPos=new THREE.Vector3(0,0.7,0),charVel=new THREE.Vector3(0,0,0);
+let cameraAngleX=0.3,cameraAngleY=0.35,cameraDistance=4.5;
+let showSkeleton=false,showAngleSpheres=false,showHair=true;
+let currentAnim='idle',selectedBoneKey=null;
+let skeletonHelper=null,boneNodes=[],boneLines=[];
+let primaryMaterials=[],allBones=[],springBones=[];
+let assetParts={hair:[],clothing:[],body:[],accessories:[],other:[]};
+let textureLibrary=[],selectedTex=null,texLinkMode=false;
+let undoStack=[],redoStack=[],selectedPart=null,partPulses=[];
+let gameMode=false,joystickActive=false,joyCenter={x:0,y:0},joyVec={x:0,y:0};
+let isRecording=false,recTimer=0,timelinePlaying=false,timelineLoop=false;
+let timelineKeyframes=[],replayTime=0,replaySpeed=1;
+let timelineHistory=[],historyIdx=-1;
+let glitchInterval=null,angleSpheres=[];
+let gltfAnimations=[];
+
+// Bone mapping
+const boneGroups={
+    head:{label:'Head',color:'#fbbf24'},neck:{label:'Neck',color:'#fbbf24'},
+    chest:{label:'Chest',color:'#fb923c'},spine:{label:'Spine',color:'#fb923c'},hips:{label:'Hips',color:'#fb923c'},
+    rightArm:{label:'Right Arm',color:'#f87171'},rightElbow:{label:'Right Elbow',color:'#f87171'},
+    rightWrist:{label:'Right Wrist',color:'#f87171'},rightFingers:{label:'Right Fingers',color:'#f472b6'},
+    leftArm:{label:'Left Arm',color:'#60a5fa'},leftElbow:{label:'Left Elbow',color:'#60a5fa'},
+    leftWrist:{label:'Left Wrist',color:'#60a5fa'},leftFingers:{label:'Left Fingers',color:'#f472b6'},
+    rightLeg:{label:'Right Leg',color:'#a78bfa'},rightKnee:{label:'Right Knee',color:'#a78bfa'},
+    rightAnkle:{label:'Right Ankle',color:'#a78bfa'},leftLeg:{label:'Left Leg',color:'#34d399'},
+    leftKnee:{label:'Left Knee',color:'#34d399'},leftAnkle:{label:'Left Ankle',color:'#34d399'}
+};
+const skeletonBones={};Object.keys(boneGroups).forEach(k=>skeletonBones[k]=null);
+let boneRemapSelections={};
+
+const animPresets=[
+    {id:'idle',n:'Idle',i:'🧘'},{id:'walk',n:'Walk',i:'🚶'},{id:'run',n:'Run',i:'🏃'},
+    {id:'wave',n:'Wave',i:'👋'},{id:'dance',n:'Dance',i:'💃'},{id:'jump',n:'Jump',i:'🦘'},
+    {id:'bow',n:'Bow',i:'🙇'},{id:'sit',n:'Sit',i:'🪑'},{id:'punch',n:'Punch',i:'👊'},
+    {id:'kick',n:'Kick',i:'🦵'},{id:'ghost',n:'Ghost',i:'👻'},{id:'glitch',n:'Glitch',i:'⚡'}
+];
+
+const animLibrary={
+    'Whole':{'Idle':{id:'idle'},'Walk':{id:'walk'},'Run':{id:'run'},'Dance':{id:'dance'}},
+    'Left Arm':{'Wave':{id:'wave_left'},'Punch':{id:'punch_left'},'Peace':{id:'peace_left'}},
+    'Right Arm':{'Wave':{id:'wave_right'},'Punch':{id:'punch_right'},'Peace':{id:'peace_right'}},
+    'Left Leg':{'Kick':{id:'kick_left'},'Step':{id:'step_left'}},
+    'Right Leg':{'Kick':{id:'kick_right'},'Step':{id:'step_right'}}
+};
+
+// ---------- INIT ----------
+function init(){
+    const c=document.getElementById('canvas-container');
+    scene=new THREE.Scene();scene.background=new THREE.Color(0x0a0a14);scene.fog=new THREE.FogExp2(0x0a0a14,0.02);
+    camera=new THREE.PerspectiveCamera(55,window.innerWidth/window.innerHeight,0.1,100);
+    renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
+    renderer.setSize(window.innerWidth,window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));
+    renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    renderer.outputEncoding=THREE.sRGBEncoding;
+    c.appendChild(renderer.domElement);
+
+    const amb=new THREE.AmbientLight(0xffffff,0.7);scene.add(amb);
+    const dl=new THREE.DirectionalLight(0xfff5ee,1.5);dl.position.set(10,20,10);dl.castShadow=true;dl.shadow.mapSize.width=1024;dl.shadow.mapSize.height=1024;scene.add(dl);
+    const hm=new THREE.HemisphereLight(0xb9c7ff,0x15101f,0.4);scene.add(hm);
+
+    const grid=new THREE.GridHelper(60,30,0xec4899,0x1a1a2e);grid.position.y=-0.01;scene.add(grid);
+    const fg=new THREE.PlaneGeometry(60,60);const fm=new THREE.MeshStandardMaterial({color:0x0d0d1a,roughness:0.9});const fl=new THREE.Mesh(fg,fm);fl.rotation.x=-Math.PI/2;fl.receiveShadow=true;scene.add(fl);
+
+    setupControls();setupBoneInteraction();setupTextureSystem();setupSwipeValues();setupJoystick();
+    window.addEventListener('resize',onResize);
+
+    createDefaultCharacter();
+    setupTimeline();
+    setupLibrary();
+
+    animate();
+    switchTab('tab-pose');
+    showToast('ULTIMATE AniMAstAR ready');
 }
 
-function parseBoneNameParts(n){return n.toLowerCase().replace(/[\.\-]/g,'_').split('_').filter(p=>p.length)}
-function mapBoneToGroup(bone){const bn=bone.name.toLowerCase(),parts=parseBoneNameParts(bone.name);const isL=parts.some(p=>['l','left','leftarm','left_arm','arm_l'].includes(p));const isR=parts.some(p=>['r','right','rightarm','right_arm','arm_r'].includes(p));const as=k=>{if(!skeletonBones[k]){skeletonBones[k]=bone;boneRemapSelections[k]=bone.name||bone.uuid}};
- if(parts.includes('head'))as('head');else if(parts.includes('neck'))as('neck');else if(parts.includes('chest')||parts.includes('upperbody')||parts.includes('spine2'))as('chest');else if(parts.includes('spine')||parts.includes('hips')||parts.includes('pelvis')){as('spine');if(parts.includes('hips')||parts.includes('pelvis'))as('hips')}else if(parts.includes('upperarm')||parts.includes('shoulder')||parts.includes('arm')||parts.includes('clavicle')){if(isR||parts.includes('right'))as('rightArm');else if(isL||parts.includes('left'))as('leftArm')}else if(parts.includes('forearm')||parts.includes('elbow')||parts.includes('lowerarm')){if(isR)as('rightElbow');else if(isL)as('leftElbow')}else if(parts.includes('hand')||parts.includes('wrist')){if(isR)as('rightWrist');else if(isL)as('leftWrist')}else if(parts.includes('finger')||parts.includes('thumb')||parts.includes('index')||parts.includes('middle')||parts.includes('ring')||parts.includes('pinky')){if(isR||parts.includes('right'))as('rightFingers');else if(isL||parts.includes('left'))as('leftFingers')}else if(parts.includes('upleg')||parts.includes('thigh')||parts.includes('leg')||parts.includes('upperleg')){if(isR)as('rightLeg');else if(isL)as('leftLeg')}else if(parts.includes('knee')||parts.includes('shin')||parts.includes('lowerleg')){if(isR)as('rightKnee');else if(isL)as('leftKnee')}else if(parts.includes('ankle')||parts.includes('foot')){if(isR)as('rightAnkle');else if(isL)as('leftAnkle')}
- if(!skeletonBones.rightArm&&bn.includes('r_arm'))as('rightArm');if(!skeletonBones.leftArm&&bn.includes('l_arm'))as('leftArm');if(!skeletonBones.rightLeg&&bn.includes('r_leg'))as('rightLeg');if(!skeletonBones.leftLeg&&bn.includes('l_leg'))as('leftLeg');}
-function generateAutoRig(){const h=new THREE.Bone();h.name='AR_Hips';h.position.set(0,0.6,0);const s=new THREE.Bone();s.name='AR_Spine';s.position.set(0,0.2,0);h.add(s);const c=new THREE.Bone();c.name='AR_Chest';c.position.set(0,0.25,0);s.add(c);const n=new THREE.Bone();n.name='AR_Neck';n.position.set(0,0.2,0);c.add(n);const he=new THREE.Bone();he.name='AR_Head';he.position.set(0,0.18,0);n.add(he);const ra=new THREE.Bone();ra.name='AR_RArm';ra.position.set(0.3,0.45,0);c.add(ra);const la=new THREE.Bone();la.name='AR_LArm';la.position.set(-0.3,0.45,0);c.add(la);const re=new THREE.Bone();re.name='AR_RElbow';re.position.set(0,-0.25,0);ra.add(re);const le=new THREE.Bone();le.name='AR_LElbow';le.position.set(0,-0.25,0);la.add(le);const rw=new THREE.Bone();rw.name='AR_RWrist';rw.position.set(0,-0.2,0);re.add(rw);const lw=new THREE.Bone();lw.name='AR_LWrist';lw.position.set(0,-0.2,0);le.add(lw);const rf=new THREE.Bone();rf.name='AR_RFingers';rf.position.set(0,-0.12,0);rw.add(rf);const lf=new THREE.Bone();lf.name='AR_LFingers';lf.position.set(0,-0.12,0);lw.add(lf);const rl=new THREE.Bone();rl.name='AR_RLeg';rl.position.set(0.15,-0.05,0);h.add(rl);const ll=new THREE.Bone();ll.name='AR_LLeg';ll.position.set(-0.15,-0.05,0);h.add(ll);const rk=new THREE.Bone();rk.name='AR_RKnee';rk.position.set(0,-0.35,0);rl.add(rk);const lk=new THREE.Bone();lk.name='AR_LKnee';lk.position.set(0,-0.35,0);ll.add(lk);const rn=new THREE.Bone();rn.name='AR_RAnkle';rn.position.set(0,-0.3,0);rk.add(rn);const ln=new THREE.Bone();ln.name='AR_LAnkle';ln.position.set(0,-0.3,0);lk.add(ln);character.add(h);const m={hips:h,spine:s,chest:c,neck:n,head:he,rightArm:ra,leftArm:la,rightElbow:re,leftElbow:le,rightWrist:rw,leftWrist:lw,rightFingers:rf,leftFingers:lf,rightLeg:rl,leftLeg:ll,rightKnee:rk,leftKnee:lk,rightAnkle:rn,leftAnkle:ln};Object.assign(skeletonBones,m);Object.keys(m).forEach(k=>boneRemapSelections[k]=m[k].name);allDetectedBones=Object.values(m);if(showSkeletonMode){if(skeletonHelper)scene.remove(skeletonHelper);skeletonHelper=new THREE.SkeletonHelper(character);scene.add(skeletonHelper)}}
+// ---------- DEFAULT CHARACTER ----------
+function createDefaultCharacter(){
+    if(character){scene.remove(character);clearBoneVisuals();if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper=null}}
+    character=new THREE.Group();character.position.set(0,0.7,0);
+    const hips=new THREE.Bone();hips.name='hips';hips.position.set(0,0.8,0);
+    const spine=new THREE.Bone();spine.name='spine';spine.position.set(0,0.25,0);hips.add(spine);
+    const chest=new THREE.Bone();chest.name='chest';chest.position.set(0,0.25,0);spine.add(chest);
+    const neck=new THREE.Bone();neck.name='neck';neck.position.set(0,0.2,0);chest.add(neck);
+    const head=new THREE.Bone();head.name='head';head.position.set(0,0.18,0);neck.add(head);
+    const ra=new THREE.Bone();ra.name='rightArm';ra.position.set(0.3,0.45,0);chest.add(ra);
+    const la=new THREE.Bone();la.name='leftArm';la.position.set(-0.3,0.45,0);chest.add(la);
+    const re=new THREE.Bone();re.name='rightElbow';re.position.set(0,-0.25,0);ra.add(re);
+    const le=new THREE.Bone();le.name='leftElbow';le.position.set(0,-0.25,0);la.add(le);
+    const rw=new THREE.Bone();rw.name='rightWrist';rw.position.set(0,-0.2,0);re.add(rw);
+    const lw=new THREE.Bone();lw.name='leftWrist';lw.position.set(0,-0.2,0);le.add(lw);
+    const rf=new THREE.Bone();rf.name='rightFingers';rf.position.set(0,-0.12,0);rw.add(rf);
+    const lf=new THREE.Bone();lf.name='leftFingers';lf.position.set(0,-0.12,0);lw.add(lf);
+    const rl=new THREE.Bone();rl.name='rightLeg';rl.position.set(0.15,-0.05,0);hips.add(rl);
+    const ll=new THREE.Bone();ll.name='leftLeg';ll.position.set(-0.15,-0.05,0);hips.add(ll);
+    const rk=new THREE.Bone();rk.name='rightKnee';rk.position.set(0,-0.35,0);rl.add(rk);
+    const lk=new THREE.Bone();lk.name='leftKnee';lk.position.set(0,-0.35,0);ll.add(lk);
+    const rn=new THREE.Bone();rn.name='rightAnkle';rn.position.set(0,-0.3,0);rk.add(rn);
+    const ln=new THREE.Bone();ln.name='leftAnkle';ln.position.set(0,-0.3,0);lk.add(ln);
+    character.add(hips);
+    const map={hips,spine,chest,neck,head,rightArm:ra,leftArm:la,rightElbow:re,leftElbow:le,rightWrist:rw,leftWrist:lw,rightFingers:rf,leftFingers:lf,rightLeg:rl,leftLeg:ll,rightKnee:rk,leftKnee:lk,rightAnkle:rn,leftAnkle:ln};
+    Object.assign(skeletonBones,map);Object.keys(map).forEach(k=>boneRemapSelections[k]=map[k].name);allBones=Object.values(map);
+    const makeMesh=(name,color,pos,scale)=>{const g=new THREE.BoxGeometry(scale.x,scale.y,scale.z);const m=new THREE.MeshStandardMaterial({color,roughness:0.5,metalness:0.1});const mesh=new THREE.Mesh(g,m);mesh.name=name;mesh.position.copy(pos);mesh.castShadow=mesh.receiveShadow=true;return mesh};
+    head.add(makeMesh('head',0xfbbf24,new THREE.Vector3(0,0.12,0),new THREE.Vector3(0.18,0.18,0.18)));
+    chest.add(makeMesh('torso',0xfb923c,new THREE.Vector3(0,0.12,0),new THREE.Vector3(0.3,0.25,0.18)));
+    hips.add(makeMesh('hips',0xfb923c,new THREE.Vector3(0,0,0),new THREE.Vector3(0.25,0.12,0.18)));
+    ra.add(makeMesh('rightArm',0xf87171,new THREE.Vector3(0,-0.1,0),new THREE.Vector3(0.07,0.25,0.07)));
+    la.add(makeMesh('leftArm',0x60a5fa,new THREE.Vector3(0,-0.1,0),new THREE.Vector3(0.07,0.25,0.07)));
+    rl.add(makeMesh('rightLeg',0xa78bfa,new THREE.Vector3(0,-0.15,0),new THREE.Vector3(0.08,0.35,0.08)));
+    ll.add(makeMesh('leftLeg',0x34d399,new THREE.Vector3(0,-0.15,0),new THREE.Vector3(0.08,0.35,0.08)));
+    primaryMaterials=[];character.traverse(ch=>{if(ch.isMesh){const ms=Array.isArray(ch.material)?ch.material:[ch.material];primaryMaterials.push(...ms)}});
+    scene.add(character);
+    if(showSkeleton){skeletonHelper=new THREE.SkeletonHelper(character);scene.add(skeletonHelper)}
+    buildBoneVisuals();
+    assetParts={hair:[],clothing:[],body:[],accessories:[],other:[]};
+    character.traverse(ch=>{if(!ch.isMesh)return;const nm=ch.name.toLowerCase();if(nm.includes('hair'))assetParts.hair.push(ch);else if(nm.includes('skirt')||nm.includes('shirt')||nm.includes('pant')||nm.includes('dress')||nm.includes('cloth'))assetParts.clothing.push(ch);else if(nm.includes('body')||nm.includes('skin')||nm.includes('face')||nm.includes('head')||nm.includes('torso'))assetParts.body.push(ch);else if(nm.includes('accessor')||nm.includes('glass')||nm.includes('hat'))assetParts.accessories.push(ch);else assetParts.other.push(ch)});
+    updateBoneUI();updatePartsUI();updatePoseUI();updateTextureHUD();setupAnimGrid();
+    document.getElementById('status-dot').className='w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse';
+    document.getElementById('asset-name').innerText='Default';
+    showToast('Default character loaded');
+}
 
-function loadModel(url,name){const loader=new THREE.GLTFLoader();const draco=new THREE.DRACOLoader();draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.4.1/');loader.setDRACOLoader(draco);loader.load(url,gltf=>{if(character){scene.remove(character);clearBoneVisuals();if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper=null}stopGlitch()}character=gltf.scene;character.scale.set(1.4,1.4,1.4);character.position.copy(charPos);primaryMaterials=[];allDetectedBones=[];springBones=[];assetParts={hair:[],clothing:[],body:[],accessories:[],other:[]};textureLibrary=[];undoStack=[];redoStack=[];Object.keys(skeletonBones).forEach(k=>{skeletonBones[k]=null;boneRemapSelections[k]=''});character.traverse(ch=>{if(ch.isMesh){ch.castShadow=ch.receiveShadow=true;if(ch.material){const ms=Array.isArray(ch.material)?ch.material:[ch.material];primaryMaterials.push(...ms)}const nm=(ch.name||'').toLowerCase();if(nm.includes('hair')||nm.includes('beard')||nm.includes('fur'))assetParts.hair.push(ch);else if(nm.includes('skirt')||nm.includes('shirt')||nm.includes('pant')||nm.includes('dress')||nm.includes('jacket')||nm.includes('cloth'))assetParts.clothing.push(ch);else if(nm.includes('body')||nm.includes('skin')||nm.includes('face')||nm.includes('head')||nm.includes('torso'))assetParts.body.push(ch);else if(nm.includes('accessor')||nm.includes('glass')||nm.includes('hat')||nm.includes('earring')||nm.includes('necklace')||nm.includes('ring'))assetParts.accessories.push(ch);else assetParts.other.push(ch)}if(ch.isBone||ch.type==='Bone'){allDetectedBones.push(ch);mapBoneToGroup(ch)}if(ch.name&&(ch.name.toLowerCase().includes('hair')||ch.name.toLowerCase().includes('skirt')||ch.name.toLowerCase().includes('cloth')))springBones.push({bone:ch,baseRotation:ch.rotation.clone()})});if(allDetectedBones.length<8)generateAutoRig();scene.add(character);if(showSkeletonMode){skeletonHelper=new THREE.SkeletonHelper(character);scene.add(skeletonHelper)}buildBoneVisuals();updateBonesUI();updatePartsUI();extractTextures();updateTextureHUD();setupAnimGrid();document.getElementById('status-dot').className='w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse';document.getElementById('asset-name').innerText=name;showToast(`Loaded: ${name}`);cameraAngleX=0.3;cameraAngleY=0.35;cameraDistance=4.5;},undefined,err=>{console.error(err);showToast('Load failed')})}
+// ---------- UTILITY ----------
+function switchTab(t){['tab-pose','tab-parts','tab-anim','tab-library','tab-game'].forEach(id=>document.getElementById(id).classList.add('hidden'));['btn-tab-pose','btn-tab-parts','btn-tab-anim','btn-tab-library','btn-tab-game'].forEach(id=>document.getElementById(id).className='tab-btn');document.getElementById(t).classList.remove('hidden');document.getElementById('btn-'+t).className='tab-btn active'}
+function closeModal(){document.querySelectorAll('.modal-overlay').forEach(el=>el.style.display='none')}
+function showToast(m){const t=document.getElementById('toast-container');t.textContent=m;t.style.opacity='1';clearTimeout(t._to);t._to=setTimeout(()=>t.style.opacity='0',1800)}
+function onResize(){camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight)}
+function getPose(){const p={};Object.keys(skeletonBones).forEach(k=>{const b=skeletonBones[k];if(b)p[k]={rx:b.rotation.x,ry:b.rotation.y,rz:b.rotation.z}});return p}
+function applyPoseToBones(pose,blend){Object.keys(pose).forEach(k=>{const b=skeletonBones[k];if(!b)return;const p=pose[k];if(blend>=1)b.rotation.set(p.rx,p.ry,p.rz);else{b.rotation.x+=(p.rx-b.rotation.x)*blend;b.rotation.y+=(p.ry-b.rotation.y)*blend;b.rotation.z+=(p.rz-b.rotation.z)*blend}});if(skeletonHelper)skeletonHelper.update()}
+function pushHistory(){const state=JSON.stringify(getPose());if(timelineHistory[historyIdx]!==state){timelineHistory=timelineHistory.slice(0,historyIdx+1);timelineHistory.push(state);historyIdx++;if(timelineHistory.length>50)timelineHistory.shift()}}
 
-function switchTab(t){['tab-pose','tab-animate','tab-appearance','tab-parts'].forEach(id=>document.getElementById(id).classList.add('hidden'));['btn-tab-pose','btn-tab-animate','btn-tab-appearance','btn-tab-parts'].forEach(id=>document.getElementById(id).className='tab-btn py-1.5 rounded-xl text-slate-400');document.getElementById(t).classList.remove('hidden');document.getElementById('btn-'+t).className='tab-btn py-1.5 rounded-xl text-pink-400 bg-slate-800'}
+// ---------- CAMERA CONTROLS ----------
+function setupCameraControls(){
+    document.getElementById('cam-center').addEventListener('click',()=>{
+        cameraAngleX=0.3;cameraAngleY=0.35;cameraDistance=4.5;
+        showToast('Center');
+    });
+    document.getElementById('cam-1st').addEventListener('click',()=>{
+        cameraAngleX=0;cameraAngleY=0.15;cameraDistance=0.8;
+        showToast('1st person');
+    });
+    document.getElementById('cam-3rd').addEventListener('click',()=>{
+        cameraAngleX=0.3;cameraAngleY=0.45;cameraDistance=5.5;
+        showToast('3rd person');
+    });
+}
 
-function setupSwipeValues(){document.querySelectorAll('.swipe-value').forEach(el=>{let startX=0,startY=0,startVal=0,active=false;el.addEventListener('pointerdown',e=>{active=true;startX=e.clientX;startY=e.clientY;startVal=parseFloat(el.textContent)||0;el.style.background='#2a2a3e';el.setPointerCapture(e.pointerId)});el.addEventListener('pointermove',e=>{if(!active)return;const dx=e.clientX-startX,dy=e.clientY-startY;const coarse=Math.abs(dy)>30;const step=coarse?0.1:0.02;let val=startVal+dx*step;val=Math.max(-180,Math.min(180,val));el.textContent=val.toFixed(1)+'°';const axis=el.dataset.axis;if(selectedBoneKey&&skeletonBones[selectedBoneKey]){skeletonBones[selectedBoneKey].rotation[axis]=val*(Math.PI/180);if(skeletonHelper)skeletonHelper.update();updateBoneVisualPositions()}});el.addEventListener('pointerup',()=>{active=false;el.style.background='#1a1a2e'})})}
+// ---------- BONE UI ----------
+function updateBoneUI(){
+    const l=document.getElementById('bone-hierarchy-list');l.innerHTML='';
+    const sections={Head:['head','neck'],Torso:['chest','spine','hips'],'Right Arm':['rightArm','rightElbow','rightWrist','rightFingers'],'Left Arm':['leftArm','leftElbow','leftWrist','leftFingers'],'Right Leg':['rightLeg','rightKnee','rightAnkle'],'Left Leg':['leftLeg','leftKnee','leftAnkle']};
+    Object.keys(sections).forEach(sec=>{
+        const h=document.createElement('div');h.className='bone-section-header';h.textContent=sec.toUpperCase();l.appendChild(h);
+        sections[sec].forEach(key=>{
+            const b=skeletonBones[key];if(!b)return;
+            const d=document.createElement('div');d.className=`bone-group-item ${selectedBoneKey===key?'active':''}`;
+            d.innerHTML=`<span style="width:4px;height:4px;border-radius:50%;background:${boneGroups[key].color};flex-shrink:0"></span><span style="flex:1">${boneGroups[key].label}</span><button class="zoom-btn" data-key="${key}" style="background:transparent;border:none;color:#94a3b8;cursor:pointer;font-size:6px"><i class="fa-solid fa-magnifying-glass"></i></button>`;
+            d.querySelector('.zoom-btn').addEventListener('click',(e)=>{e.stopPropagation();zoomToBone(key)});
+            d.onclick=()=>{selectedBoneKey=key;updateBoneUI();updateBoneVisualPositions();document.getElementById('pose-bone-name').textContent=boneGroups[key].label;updateSwipeValues()};
+            l.appendChild(d);
+        })
+    });
+}
+function updatePoseUI(){const n=document.getElementById('pose-bone-name');if(selectedBoneKey&&skeletonBones[selectedBoneKey])n.textContent=boneGroups[selectedBoneKey].label;else n.textContent='None'}
+function updateSwipeValues(){const b=skeletonBones[selectedBoneKey];if(!b){['swipe-x','swipe-y','swipe-z'].forEach(id=>document.getElementById(id).textContent='0°');return}document.getElementById('swipe-x').textContent=(b.rotation.x*180/Math.PI).toFixed(1)+'°';document.getElementById('swipe-y').textContent=(b.rotation.y*180/Math.PI).toFixed(1)+'°';document.getElementById('swipe-z').textContent=(b.rotation.z*180/Math.PI).toFixed(1)+'°'}
+function zoomToBone(key){const b=skeletonBones[key];if(!b)return;const pos=new THREE.Vector3();b.getWorldPosition(pos);cameraAngleX=Math.atan2(pos.x-charPos.x,pos.z-charPos.z);cameraAngleY=Math.PI/4;cameraDistance=1.2;showToast('Zoom to '+boneGroups[key].label)}
 
-function setupTextureSystem(){document.getElementById('texture-hud-upload').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const tl=new THREE.TextureLoader();tl.load(URL.createObjectURL(f),tex=>{tex.name=f.name;if(!textureLibrary.find(t=>t.name===f.name)){textureLibrary.push({name:f.name,texture:tex,source:'upload'});updateTextureHUD();showToast('Texture added')}})});document.getElementById('btn-texture-link').addEventListener('click',e=>{textureLinkMode=!textureLinkMode;e.target.style.background=textureLinkMode?'#ec4899':'#1e293b'});document.getElementById('btn-texture-undo').addEventListener('click',()=>{if(undoStack.length){const a=undoStack.pop();redoStack.push(a);applyTextureAction(a,true);updateTextureHUD()}});document.getElementById('btn-texture-redo').addEventListener('click',()=>{if(redoStack.length){const a=redoStack.pop();undoStack.push(a);applyTextureAction(a,false);updateTextureHUD()}});document.getElementById('btn-texture-delete').addEventListener('click',()=>{if(selectedTextureForAssign){const i=textureLibrary.indexOf(selectedTextureForAssign);if(i>-1){textureLibrary.splice(i,1);selectedTextureForAssign=null;updateTextureHUD()}}})}
+// ---------- SWIPE ----------
+function setupSwipeValues(){
+    document.querySelectorAll('.swipe-value').forEach(el=>{
+        let sx=0,sy=0,sv=0,act=false;
+        el.addEventListener('pointerdown',e=>{act=true;sx=e.clientX;sy=e.clientY;sv=parseFloat(el.textContent)||0;el.style.background='#2a2a3e';el.setPointerCapture(e.pointerId)});
+        el.addEventListener('pointermove',e=>{if(!act)return;const dx=e.clientX-sx,dy=e.clientY-sy;const coarse=Math.abs(dy)>20;const step=coarse?0.08:0.015;let val=sv+dx*step;val=Math.max(-180,Math.min(180,val));el.textContent=val.toFixed(1)+'°';const axis=el.dataset.axis;if(selectedBoneKey&&skeletonBones[selectedBoneKey]){skeletonBones[selectedBoneKey].rotation[axis]=val*(Math.PI/180);if(skeletonHelper)skeletonHelper.update();updateBoneVisualPositions();pushHistory()}});
+        el.addEventListener('pointerup',()=>{act=false;el.style.background='#1a1a2e'});
+    });
+}
 
-function extractTextures(){if(!character)return;const seen=new Set();character.traverse(ch=>{if(!ch.isMesh||!ch.material)return;const ms=Array.isArray(ch.material)?ch.material:[ch.material];ms.forEach(m=>{if(m.map&&!seen.has(m.map.uuid)){seen.add(m.map.uuid);const n=m.map.name||`tex_${textureLibrary.length+1}`;if(!textureLibrary.find(t=>t.texture===m.map||t.name===n))textureLibrary.push({name:n,texture:m.map,source:'model'})}})})}
+// ---------- PARTS ----------
+function updatePartsUI(){
+    const grid=document.getElementById('asset-parts-grid');grid.innerHTML='';const total=Object.values(assetParts).flat().length;if(!total){grid.innerHTML='<div class="text-slate-500 text-[5px]">No parts</div>';return}
+    const cats=[{k:'hair',l:'💇'},{k:'clothing',l:'👕'},{k:'body',l:'🧍'},{k:'accessories',l:'💎'},{k:'other',l:'📦'}];
+    cats.forEach(cat=>{assetParts[cat.k].forEach((p,i)=>{const d=document.createElement('div');d.className=`part-card ${selectedPart===p?'selected':''}`;d.innerHTML=`<span>${cat.l} ${p.name||cat.k+'_'+i}</span><button class="eye-btn" style="background:transparent;border:none;color:${p.visible?'#34d399':'#64748b'};cursor:pointer"><i class="fa-solid ${p.visible?'fa-eye':'fa-eye-slash'}"></i></button>`;d.onclick=e=>{if(e.target.closest('.eye-btn'))return;selectPart(p)};d.querySelector('.eye-btn').onclick=e=>{e.stopPropagation();p.visible=!p.visible;updatePartsUI();showToast(p.name+' '+(p.visible?'visible':'hidden'))};grid.appendChild(d)})});
+    const panel=document.getElementById('part-edit-panel');if(selectedPart){panel.classList.remove('hidden');document.getElementById('part-edit-name').value=selectedPart.name||'';document.getElementById('part-eye-toggle').innerHTML=selectedPart.visible?'<i class="fa-solid fa-eye"></i>':'<i class="fa-solid fa-eye-slash"></i>'}else panel.classList.add('hidden');
+    document.querySelectorAll('.part-card').forEach(el=>el.classList.remove('selected'));if(selectedPart){document.querySelectorAll('.part-card').forEach(el=>{if(el.textContent.includes(selectedPart.name||''))el.classList.add('selected')})}
+}
+function selectPart(p){if(selectedPart===p){selectedPart=null;updatePartsUI();return}selectedPart=p;updatePartsUI();character?.traverse(ch=>{if(ch.isMesh){const ms=Array.isArray(ch.material)?ch.material:[ch.material];ms.forEach(m=>{if(m.emissive){m.emissive.set(0x000000);m.emissiveIntensity=0;m.needsUpdate=true}})}});if(p){const ms=Array.isArray(p.material)?p.material:[p.material];ms.forEach(m=>{if(m.emissive){m.emissive.set(0xec4899);m.emissiveIntensity=0.5;m.needsUpdate=true}})}showToast('Selected: '+(p.name||'Part'))}
+function editPartScale(axis,amount){if(!selectedPart)return;selectedPart.scale[axis]+=amount;showToast(axis.toUpperCase()+' '+selectedPart.scale[axis].toFixed(1))}
+function fxPart(effect){if(!selectedPart)return;const ms=Array.isArray(selectedPart.material)?selectedPart.material:[selectedPart.material];ms.forEach(m=>{m.transparent=false;m.opacity=1;m.emissive=m.emissive||new THREE.Color(0);m.emissive.set(0);m.emissiveIntensity=0;m.wireframe=false;switch(effect){case'glitch':m.color.set(0xec4899);m.roughness=.1;m.metalness=.9;m.emissive.set(0xec4899);m.emissiveIntensity=.3;break;case'ghost':m.color.set(0xa78bfa);m.roughness=.25;m.metalness=.1;m.transparent=true;m.opacity=.55;break;case'holo':m.color.set(0x22d3ee);m.roughness=.05;m.metalness=.85;m.transparent=true;m.opacity=.7;break;case'pulse':m.color.set(0x34d399);m.emissive.set(0x34d399);m.emissiveIntensity=.5;break;default:m.color.set(0xf5f5f5);m.roughness=.4;m.metalness=.05;m.transparent=false;m.opacity=1}m.needsUpdate=true});showToast(effect+' applied')}
+function toggleParts(type){character?.traverse(ch=>{if(!ch.isMesh)return;const nm=ch.name.toLowerCase();let t=false;if(type==='hair'&&(nm.includes('hair')||nm.includes('beard')||nm.includes('fur')))t=true;if(type==='clothing'&&(nm.includes('skirt')||nm.includes('shirt')||nm.includes('pant')||nm.includes('dress')||nm.includes('cloth')))t=true;if(type==='accessories'&&(nm.includes('accessor')||nm.includes('glass')||nm.includes('hat')||nm.includes('earring')||nm.includes('necklace')))t=true;if(type==='body'&&(nm.includes('body')||nm.includes('skin')||nm.includes('face')||nm.includes('head')||nm.includes('torso')))t=true;if(type==='other'&&!nm.includes('hair')&&!nm.includes('beard')&&!nm.includes('fur')&&!nm.includes('skirt')&&!nm.includes('shirt')&&!nm.includes('pant')&&!nm.includes('dress')&&!nm.includes('cloth')&&!nm.includes('accessor')&&!nm.includes('glass')&&!nm.includes('hat')&&!nm.includes('earring')&&!nm.includes('necklace')&&!nm.includes('body')&&!nm.includes('skin')&&!nm.includes('face')&&!nm.includes('head')&&!nm.includes('torso'))t=true;if(t)ch.visible=!ch.visible;if(type==='all')ch.visible=true});updatePartsUI()}
 
-function genThumb(tex,size=40){try{const cv=document.createElement('canvas');cv.width=cv.height=size;const ctx=cv.getContext('2d');const img=tex.image;if(img&&img.width){const asp=img.width/img.height;let sw=size,sh=size;if(asp>1)sh=size/asp;else sw=size*asp;ctx.drawImage(img,(size-sw)/2,(size-sh)/2,sw,sh)}else{ctx.fillStyle='#333';ctx.fillRect(0,0,size,size);ctx.fillStyle='#fff';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('T',size/2,size/2)}return cv.toDataURL()}catch(e){return''}}
+// ---------- TEXTURES ----------
+function setupTextureSystem(){
+    document.getElementById('texture-hud-upload').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const tl=new THREE.TextureLoader();tl.load(URL.createObjectURL(f),tex=>{tex.name=f.name;if(!textureLibrary.find(t=>t.name===f.name)){textureLibrary.push({name:f.name,texture:tex});updateTextureHUD();showToast('Texture added')}})});
+    document.getElementById('btn-texture-link').addEventListener('click',e=>{texLinkMode=!texLinkMode;e.target.style.background=texLinkMode?'#ec4899':'#1e293b'});
+    document.getElementById('btn-texture-undo').addEventListener('click',()=>{if(undoStack.length){const a=undoStack.pop();redoStack.push(a);applyTexAction(a,true);updateTextureHUD()}});
+    document.getElementById('btn-texture-redo').addEventListener('click',()=>{if(redoStack.length){const a=redoStack.pop();undoStack.push(a);applyTexAction(a,false);updateTextureHUD()}});
+    document.getElementById('btn-texture-delete').addEventListener('click',()=>{if(selectedTex){const i=textureLibrary.indexOf(selectedTex);if(i>-1){textureLibrary.splice(i,1);selectedTex=null;updateTextureHUD()}}});
+}
+function genThumb(tex,s=24){try{const cv=document.createElement('canvas');cv.width=cv.height=s;const ctx=cv.getContext('2d');const img=tex.image;if(img&&img.width){const asp=img.width/img.height;let sw=s,sh=s;if(asp>1)sh=s/asp;else sw=s*asp;ctx.drawImage(img,(s-sw)/2,(s-sh)/2,sw,sh)}else{ctx.fillStyle='#333';ctx.fillRect(0,0,s,s);ctx.fillStyle='#fff';ctx.font='6px sans-serif';ctx.textAlign='center';ctx.fillText('T',s/2,s/2)}return cv.toDataURL()}catch(e){return''}}
+function updateTextureHUD(){const g=document.getElementById('texture-hud-grid');if(!textureLibrary.length){g.innerHTML='<div class="text-slate-500 text-[5px]">No textures</div>';return}g.innerHTML='';textureLibrary.forEach(t=>{const d=document.createElement('div');d.style.cssText='border:1px solid #2a2a3e;border-radius:3px;padding:1px;cursor:pointer;text-align:center;background:#1a1a2e';d.innerHTML=`<img src="${genThumb(t.texture)}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:2px"><span style="font-size:4px;color:#94a3b8">${t.name}</span>`;if(selectedTex===t)d.style.borderColor='#06b6d4';d.onclick=()=>{selectedTex=t;updateTextureHUD()};g.appendChild(d)})}
+function applyTexToPart(part,tex){const ms=Array.isArray(part.material)?part.material:[part.material];const old=ms.map(m=>m.map);undoStack.push({part,old,newTex:tex});redoStack=[];ms.forEach(m=>{m.map=tex.texture;m.color.set(0xffffff);m.needsUpdate=true})}
+function applyTexAction(a,isUndo){const ms=Array.isArray(a.part.material)?a.part.material:[a.part.material];if(isUndo)ms.forEach((m,i)=>{m.map=a.old[i]||null;m.needsUpdate=true});else ms.forEach(m=>{m.map=a.newTex.texture;m.color.set(0xffffff);m.needsUpdate=true})}
 
-function updateTextureHUD(){const g=document.getElementById('texture-hud-grid');if(!textureLibrary.length){g.innerHTML='<div class="text-slate-500 text-[9px]">No textures</div>';return}g.innerHTML='';textureLibrary.forEach(t=>{const d=document.createElement('div');d.className=`tex-hud-item ${selectedTextureForAssign===t?'active':''}`;d.style.cssText='border:1px solid #2a2a3e;border-radius:6px;padding:2px;cursor:pointer;text-align:center;background:#1a1a2e';d.innerHTML=`<img src="${genThumb(t.texture)}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:3px"><span style="font-size:6px;color:#94a3b8">${t.name}</span>`;d.onclick=()=>{selectedTextureForAssign=t;updateTextureHUD()};g.appendChild(d)})}
+// ---------- ANIM GRID ----------
+function setupAnimGrid(){
+    const g=document.getElementById('anim-grid');g.innerHTML='';
+    if(gltfAnimations.length){
+        gltfAnimations.forEach(anim=>{
+            const d=document.createElement('div');d.className='anim-grid-item '+(currentAnim===anim.name?'active':'');d.innerHTML=`<span style="font-size:9px">🎬</span><br><span>${anim.name}</span>`;d.onclick=()=>{currentAnim=anim.name;setupAnimGrid();document.getElementById('current-anim-label').textContent=anim.name;playGLBAnim(anim)};g.appendChild(d);
+        });
+    }
+    animPresets.forEach(p=>{
+        const d=document.createElement('div');d.className=`anim-grid-item ${p.id===currentAnim?'active':''}`;d.innerHTML=`<span style="font-size:10px">${p.i}</span><br><span>${p.n}</span>`;d.onclick=()=>{currentAnim=p.id;setupAnimGrid();document.getElementById('current-anim-label').textContent=p.n;timelinePlaying=false};g.appendChild(d);
+    });
+}
+function playGLBAnim(anim){/* handled by animation mixer */}
 
-function setupAnimGrid(){const g=document.getElementById('anim-grid');g.innerHTML='';animPresets.forEach(p=>{const d=document.createElement('div');d.className=`anim-grid-item ${p.id===currentAnimPreset?'active':''}`;d.style.cssText='border:1px solid #2a2a3e;border-radius:8px;padding:4px;cursor:pointer;text-align:center;background:'+(p.id===currentAnimPreset?'rgba(236,72,153,0.2)':'#1a1a2e');d.innerHTML=`<span style="font-size:16px">${p.i}</span><br><span style="font-size:8px">${p.n}</span>`;d.onclick=()=>{currentAnimPreset=p.id;replayPlaying=false;setupAnimGrid();document.getElementById('current-anim-label').textContent=p.n};g.appendChild(d)})}
+// ---------- TIMELINE ----------
+function setupTimeline(){
+    const track=document.getElementById('tl-track');
+    const recBtn=document.getElementById('tl-record');
+    const addBtn=document.getElementById('tl-add-key');
+    const playBtn=document.getElementById('tl-play');
+    const loopBtn=document.getElementById('tl-loop');
+    const mirrorBtn=document.getElementById('tl-mirror');
+    const expBtn=document.getElementById('tl-export');
+    const clearBtn=document.getElementById('tl-clear');
+    const undoBtn=document.getElementById('tl-undo');
+    const redoBtn=document.getElementById('tl-redo');
 
-function setupJoystick(){const base=document.getElementById('joystick-base'),thumb=document.getElementById('joystick-thumb');base.addEventListener('pointerdown',e=>{joystickActive=true;const rect=base.getBoundingClientRect();joystickCenter.x=rect.left+rect.width/2;joystickCenter.y=rect.top+rect.height/2;updateJoystick(e.clientX,e.clientY)});window.addEventListener('pointermove',e=>{if(!joystickActive)return;updateJoystick(e.clientX,e.clientY)});window.addEventListener('pointerup',()=>{joystickActive=false;joystickVector={x:0,y:0};thumb.style.left='25px';thumb.style.top='25px'});}
-function updateJoystick(cx,cy){const dx=cx-joystickCenter.x,dy=cy-joystickCenter.y;const dist=Math.sqrt(dx*dx+dy*dy);const maxR=25;const clamped=Math.min(dist,maxR);const angle=Math.atan2(dy,dx);thumb.style.left=(25+Math.cos(angle)*clamped)+'px';thumb.style.top=(25+Math.sin(angle)*clamped)+'px';joystickVector.x=Math.cos(angle)*clamped/maxR;joystickVector.y=Math.sin(angle)*clamped/maxR;}
+    recBtn.addEventListener('click',()=>{isRecording=!isRecording;if(isRecording){recTimer=0;recBtn.style.color='#ef4444';showToast('Recording...')}else{recBtn.style.color='';showToast('Recording stopped')}});
+    addBtn.addEventListener('click',()=>{if(!character)return;const pose=getPose();const time=timelineKeyframes.length?timelineKeyframes[timelineKeyframes.length-1].time+0.5:0;timelineKeyframes.push({time,pose});timelineKeyframes.sort((a,b)=>a.time-b.time);updateTLUI();pushHistory();showToast('Keyframe added')});
+    playBtn.addEventListener('click',()=>{if(timelineKeyframes.length<2)return;timelinePlaying=!timelinePlaying;playBtn.innerHTML=timelinePlaying?'<i class="fa-solid fa-pause"></i>':'<i class="fa-solid fa-play"></i>'});
+    loopBtn.addEventListener('click',()=>{timelineLoop=!timelineLoop;loopBtn.style.color=timelineLoop?'#34d399':''});
+    mirrorBtn.addEventListener('click',()=>{if(timelineKeyframes.length){const mirrored=timelineKeyframes.map(kf=>{const p={};Object.keys(kf.pose).forEach(k=>{const key=k.replace('left','right').replace('right','left');p[key]={rx:kf.pose[k].rx,ry:-kf.pose[k].ry,rz:-kf.pose[k].rz}});return{time:kf.time+0.1,pose:p}});timelineKeyframes.push(...mirrored);timelineKeyframes.sort((a,b)=>a.time-b.time);updateTLUI();pushHistory();showToast('Mirrored')}});
+    expBtn.addEventListener('click',()=>{if(!timelineKeyframes.length)return;const blob=new Blob([JSON.stringify(timelineKeyframes)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='anim.json';a.click()});
+    clearBtn.addEventListener('click',()=>{timelineKeyframes=[];replayTime=0;timelinePlaying=false;updateTLUI();showToast('Cleared')});
+    undoBtn.addEventListener('click',()=>{if(historyIdx>0){historyIdx--;const state=JSON.parse(timelineHistory[historyIdx]);applyPoseToBones(state,1);updateTLUI();showToast('Undo')}});
+    redoBtn.addEventListener('click',()=>{if(historyIdx<timelineHistory.length-1){historyIdx++;const state=JSON.parse(timelineHistory[historyIdx]);applyPoseToBones(state,1);updateTLUI();showToast('Redo')}});
 
-function setupControls(){document.getElementById('btn-toggle-skeleton').addEventListener('click',()=>{showSkeletonMode=!showSkeletonMode;if(showSkeletonMode&&character&&!skeletonHelper){skeletonHelper=new THREE.SkeletonHelper(character);scene.add(skeletonHelper)}boneVisualNodes.forEach(n=>n.visible=showSkeletonMode);boneVisualLines.forEach(l=>l.visible=showSkeletonMode);if(!showSkeletonMode&&skeletonHelper){scene.remove(skeletonHelper);skeletonHelper=null}});document.getElementById('btn-skeleton-map').addEventListener('click',()=>{document.getElementById('skeleton-map-modal').style.display='flex';renderSkeletonMap()});document.getElementById('btn-open-remap').addEventListener('click',openRemap);document.getElementById('btn-toggle-texture-hud').addEventListener('click',()=>document.getElementById('texture-hud').classList.toggle('hidden'));document.getElementById('btn-toggle-hair').addEventListener('click',()=>{showHair=!showHair;character?.traverse(ch=>{if(ch.isMesh&&(ch.name||'').toLowerCase().includes('hair'))ch.visible=showHair})});document.getElementById('btn-export-model').addEventListener('click',()=>{if(!character)return;const ex=new THREE.GLTFExporter();ex.parse(character,r=>{const b=new Blob([r],{type:'application/octet-stream'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download='avatar.glb';l.click()},{binary:true})});document.getElementById('gltf-upload').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadModel(URL.createObjectURL(f),f.name)});document.getElementById('btn-record-key').addEventListener('click',()=>{if(!character)return;const pose={};Object.keys(skeletonBones).forEach(k=>{const b=skeletonBones[k];if(b)pose[k]={rx:b.rotation.x,ry:b.rotation.y,rz:b.rotation.z}});recordedKeyframes.push({time:recordedKeyframes.length*0.5,pose});updateTimeline();showToast(`Frame #${recordedKeyframes.length}`)});document.getElementById('btn-play-anim').addEventListener('click',()=>{if(recordedKeyframes.length<2)return;replayPlaying=!replayPlaying;replayTime=0;document.getElementById('btn-play-anim').innerHTML=replayPlaying?'<i class="fa-solid fa-pause"></i> Pause':'<i class="fa-solid fa-play"></i> Play'});document.getElementById('btn-live-record').addEventListener('click',()=>{liveRecording=!liveRecording;if(liveRecording){liveKeyframes=[];liveStartTime=Date.now();document.getElementById('btn-live-record').style.background='#ef4444';showToast('Live recording started')}else{document.getElementById('btn-live-record').style.background='';recordedKeyframes=liveKeyframes;updateTimeline();showToast(`Recorded ${liveKeyframes.length} frames`)}});document.getElementById('btn-export-anim').addEventListener('click',()=>{if(!recordedKeyframes.length)return;const b=new Blob([JSON.stringify(recordedKeyframes)],{type:'application/json'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download='anim.json';l.click()});document.getElementById('btn-clear-anim').addEventListener('click',()=>{recordedKeyframes=[];replayTime=0;replayPlaying=false;updateTimeline()});document.getElementById('btn-mirror-off').addEventListener('click',()=>{mirrorMode='off';document.getElementById('btn-mirror-off').style.background='#4b5563';document.getElementById('btn-mirror-left').style.background='#1e293b';document.getElementById('btn-mirror-right').style.background='#1e293b'});document.getElementById('btn-mirror-left').addEventListener('click',()=>{mirrorMode='left';document.getElementById('btn-mirror-left').style.background='#4b5563';document.getElementById('btn-mirror-off').style.background='#1e293b';document.getElementById('btn-mirror-right').style.background='#1e293b'});document.getElementById('btn-mirror-right').addEventListener('click',()=>{mirrorMode='right';document.getElementById('btn-mirror-right').style.background='#4b5563';document.getElementById('btn-mirror-off').style.background='#1e293b';document.getElementById('btn-mirror-left').style.background='#1e293b'});document.getElementById('btn-game-mode').addEventListener('click',()=>{gameMode=!gameMode;document.getElementById('joystick-container').classList.toggle('hidden',!gameMode);showToast(gameMode?'Game mode ON':'Game mode OFF')});document.getElementById('mat-color-1').addEventListener('input',e=>{primaryMaterials.forEach(m=>m.color.set(e.target.value));document.getElementById('mat-color-hex').textContent=e.target.value});document.getElementById('mat-roughness').addEventListener('input',e=>{const v=parseFloat(e.target.value);primaryMaterials.forEach(m=>m.roughness=v);document.getElementById('val-roughness').textContent=v.toFixed(2)});document.getElementById('mat-metalness').addEventListener('input',e=>{const v=parseFloat(e.target.value);primaryMaterials.forEach(m=>m.metalness=v);document.getElementById('val-metalness').textContent=v.toFixed(2)});document.getElementById('btn-save-fx').addEventListener('click',()=>{const fx={name:`FX_${Date.now()%1000}`,color:document.getElementById('mat-color-1').value,roughness:parseFloat(document.getElementById('mat-roughness').value),metalness:parseFloat(document.getElementById('mat-metalness').value)};customFX.push(fx);updateCustomFX();showToast('FX saved')});const cc=document.getElementById('canvas-container');let md=false,lm={x:0,y:0};cc.addEventListener('mousedown',e=>{if(e.target.closest('.panel')||e.target.closest('button')||e.target.closest('select')||e.target.closest('input')||e.target.closest('.modal-overlay')||gameMode)return;if(textureLinkMode&&selectedTextureForAssign){const rect=cc.getBoundingClientRect();const mv=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);const rc=new THREE.Raycaster();rc.setFromCamera(mv,camera);const hits=rc.intersectObjects(character?[character]:[],true);if(hits.length){const mesh=hits[0].object;if(mesh.isMesh)applyTextureToPart(mesh,selectedTextureForAssign);return}}md=true;lm.x=e.clientX;lm.y=e.clientY;cc.style.cursor='grabbing'});window.addEventListener('mousemove',e=>{if(!md)return;cameraAngleX-=(e.clientX-lm.x)*0.006;cameraAngleY=Math.max(0.05,Math.min(1.5,cameraAngleY-(e.clientY-lm.y)*0.006));lm.x=e.clientX;lm.y=e.clientY});window.addEventListener('mouseup',()=>{md=false;cc.style.cursor='default'});}
+    track.addEventListener('click',(e)=>{if(timelineKeyframes.length<2)return;const rect=track.getBoundingClientRect();const pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));const maxTime=timelineKeyframes[timelineKeyframes.length-1].time||10;replayTime=pct*maxTime;applyTimelineFrame(replayTime);updateTLUI()});
+}
 
-function renderSkeletonMap(){const cv=document.getElementById('skeleton-map-canvas');cv.innerHTML='';const pos={head:[160,60],neck:[160,100],chest:[160,140],spine:[160,180],hips:[160,220],rightArm:[220,145],rightElbow:[260,170],rightWrist:[290,195],rightFingers:[305,215],leftArm:[100,145],leftElbow:[60,170],leftWrist:[30,195],leftFingers:[15,215],rightLeg:[195,260],rightKnee:[210,300],rightAnkle:[225,340],leftLeg:[125,260],leftKnee:[110,300],leftAnkle:[95,340]};const conn=[['hips','spine'],['spine','chest'],['chest','neck'],['neck','head'],['chest','rightArm'],['chest','leftArm'],['rightArm','rightElbow'],['leftArm','leftElbow'],['rightElbow','rightWrist'],['leftElbow','leftWrist'],['rightWrist','rightFingers'],['leftWrist','leftFingers'],['hips','rightLeg'],['hips','leftLeg'],['rightLeg','rightKnee'],['leftLeg','leftKnee'],['rightKnee','rightAnkle'],['leftKnee','leftAnkle']];conn.forEach(([a,b])=>{const pa=pos[a],pb=pos[b];const l=document.createElement('div');l.style.cssText=`position:absolute;left:${pa[0]}px;top:${pa[1]}px;width:${Math.sqrt((pb[0]-pa[0])**2+(pb[1]-pa[1])**2)}px;height:2px;background:rgba(255,255,255,.3);transform-origin:left;transform:rotate(${Math.atan2(pb[1]-pa[1],pb[0]-pa[0])}rad)`;cv.appendChild(l)});Object.keys(boneGroups).forEach(k=>{const p=pos[k];if(!p)return;const b=skeletonBones[k];const d=document.createElement('div');d.style.cssText=`position:absolute;left:${p[0]-8}px;top:${p[1]-8}px;width:16px;height:16px;border-radius:50%;background:${b?boneGroups[k].color:'#444'};border:2px solid ${selectedBoneKey===k?'#fff':'rgba(255,255,255,.5)'};cursor:pointer`;d.onclick=()=>{selectedBoneKey=k;updateBonesUI();updateBoneVisualPositions();renderSkeletonMap()};cv.appendChild(d)})}
+function updateTLUI(){
+    const track=document.getElementById('tl-track');track.innerHTML='';const info=document.getElementById('tl-frame-info');const total=timelineKeyframes.length;info.textContent=total?`${replayTime.toFixed(1)}/${timelineKeyframes[total-1].time.toFixed(1)}`:'0/0';if(!total)return;
+    const maxTime=timelineKeyframes[total-1].time||10;
+    timelineKeyframes.forEach((kf,i)=>{const dot=document.createElement('div');dot.className='keyframe-dot';dot.style.left=`${(kf.time/maxTime)*100}%`;dot.addEventListener('click',(e)=>{e.stopPropagation();replayTime=kf.time;applyTimelineFrame(replayTime);updateTLUI()});track.appendChild(dot)});
+    const ph=document.createElement('div');ph.className='playhead';ph.style.left=`${(replayTime/maxTime)*100}%`;track.appendChild(ph);
+}
+function applyTimelineFrame(time){if(!timelineKeyframes.length)return;let a=timelineKeyframes[0],b=timelineKeyframes[timelineKeyframes.length-1];if(time<=a.time){applyPoseToBones(a.pose,1);return}if(time>=b.time){applyPoseToBones(b.pose,1);return}let idx=0;for(let i=0;i<timelineKeyframes.length-1;i++){if(time>=timelineKeyframes[i].time&&time<timelineKeyframes[i+1].time){idx=i;break}}const fA=timelineKeyframes[idx],fB=timelineKeyframes[idx+1];if(!fA||!fB)return;const frac=(time-fA.time)/(fB.time-fA.time);const pose={};Object.keys(fA.pose).forEach(k=>{if(!fB.pose[k]){pose[k]=fA.pose[k];return}const a=fA.pose[k],b=fB.pose[k];pose[k]={rx:a.rx+(b.rx-a.rx)*frac,ry:a.ry+(b.ry-a.ry)*frac,rz:a.rz+(b.rz-a.rz)*frac}});applyPoseToBones(pose,1);}
 
-function openRemap(){document.getElementById('bone-remap-modal').style.display='flex';const g=document.getElementById('bone-remap-grid');g.innerHTML='';const opts=[{v:'',l:'—'},...allDetectedBones.map(b=>({v:b.name||b.uuid,l:b.name||b.uuid}))];Object.keys(boneGroups).forEach(k=>{const cur=skeletonBones[k];const cv=cur?.name||cur?.uuid||'';const c=document.createElement('div');c.className='bone-grid-item';c.innerHTML=`<div style="width:10px;height:10px;border-radius:50%;background:${boneGroups[k].color};margin:0 auto"></div><div style="font-size:9px;font-weight:bold;color:#cbd5e1">${boneGroups[k].label}</div><select class="remap-sel" style="width:100%;background:#0f172a;border:1px solid #334155;border-radius:4px;color:#fff;font-size:8px;padding:2px">${opts.map(o=>`<option value="${o.v}" ${o.v===cv?'selected':''}>${o.l}</option>`).join('')}</select>`;g.appendChild(c)});document.getElementById('btn-apply-remap').onclick=()=>{document.querySelectorAll('.remap-sel').forEach((s,i)=>{const key=Object.keys(boneGroups)[i];const v=s.value;if(!v){skeletonBones[key]=null;boneRemapSelections[key]=''}else{const b=allDetectedBones.find(x=>(x.name||x.uuid)===v);if(b){skeletonBones[key]=b;boneRemapSelections[key]=v}}});closeModal('bone-remap-modal');buildBoneVisuals();updateBonesUI()};document.getElementById('btn-auto-detect').onclick=()=>{Object.keys(skeletonBones).forEach(k=>{skeletonBones[k]=null;boneRemapSelections[k]=''});allDetectedBones.forEach(b=>mapBoneToGroup(b));Object.keys(skeletonBones).forEach(k=>{if(skeletonBones[k])boneRemapSelections[k]=skeletonBones[k].name||skeletonBones[k].uuid});openRemap()}}
-function closeModal(id){document.getElementById(id).style.display='none'}
+// ---------- LIBRARY ----------
+function setupLibrary(){
+    const list=document.getElementById('library-list');list.innerHTML='';
+    Object.keys(animLibrary).forEach(cat=>{
+        const h=document.createElement('div');h.className='text-[4px] font-bold text-indigo-300 mt-0.5';h.textContent=cat;list.appendChild(h);
+        Object.keys(animLibrary[cat]).forEach(name=>{
+            const item=document.createElement('div');item.className='lib-item';item.innerHTML=`<span>${name}</span><span class="drag-handle"><i class="fa-solid fa-grip-lines"></i></span>`;
+            item.draggable=true;
+            item.addEventListener('dragstart',(e)=>{e.dataTransfer.setData('text/plain',JSON.stringify({id:animLibrary[cat][name].id}))});
+            list.appendChild(item);
+        })
+    });
+    document.getElementById('library-list-tab').innerHTML=list.innerHTML;
+    const track=document.getElementById('tl-track');
+    track.addEventListener('dragover',e=>e.preventDefault());
+    track.addEventListener('drop',(e)=>{e.preventDefault();const data=JSON.parse(e.dataTransfer.getData('text/plain'));if(data&&data.id){const pose=getAnimPoseFromLib(data.id);if(pose){const time=timelineKeyframes.length?timelineKeyframes[timelineKeyframes.length-1].time+0.5:0;timelineKeyframes.push({time,pose});timelineKeyframes.sort((a,b)=>a.time-b.time);updateTLUI();pushHistory();showToast('Animation dropped')}}});
+}
+function getAnimPoseFromLib(id){const pose={};switch(id){case'idle':pose.chest={rx:0.04,ry:0,rz:0};pose.head={rx:0.05,ry:0,rz:0};break;case'walk':pose.rightArm={rx:0.5,ry:0,rz:0};pose.leftArm={rx:-0.5,ry:0,rz:0};pose.rightLeg={rx:-0.7,ry:0,rz:0};pose.leftLeg={rx:0.7,ry:0,rz:0};break;case'run':pose.rightArm={rx:0.8,ry:0,rz:0};pose.leftArm={rx:-0.8,ry:0,rz:0};pose.rightLeg={rx:-1.0,ry:0,rz:0};pose.leftLeg={rx:1.0,ry:0,rz:0};break;case'dance':pose.rightArm={rx:0.7,ry:0,rz:0};pose.leftArm={rx:-0.7,ry:0,rz:0};pose.chest={rx:0.15,ry:0.1,rz:0.1};break;case'wave_left':pose.leftArm={rx:-1.2,ry:0,rz:0.5};break;case'wave_right':pose.rightArm={rx:-1.2,ry:0,rz:-0.5};break;case'punch_left':pose.leftArm={rx:-0.1,ry:0,rz:-1.2};break;case'punch_right':pose.rightArm={rx:-0.1,ry:0,rz:1.2};break;case'peace_left':pose.leftArm={rx:-0.8,ry:0,rz:0.2};pose.leftFingers={rx:0.5,ry:0,rz:0};break;case'peace_right':pose.rightArm={rx:-0.8,ry:0,rz:-0.2};pose.rightFingers={rx:0.5,ry:0,rz:0};break;case'kick_left':pose.leftLeg={rx:-0.3,ry:0,rz:0.9};break;case'kick_right':pose.rightLeg={rx:-0.3,ry:0,rz:-0.9};break;default:return null}return pose}
 
-function updateBonesUI(){const l=document.getElementById('bone-hierarchy-list');l.innerHTML='';Object.keys(boneSections).forEach(section=>{const h=document.createElement('div');h.className='bone-section-header';h.textContent=section.toUpperCase();l.appendChild(h);boneSections[section].forEach(key=>{const b=skeletonBones[key];if(!b)return;const d=document.createElement('div');d.style.cssText=`padding:3px 6px;cursor:pointer;border-radius:4px;display:flex;gap:4px;align-items:center;${selectedBoneKey===key?'background:rgba(236,72,153,.2);border:1px solid #ec4899':'border:1px solid transparent'}`;d.innerHTML=`<span style="width:8px;height:8px;border-radius:50%;background:${boneGroups[key].color};flex-shrink:0"></span><span style="flex:1;font-size:9px;color:#cbd5e1">${boneGroups[key].label}</span>`;d.onclick=()=>{selectedBoneKey=key;updateBonesUI();updateBoneVisualPositions();document.getElementById('pose-bone-name').textContent=boneGroups[key].label};l.appendChild(d)})})}
+// ---------- JOYSTICK ----------
+function setupJoystick(){
+    const base=document.getElementById('joystick-base'),thumb=document.getElementById('joystick-thumb');
+    base.addEventListener('pointerdown',e=>{joystickActive=true;const r=base.getBoundingClientRect();joyCenter.x=r.left+r.width/2;joyCenter.y=r.top+r.height/2;updateJoy(e.clientX,e.clientY)});
+    window.addEventListener('pointermove',e=>{if(joystickActive)updateJoy(e.clientX,e.clientY)});
+    window.addEventListener('pointerup',()=>{joystickActive=false;joyVec={x:0,y:0};thumb.style.transform='translate(0,0)'});
+    document.querySelectorAll('.joystick-actions button').forEach(b=>{b.addEventListener('click',()=>{const a=b.dataset.action;if(a==='jump'){charVel.y=0.22;showToast('Jump')}else if(a==='punch'){currentAnim='punch';setupAnimGrid()}else if(a==='kick'){currentAnim='kick';setupAnimGrid()}else if(a==='dance'){currentAnim='dance';setupAnimGrid()}})});
+}
+function updateJoy(cx,cy){const dx=cx-joyCenter.x,dy=cy-joyCenter.y;const dist=Math.sqrt(dx*dx+dy*dy);const maxR=18;const clamped=Math.min(dist,maxR);const angle=Math.atan2(dy,dx);document.getElementById('joystick-thumb').style.transform=`translate(${Math.cos(angle)*clamped}px,${Math.sin(angle)*clamped}px)`;joyVec.x=Math.cos(angle)*clamped/maxR;joyVec.y=Math.sin(angle)*clamped/maxR;}
 
-function updatePartsUI(){const l=document.getElementById('asset-parts-list');const total=Object.values(assetParts).flat().length;document.getElementById('asset-part-count').textContent=total;l.innerHTML='';if(!total){l.innerHTML='<div style="color:#64748b;font-size:9px">No parts</div>';return}const cats=[{k:'hair',l:'💇'},{k:'clothing',l:'👕'},{k:'body',l:'🧍'},{k:'accessories',l:'💎'},{k:'other',l:'📦'}];cats.forEach(cat=>{assetParts[cat.k].forEach((p,i)=>{const d=document.createElement('div');d.className=`part-item ${selectedPart===p?'selected':''} ${!p.visible?'hidden':''}`;d.innerHTML=`<span style="font-size:10px">${cat.l} ${p.name||cat.k+'_'+i}</span><span style="font-size:8px;color:${p.visible?'#34d399':'#64748b'}">${p.visible?'👁':'🚫'}</span>`;d.onclick=e=>{e.stopPropagation();selectPart(p,cat.k,i)};l.appendChild(d)})});updatePartEditPanel()}
-function selectPart(p,cat,idx){selectedPart=p;document.querySelectorAll('.part-item').forEach(el=>el.classList.remove('selected'));if(p){document.querySelectorAll('.part-item').forEach(el=>{if(el.textContent.includes(p.name)||(cat&&el.textContent.includes(cat)))el.classList.add('selected')});document.getElementById('part-edit-panel').classList.remove('hidden');document.getElementById('part-edit-name').value=p.name||`${cat}_${idx}`}else{document.getElementById('part-edit-panel').classList.add('hidden')}updatePartsUI()}
-function updatePartEditPanel(){const panel=document.getElementById('part-edit-panel');if(!selectedPart){panel.classList.add('hidden');return}panel.classList.remove('hidden');document.getElementById('part-edit-name').value=selectedPart.name||'';document.getElementById('part-eye-toggle').innerHTML=selectedPart.visible?'<i class="fa-solid fa-eye"></i>':'<i class="fa-solid fa-eye-slash"></i>'}
-function editPartScale(axis,amount){if(!selectedPart)return;selectedPart.scale[axis]+=amount;showToast(`${axis.toUpperCase()} scale: ${selectedPart.scale[axis].toFixed(1)}`)}
-function editPartTexture(){if(!selectedPart)return;const modal=document.createElement('div');modal.className='modal-overlay';modal.style.display='flex';modal.innerHTML=`<div class="modal-panel w-[300px]"><h3 class="text-sm font-bold text-sky-300 mb-2">Assign Texture</h3><div class="grid grid-cols-4 gap-2 max-h-40 overflow-y-auto">${textureLibrary.map(t=>`<img src="${genThumb(t.texture,48)}" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;cursor:pointer" onclick="this.parentElement.querySelectorAll('img').forEach(i=>i.style.outline='none');this.style.outline='2px solid #06b6d4';window._texSel=${textureLibrary.indexOf(t)}">`).join('')}</div><button onclick="document.querySelector('.modal-overlay').remove()" class="w-full mt-2 bg-slate-800 p-2 rounded text-slate-300 text-xs">Cancel</button></div>`;document.body.appendChild(modal);window._texSel=-1;modal.querySelectorAll('img').forEach(img=>{img.onclick=()=>{modal.querySelectorAll('img').forEach(i=>i.style.outline='none');img.style.outline='2px solid #06b6d4';window._texSel=parseInt(img.dataset.idx||0)}});modal.innerHTML=modal.innerHTML.replace('</div></div>','<button onclick="applyTexToSelected()" class="w-full mt-2 bg-sky-600 p-2 rounded text-white text-xs">Apply</button></div></div>')}
-function applyTexToSelected(){if(window._texSel>=0&&selectedPart&&textureLibrary[window._texSel]){applyTextureToPart(selectedPart,textureLibrary[window._texSel]);document.querySelector('.modal-overlay').remove()}}
-function applyTextureToPart(part,tex){const ms=Array.isArray(part.material)?part.material:[part.material];const old=ms.map(m=>m.map);undoStack.push({part,old,newTexture:tex});redoStack=[];ms.forEach(m=>{m.map=tex.texture;m.color.set(0xffffff);m.needsUpdate=true})}
-function applyTextureAction(a,isUndo){const ms=Array.isArray(a.part.material)?a.part.material:[a.part.material];if(isUndo)ms.forEach((m,i)=>{m.map=a.old[i]||null;m.needsUpdate=true});else ms.forEach(m=>{m.map=a.newTexture.texture;m.color.set(0xffffff);m.needsUpdate=true})}
-function addPartPulse(){if(!selectedPart)return;partPulses.push({part:selectedPart,start:Date.now(),speed:2+Math.random()*2});showToast('Pulse added')}
+// ---------- BONE VISUALS ----------
+function buildBoneVisuals(){
+    clearBoneVisuals();
+    Object.keys(skeletonBones).forEach(k=>{const b=skeletonBones[k];if(!b)return;const sg=new THREE.SphereGeometry(.025,8,8);const sm=new THREE.MeshStandardMaterial({color:boneGroups[k].color,emissive:boneGroups[k].color,emissiveIntensity:.3});const sp=new THREE.Mesh(sg,sm);sp.userData.boneKey=k;sp.visible=showSkeleton;scene.add(sp);boneNodes.push(sp)});
+    const conn=[['hips','spine'],['spine','chest'],['chest','neck'],['neck','head'],['chest','rightArm'],['chest','leftArm'],['rightArm','rightElbow'],['leftArm','leftElbow'],['rightElbow','rightWrist'],['leftElbow','leftWrist'],['rightWrist','rightFingers'],['leftWrist','leftFingers'],['hips','rightLeg'],['hips','leftLeg'],['rightLeg','rightKnee'],['leftLeg','leftKnee'],['rightKnee','rightAnkle'],['leftKnee','leftAnkle']];
+    conn.forEach(([a,b])=>{const ba=skeletonBones[a],bb=skeletonBones[b];if(!ba||!bb)return;const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));const lm=new THREE.LineBasicMaterial({color:boneGroups[a].color,transparent:true,opacity:.3});const l=new THREE.Line(lg,lm);l.userData.a=a;l.userData.b=b;l.visible=showSkeleton;scene.add(l);boneLines.push(l)});
+}
+function updateBoneVisualPositions(){if(!character)return;boneNodes.forEach(sp=>{const k=sp.userData.boneKey;const b=skeletonBones[k];if(!b){sp.visible=false;return}const wp=new THREE.Vector3();b.getWorldPosition(wp);sp.position.copy(wp);sp.visible=showSkeleton;sp.material.emissiveIntensity=selectedBoneKey===k?.8:.3;sp.scale.setScalar(selectedBoneKey===k?1.8:1)});boneLines.forEach(l=>{const ba=skeletonBones[l.userData.a],bb=skeletonBones[l.userData.b];if(!ba||!bb){l.visible=false;return}const pa=new THREE.Vector3(),pb=new THREE.Vector3();ba.getWorldPosition(pa);bb.getWorldPosition(pb);const arr=l.geometry.attributes.position.array;arr[0]=pa.x;arr[1]=pa.y;arr[2]=pa.z;arr[3]=pb.x;arr[4]=pb.y;arr[5]=pb.z;l.geometry.attributes.position.needsUpdate=true;l.geometry.computeBoundingSphere();l.visible=showSkeleton})}
+function clearBoneVisuals(){boneNodes.forEach(n=>scene.remove(n));boneLines.forEach(l=>scene.remove(l));boneNodes=[];boneLines=[]}
 
-function updateTimeline(){const tr=document.getElementById('timeline-track');tr.innerHTML='';document.getElementById('keyframe-count').textContent=`${recordedKeyframes.length} frames`;if(!recordedKeyframes.length)return;recordedKeyframes.forEach((_,i)=>{const d=document.createElement('div');d.className='keyframe-dot';d.style.left=`${(i/(recordedKeyframes.length-1||1))*100}%`;d.onclick=e=>{e.stopPropagation();replayTime=i;applyReplayFrame(i);updateTimeline()};tr.appendChild(d)});const ph=document.createElement('div');ph.className='playhead';ph.style.left=`${(replayTime/(recordedKeyframes.length-1||1))*100}%`;tr.appendChild(ph);tr.onclick=e=>{const r=tr.getBoundingClientRect();const pct=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));replayTime=pct*(recordedKeyframes.length-1);applyReplayFrame(replayTime);updateTimeline()}}
-function applyReplayFrame(t){const n=recordedKeyframes.length;if(!n)return;if(t<=0){applyPose(recordedKeyframes[0].pose,1);return}if(t>=n-1){applyPose(recordedKeyframes[n-1].pose,1);return}const i=Math.floor(t),f=t-i,a=recordedKeyframes[i],b=recordedKeyframes[i+1];if(!a||!b)return;Object.keys(a.pose).forEach(k=>{const bone=skeletonBones[k];if(bone&&b.pose[k]){bone.rotation.x+=(b.pose[k].rx-bone.rotation.x)*f;bone.rotation.y+=(b.pose[k].ry-bone.rotation.y)*f;bone.rotation.z+=(b.pose[k].rz-bone.rotation.z)*f}});if(skeletonHelper)skeletonHelper.update()}
-function applyPose(pose,blend=1){Object.keys(pose).forEach(k=>{const b=skeletonBones[k];if(!b)return;if(blend>=1)b.rotation.set(pose[k].rx,pose[k].ry,pose[k].rz);else{b.rotation.x+=(pose[k].rx-b.rotation.x)*blend;b.rotation.y+=(pose[k].ry-b.rotation.y)*blend;b.rotation.z+=(pose[k].rz-b.rotation.z)*blend}});if(skeletonHelper)skeletonHelper.update()}
+// ---------- BONE INTERACTION ----------
+function setupBoneInteraction(){const r=new THREE.Raycaster(),m=new THREE.Vector2();const c=renderer.domElement;c.addEventListener('pointerdown',e=>{if(e.target.closest('.panel')||e.target.closest('button')||e.target.closest('select')||e.target.closest('input')||e.target.closest('.modal-overlay')||texLinkMode||gameMode)return;const rect=c.getBoundingClientRect();m.x=((e.clientX-rect.left)/rect.width)*2-1;m.y=-((e.clientY-rect.top)/rect.height)*2+1;r.setFromCamera(m,camera);const hits=r.intersectObjects(boneNodes.filter(n=>n.visible));if(hits.length){const k=hits[0].object.userData.boneKey;if(k&&skeletonBones[k]){selectedBoneKey=k;updateBoneUI();updateBoneVisualPositions();document.getElementById('pose-bone-name').textContent=boneGroups[k].label;updateSwipeValues();showToast('Selected '+boneGroups[k].label)}}})}
 
-function getAnimPose(t,id){const p={};const s=(k,rx,ry,rz)=>p[k]={rx,ry,rz};switch(id){case'idle':s('chest',Math.sin(t*1.5)*.04,0,0);s('head',Math.sin(t*1.2)*.05,0,0);break;case'walk':const sw=Math.sin(t*4);s('rightArm',sw*.5,0,0);s('leftArm',-sw*.5,0,0);s('rightLeg',-sw*.7,0,0);s('leftLeg',sw*.7,0,0);break;case'run':const sr=Math.sin(t*6.5);s('rightArm',sr*.8,0,0);s('leftArm',-sr*.8,0,0);s('rightLeg',-sr,0,0);s('leftLeg',sr,0,0);break;case'wave':s('rightArm',-1.2,0,Math.sin(t*5)*.5);break;case'dance':s('rightArm',Math.sin(t*5)*.7,0,0);s('leftArm',-Math.sin(t*5)*.7,0,0);break;case'ghost':s('rightArm',Math.sin(t*2)*.4,0,0);s('leftArm',-Math.sin(t*2)*.4,0,0);break;case'glitch':s('rightArm',Math.random()*.4,0,0);s('leftArm',Math.random()*.4,0,0);break;default:s('chest',Math.sin(t*1.5)*.03,0,0)}return p}
+// ---------- CONTROLS ----------
+function setupControls(){
+    setupCameraControls();
 
-function applyEffectPreset(e){if(!primaryMaterials.length)return;stopGlitch();currentEffect=e;primaryMaterials.forEach(m=>{m.transparent=false;m.opacity=1;m.emissive=m.emissive||new THREE.Color(0);m.emissive.set(0);m.emissiveIntensity=0;m.wireframe=false;switch(e){case'cyberglitch':m.color.set(0xec4899);m.roughness=.1;m.metalness=.9;m.emissive.set(0xec4899);m.emissiveIntensity=.3;startGlitch();break;case'ghost':m.color.set(0xa78bfa);m.roughness=.25;m.metalness=.1;m.transparent=true;m.opacity=.55;break;case'holo':m.color.set(0x22d3ee);m.roughness=.05;m.metalness=.85;m.transparent=true;m.opacity=.7;break;case'normal':m.color.set(0xf5f5f5);m.roughness=.4;m.metalness=.05;m.transparent=false;m.opacity=1;break}m.needsUpdate=true})}
-function startGlitch(){document.getElementById('glitch-overlay').style.opacity='1';glitchInterval=setInterval(()=>{if(character){character.position.x=charPos.x+(Math.random()-.5)*.04;setTimeout(()=>{if(character)character.position.x=charPos.x},60)}},180)}
+    document.getElementById('btn-toggle-skeleton').addEventListener('click',()=>{showSkeleton=!showSkeleton;if(showSkeleton&&character&&!skeletonHelper){skeletonHelper=new THREE.SkeletonHelper(character);scene.add(skeletonHelper)}boneNodes.forEach(n=>n.visible=showSkeleton);boneLines.forEach(l=>l.visible=showSkeleton);if(!showSkeleton&&skeletonHelper){scene.remove(skeletonHelper);skeletonHelper=null}});
+    document.getElementById('btn-angle-spheres').addEventListener('click',()=>{showAngleSpheres=!showAngleSpheres;toggleAngleSpheres()});
+    document.getElementById('btn-skeleton-map').addEventListener('click',()=>{document.getElementById('skeleton-map-modal').style.display='flex';renderSkeletonMap()});
+    document.getElementById('btn-open-remap').addEventListener('click',openRemap);
+    document.getElementById('btn-toggle-texture-hud').addEventListener('click',()=>document.getElementById('texture-hud').classList.toggle('hidden'));
+    document.getElementById('btn-toggle-hair').addEventListener('click',()=>{showHair=!showHair;character?.traverse(ch=>{if(ch.isMesh&&(ch.name||'').toLowerCase().includes('hair'))ch.visible=showHair})});
+    document.getElementById('btn-neon-grid').addEventListener('click',()=>document.getElementById('neon-grid').classList.toggle('active'));
+    document.getElementById('btn-static-grid').addEventListener('click',()=>document.getElementById('static-grid').classList.toggle('active'));
+    document.getElementById('btn-cut').addEventListener('click',()=>{if(selectedPart){const p=selectedPart.parent;if(p){p.remove(selectedPart);selectedPart=null;updatePartsUI();showToast('Cut')}}else showToast('Select a part first')});
+    document.getElementById('btn-export-model').addEventListener('click',()=>{if(!character)return;const ex=new THREE.GLTFExporter();ex.parse(character,r=>{const blob=new Blob([r],{type:'application/octet-stream'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='avatar.glb';a.click()},{binary:true})});
+    document.getElementById('gltf-upload').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadGLB(URL.createObjectURL(f),f.name)});
+    document.getElementById('btn-game-mode').addEventListener('click',()=>{gameMode=!gameMode;document.getElementById('uh-joystick').style.display=gameMode?'block':'none';showToast(gameMode?'Game ON':'Game OFF')});
+    document.getElementById('btn-toggle-library').addEventListener('click',()=>document.getElementById('library-panel').classList.toggle('closed'));
+    document.getElementById('btn-close-lib').addEventListener('click',()=>document.getElementById('library-panel').classList.add('closed'));
+    document.getElementById('btn-game-toggle').addEventListener('click',()=>document.getElementById('btn-game-mode').click());
+
+    document.querySelectorAll('.xyz-btn').forEach(b=>{b.addEventListener('click',()=>{const axis=b.dataset.axis;const dir=parseFloat(b.dataset.dir);if(axis&&!isNaN(dir)){if(!selectedBoneKey||!skeletonBones[selectedBoneKey]){showToast('Select a bone');return}skeletonBones[selectedBoneKey].rotation[axis]+=dir;if(skeletonHelper)skeletonHelper.update();updateSwipeValues();updateBoneVisualPositions();pushHistory()}})});
+    document.getElementById('btn-mirror-pose').addEventListener('click',()=>{if(!selectedBoneKey||!skeletonBones[selectedBoneKey]){showToast('Select a bone');return}const b=skeletonBones[selectedBoneKey];b.rotation.y=-b.rotation.y;b.rotation.z=-b.rotation.z;updateSwipeValues();if(skeletonHelper)skeletonHelper.update();updateBoneVisualPositions();pushHistory();showToast('Mirrored')});
+    document.getElementById('pose-bone-select').addEventListener('change',e=>{selectedBoneKey=e.target.value;updateSwipeValues();updateBoneUI();updateBoneVisualPositions()});
+
+    // Camera drag
+    const cc=document.getElementById('canvas-container');let md=false,lm={x:0,y:0};
+    cc.addEventListener('mousedown',e=>{if(e.target.closest('.panel')||e.target.closest('button')||e.target.closest('select')||e.target.closest('input')||e.target.closest('.modal-overlay')||gameMode)return;if(texLinkMode&&selectedTex){const rect=cc.getBoundingClientRect();const mv=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);const rc=new THREE.Raycaster();rc.setFromCamera(mv,camera);const hits=rc.intersectObjects(character?[character]:[],true);if(hits.length){const mesh=hits[0].object;if(mesh.isMesh)applyTexToPart(mesh,selectedTex);return}}md=true;lm.x=e.clientX;lm.y=e.clientY;cc.style.cursor='grabbing'});
+    window.addEventListener('mousemove',e=>{if(!md)return;cameraAngleX-=(e.clientX-lm.x)*0.006;cameraAngleY=Math.max(0.05,Math.min(1.5,cameraAngleY-(e.clientY-lm.y)*0.006));lm.x=e.clientX;lm.y=e.clientY});
+    window.addEventListener('mouseup',()=>{md=false;cc.style.cursor='default'});
+    let swiping=false,pt={x:0,y:0};
+    cc.addEventListener('touchstart',e=>{if(e.target.closest('.panel')||e.target.closest('button')||e.target.closest('select')||e.target.closest('input')||e.target.closest('.modal-overlay')||gameMode)return;swiping=true;pt.x=e.touches[0].clientX;pt.y=e.touches[0].clientY},{passive:true});
+    cc.addEventListener('touchmove',e=>{if(!swiping)return;const t=e.touches[0];cameraAngleX-=(t.clientX-pt.x)*0.006;cameraAngleY=Math.max(0.05,Math.min(1.5,cameraAngleY-(t.clientY-pt.y)*0.006));pt.x=t.clientX;pt.y=t.clientY},{passive:true});
+    cc.addEventListener('touchend',()=>{swiping=false},{passive:true});
+    cc.addEventListener('wheel',e=>{cameraDistance=Math.max(1.2,Math.min(12,cameraDistance+e.deltaY*0.004))},{passive:true});
+}
+
+// ---------- ANGLE SPHERES ----------
+function toggleAngleSpheres(){
+    angleSpheres.forEach(s=>s.remove());angleSpheres=[];
+    if(!showAngleSpheres)return;
+    const c=document.getElementById('canvas-container');
+    Object.keys(skeletonBones).forEach(key=>{
+        const b=skeletonBones[key];if(!b)return;
+        const sp=document.createElement('div');sp.className='bone-angle-sphere';sp.style.background=boneGroups[key].color;sp.dataset.key=key;
+        sp.addEventListener('pointerdown',(e)=>{e.stopPropagation();const axis=e.shiftKey?'y':'x';const sx=e.clientX,sy=e.clientY,sr=b.rotation[axis];const move=(ev)=>{const dx=ev.clientX-sx,dy=ev.clientY-sy;b.rotation[axis]+=(dx+dy)*0.004;updateSwipeValues();updateBoneVisualPositions();pushHistory()};const up=()=>{document.removeEventListener('pointermove',move);document.removeEventListener('pointerup',up)};document.addEventListener('pointermove',move);document.addEventListener('pointerup',up)});
+        c.appendChild(sp);angleSpheres.push(sp);
+    });
+    setInterval(()=>{if(!showAngleSpheres)return;angleSpheres.forEach(sp=>{const key=sp.dataset.key;const b=skeletonBones[key];if(!b){sp.style.display='none';return}const wp=new THREE.Vector3();b.getWorldPosition(wp);wp.project(camera);const x=(wp.x*0.5+0.5)*window.innerWidth;const y=(-wp.y*0.5+0.5)*window.innerHeight;sp.style.left=x+'px';sp.style.top=y+'px';sp.style.display='block'})},80);
+}
+
+// ---------- SKELETON MAP ----------
+function renderSkeletonMap(){
+    const cv=document.getElementById('skeleton-map-canvas');cv.innerHTML='';
+    const pos={head:[120,40],neck:[120,68],chest:[120,96],spine:[120,124],hips:[120,152],rightArm:[160,102],rightElbow:[188,116],rightWrist:[206,130],rightFingers:[218,140],leftArm:[80,102],leftElbow:[52,116],leftWrist:[34,130],leftFingers:[22,140],rightLeg:[142,178],rightKnee:[152,206],rightAnkle:[162,234],leftLeg:[98,178],leftKnee:[88,206],leftAnkle:[78,234]};
+    const conn=[['hips','spine'],['spine','chest'],['chest','neck'],['neck','head'],['chest','rightArm'],['chest','leftArm'],['rightArm','rightElbow'],['leftArm','leftElbow'],['rightElbow','rightWrist'],['leftElbow','leftWrist'],['rightWrist','rightFingers'],['leftWrist','leftFingers'],['hips','rightLeg'],['hips','leftLeg'],['rightLeg','rightKnee'],['leftLeg','leftKnee'],['rightKnee','rightAnkle'],['leftKnee','leftAnkle']];
+    conn.forEach(([a,b])=>{const pa=pos[a],pb=pos[b];if(!pa||!pb)return;const l=document.createElement('div');l.style.cssText=`position:absolute;left:${pa[0]}px;top:${pa[1]}px;width:${Math.sqrt((pb[0]-pa[0])**2+(pb[1]-pa[1])**2)}px;height:2px;background:rgba(255,255,255,.12);transform-origin:left;transform:rotate(${Math.atan2(pb[1]-pa[1],pb[0]-pa[0])}rad)`;cv.appendChild(l)});
+    Object.keys(boneGroups).forEach(k=>{const p=pos[k];if(!p)return;const b=skeletonBones[k];const d=document.createElement('div');d.style.cssText=`position:absolute;left:${p[0]-4}px;top:${p[1]-4}px;width:8px;height:8px;border-radius:50%;background:${b?boneGroups[k].color:'#444'};border:2px solid ${selectedBoneKey===k?'#fff':'rgba(255,255,255,.3)'};cursor:pointer`;d.onclick=()=>{selectedBoneKey=k;updateBoneUI();updateBoneVisualPositions();renderSkeletonMap()};cv.appendChild(d)});
+}
+
+// ---------- REMAP ----------
+function openRemap(){
+    document.getElementById('bone-remap-modal').style.display='flex';
+    const g=document.getElementById('bone-remap-grid');g.innerHTML='';
+    const opts=[{v:'',l:'—'},...allBones.map(b=>({v:b.name||b.uuid,l:b.name||b.uuid}))];
+    Object.keys(boneGroups).forEach(k=>{const cur=skeletonBones[k];const cv=cur?.name||cur?.uuid||'';const c=document.createElement('div');c.className='bone-grid-item';c.innerHTML=`<div style="width:6px;height:6px;border-radius:50%;background:${boneGroups[k].color};margin:0 auto"></div><div style="font-size:6px;font-weight:bold;color:#cbd5e1">${boneGroups[k].label}</div><select class="remap-sel" style="width:100%;background:#0f172a;border:1px solid #334155;border-radius:3px;color:#fff;font-size:5px;padding:1px">${opts.map(o=>`<option value="${o.v}" ${o.v===cv?'selected':''}>${o.l}</option>`).join('')}</select>`;g.appendChild(c)});
+    document.getElementById('btn-apply-remap').onclick=()=>{document.querySelectorAll('.remap-sel').forEach((s,i)=>{const key=Object.keys(boneGroups)[i];const v=s.value;if(!v){skeletonBones[key]=null;boneRemapSelections[key]=''}else{const b=allBones.find(x=>(x.name||x.uuid)===v);if(b){skeletonBones[key]=b;boneRemapSelections[key]=v}}});closeModal();buildBoneVisuals();updateBoneUI()};
+    document.getElementById('btn-auto-detect').onclick=()=>{Object.keys(skeletonBones).forEach(k=>{skeletonBones[k]=null;boneRemapSelections[k]=''});allBones.forEach(b=>mapBoneToGroup(b));Object.keys(skeletonBones).forEach(k=>{if(skeletonBones[k])boneRemapSelections[k]=skeletonBones[k].name||skeletonBones[k].uuid});openRemap()};
+}
+function mapBoneToGroup(bone){const bn=bone.name.toLowerCase(),parts=bn.split('_');const isL=parts.some(p=>['l','left'].includes(p));const isR=parts.some(p=>['r','right'].includes(p));const as=k=>{if(!skeletonBones[k]){skeletonBones[k]=bone;boneRemapSelections[k]=bone.name||bone.uuid}};if(parts.includes('head'))as('head');else if(parts.includes('neck'))as('neck');else if(parts.includes('chest')||parts.includes('upperbody')||parts.includes('spine2'))as('chest');else if(parts.includes('spine')||parts.includes('hips')||parts.includes('pelvis')){as('spine');if(parts.includes('hips')||parts.includes('pelvis'))as('hips')}else if(parts.includes('upperarm')||parts.includes('shoulder')||parts.includes('arm')){if(isR||parts.includes('right'))as('rightArm');else if(isL||parts.includes('left'))as('leftArm')}else if(parts.includes('forearm')||parts.includes('elbow')||parts.includes('lowerarm')){if(isR)as('rightElbow');else if(isL)as('leftElbow')}else if(parts.includes('hand')||parts.includes('wrist')){if(isR)as('rightWrist');else if(isL)as('leftWrist')}else if(parts.includes('finger')||parts.includes('thumb')||parts.includes('index')){if(isR||parts.includes('right'))as('rightFingers');else if(isL||parts.includes('left'))as('leftFingers')}else if(parts.includes('upleg')||parts.includes('thigh')||parts.includes('leg')||parts.includes('upperleg')){if(isR)as('rightLeg');else if(isL)as('leftLeg')}else if(parts.includes('knee')||parts.includes('shin')||parts.includes('lowerleg')){if(isR)as('rightKnee');else if(isL)as('leftKnee')}else if(parts.includes('ankle')||parts.includes('foot')){if(isR)as('rightAnkle');else if(isL)as('leftAnkle')}}
+
+// ---------- LOAD GLB ----------
+function loadGLB(url,name){
+    const loader=new THREE.GLTFLoader();const draco=new THREE.DRACOLoader();draco.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.4.1/');loader.setDRACOLoader(draco);
+    loader.load(url,gltf=>{
+        if(character){scene.remove(character);clearBoneVisuals();if(skeletonHelper){scene.remove(skeletonHelper);skeletonHelper=null}stopGlitch()}
+        character=gltf.scene;character.scale.set(1.2,1.2,1.2);character.position.copy(charPos);
+        primaryMaterials=[];allBones=[];springBones=[];assetParts={hair:[],clothing:[],body:[],accessories:[],other:[]};textureLibrary=[];undoStack=[];redoStack=[];gltfAnimations=[];
+        Object.keys(skeletonBones).forEach(k=>{skeletonBones[k]=null;boneRemapSelections[k]=''});
+        character.traverse(ch=>{if(ch.isMesh){ch.castShadow=ch.receiveShadow=true;if(ch.material){const ms=Array.isArray(ch.material)?ch.material:[ch.material];primaryMaterials.push(...ms)}const nm=ch.name.toLowerCase();if(nm.includes('hair')||nm.includes('beard')||nm.includes('fur'))assetParts.hair.push(ch);else if(nm.includes('skirt')||nm.includes('shirt')||nm.includes('pant')||nm.includes('dress')||nm.includes('cloth'))assetParts.clothing.push(ch);else if(nm.includes('body')||nm.includes('skin')||nm.includes('face')||nm.includes('head')||nm.includes('torso'))assetParts.body.push(ch);else if(nm.includes('accessor')||nm.includes('glass')||nm.includes('hat'))assetParts.accessories.push(ch);else assetParts.other.push(ch)}if(ch.isBone||ch.type==='Bone'){allBones.push(ch);mapBoneToGroup(ch)}if(ch.name&&(ch.name.toLowerCase().includes('hair')||ch.name.toLowerCase().includes('skirt')||ch.name.toLowerCase().includes('cloth')))springBones.push({bone:ch,baseRotation:ch.rotation.clone()})});
+        if(gltf.animations&&gltf.animations.length){
+            gltfAnimations=gltf.animations.map(a=>({name:a.name||'Animation',clip:a}));
+            showToast(`Loaded ${gltfAnimations.length} animations`);
+        }
+        scene.add(character);
+        if(showSkeleton){skeletonHelper=new THREE.SkeletonHelper(character);scene.add(skeletonHelper)}
+        buildBoneVisuals();extractTextures();updateBoneUI();updatePartsUI();updatePoseUI();updateTextureHUD();setupAnimGrid();
+        document.getElementById('status-dot').className='w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse';
+        document.getElementById('asset-name').innerText=name;showToast(`Loaded: ${name}`);
+        cameraAngleX=0.3;cameraAngleY=0.35;cameraDistance=4.5;
+    },undefined,err=>{console.error(err);showToast('Load failed')});
+}
+function extractTextures(){if(!character)return;const seen=new Set();character.traverse(ch=>{if(!ch.isMesh||!ch.material)return;const ms=Array.isArray(ch.material)?ch.material:[ch.material];ms.forEach(m=>{if(m.map&&!seen.has(m.map.uuid)){seen.add(m.map.uuid);const n=m.map.name||`tex_${textureLibrary.length+1}`;if(!textureLibrary.find(t=>t.texture===m.map||t.name===n))textureLibrary.push({name:n,texture:m.map})}})})}
+
+// ---------- MAIN LOOP ----------
+function animate(){
+    requestAnimationFrame(animate);
+    const delta=Math.min(0.05,clock.getDelta()),time=Date.now()*.001;
+    if(isRecording&&character){recTimer+=delta;if(recTimer<10){const pose=getPose();timelineKeyframes.push({time:recTimer,pose});timelineKeyframes.sort((a,b)=>a.time-b.time);updateTLUI();pushHistory()}}
+    if(timelinePlaying&&timelineKeyframes.length>=2){replayTime+=delta*replaySpeed;const max=timelineKeyframes[timelineKeyframes.length-1].time||10;if(replayTime>=max){if(timelineLoop)replayTime=0;else{timelinePlaying=false;document.getElementById('tl-play').innerHTML='<i class="fa-solid fa-play"></i>'}}applyTimelineFrame(replayTime);updateTLUI()}
+    else if(character&&!timelinePlaying&&!isRecording){const pose=getAnimPose(time,currentAnim);applyPoseToBones(pose,.15)}
+    if(character){
+        if(gameMode&&joystickActive){const sp=0.08;charPos.x+=joyVec.x*sp;charPos.z+=joyVec.y*sp;}
+        if(charPos.y>0||charVel.y!==0){charPos.y+=charVel.y;charVel.y-=.018;if(charPos.y<=0){charPos.y=0;charVel.y=0}}character.position.copy(charPos);
+        springBones.forEach((s,i)=>{const st=time+i*.7;s.bone.rotation.x+=(s.baseRotation?.x??-0.3+Math.sin(st*2.5)*.05-s.bone.rotation.x)*.05});
+        partPulses.forEach((pp,i)=>{if(!pp.part.parent){partPulses.splice(i,1);return}const el=(Date.now()-pp.start)/1000;const sc=1+Math.sin(el*pp.speed)*.03;pp.part.scale.set(sc,sc,sc)});
+        if(skeletonHelper)skeletonHelper.update();updateBoneVisualPositions();
+        const cx=charPos.x+Math.sin(cameraAngleX)*Math.cos(cameraAngleY)*cameraDistance;
+        const cy=charPos.y+Math.sin(cameraAngleY)*cameraDistance+.7;
+        const cz=charPos.z+Math.cos(cameraAngleX)*Math.cos(cameraAngleY)*cameraDistance;
+        camera.position.lerp(new THREE.Vector3(cx,cy,cz),.12);
+        camera.lookAt(charPos.x,charPos.y+.7,charPos.z);
+    }
+    renderer.render(scene,camera);
+}
+function getAnimPose(t,id){const p={};const s=(k,rx,ry,rz)=>p[k]={rx,ry,rz};switch(id){case'idle':s('chest',Math.sin(t*1.5)*.03,0,0);s('head',Math.sin(t*1.2)*.04,0,0);break;case'walk':const w=Math.sin(t*4);s('rightArm',w*.4,0,0);s('leftArm',-w*.4,0,0);s('rightLeg',-w*.6,0,0);s('leftLeg',w*.6,0,0);break;case'run':const r=Math.sin(t*6);s('rightArm',r*.7,0,0);s('leftArm',-r*.7,0,0);s('rightLeg',-r*.9,0,0);s('leftLeg',r*.9,0,0);break;case'wave':s('rightArm',-1.0,0,Math.sin(t*5)*.4);break;case'dance':s('rightArm',Math.sin(t*5)*.6,0,0);s('leftArm',-Math.sin(t*5)*.6,0,0);s('chest',Math.sin(t*6)*.1,0,0);break;case'ghost':s('rightArm',Math.sin(t*2)*.3,0,0);s('leftArm',-Math.sin(t*2)*.3,0,0);break;case'glitch':s('rightArm',Math.random()*.3,0,0);s('leftArm',Math.random()*.3,0,0);break;default:s('chest',Math.sin(t*1.5)*.02,0,0)}return p}
 function stopGlitch(){document.getElementById('glitch-overlay').style.opacity='0';if(glitchInterval){clearInterval(glitchInterval);glitchInterval=null}}
 
-function buildBoneVisuals(){clearBoneVisuals();Object.keys(skeletonBones).forEach(k=>{const b=skeletonBones[k];if(!b)return;const sg=new THREE.SphereGeometry(.035,12,12);const sm=new THREE.MeshStandardMaterial({color:boneGroups[k].color,emissive:boneGroups[k].color,emissiveIntensity:.4});const sp=new THREE.Mesh(sg,sm);sp.userData.boneKey=k;sp.visible=showSkeletonMode;scene.add(sp);boneVisualNodes.push(sp)});const conn=[['hips','spine'],['spine','chest'],['chest','neck'],['neck','head'],['chest','rightArm'],['chest','leftArm'],['rightArm','rightElbow'],['leftArm','leftElbow'],['rightElbow','rightWrist'],['leftElbow','leftWrist'],['rightWrist','rightFingers'],['leftWrist','leftFingers'],['hips','rightLeg'],['hips','leftLeg'],['rightLeg','rightKnee'],['leftLeg','leftKnee'],['rightKnee','rightAnkle'],['leftKnee','leftAnkle']];conn.forEach(([a,b])=>{const ba=skeletonBones[a],bb=skeletonBones[b];if(!ba||!bb)return;const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.BufferAttribute(new Float32Array(6),3));const lm=new THREE.LineBasicMaterial({color:boneGroups[a].color,transparent:true,opacity:.7});const l=new THREE.Line(lg,lm);l.userData.a=a;l.userData.b=b;l.visible=showSkeletonMode;scene.add(l);boneVisualLines.push(l)})}
-function updateBoneVisualPositions(){if(!character)return;boneVisualNodes.forEach(sp=>{const k=sp.userData.boneKey;const b=skeletonBones[k];if(!b){sp.visible=false;return}const wp=new THREE.Vector3();b.getWorldPosition(wp);sp.position.copy(wp);sp.visible=showSkeletonMode;sp.material.emissiveIntensity=selectedBoneKey===k?1.2:.4;sp.scale.setScalar(selectedBoneKey===k?2.2:1)});boneVisualLines.forEach(l=>{const ba=skeletonBones[l.userData.a],bb=skeletonBones[l.userData.b];if(!ba||!bb){l.visible=false;return}const pa=new THREE.Vector3(),pb=new THREE.Vector3();ba.getWorldPosition(pa);bb.getWorldPosition(pb);const arr=l.geometry.attributes.position.array;arr[0]=pa.x;arr[1]=pa.y;arr[2]=pa.z;arr[3]=pb.x;arr[4]=pb.y;arr[5]=pb.z;l.geometry.attributes.position.needsUpdate=true;l.geometry.computeBoundingSphere();l.visible=showSkeletonMode})}
-function clearBoneVisuals(){boneVisualNodes.forEach(n=>scene.remove(n));boneVisualLines.forEach(l=>scene.remove(l));boneVisualNodes=[];boneVisualLines=[]}
-
-function setupBoneInteraction(){const r=new THREE.Raycaster(),m=new THREE.Vector2();const c=renderer.domElement;c.addEventListener('pointerdown',e=>{if(e.target.closest('.panel')||e.target.closest('button')||e.target.closest('select')||e.target.closest('input')||e.target.closest('.modal-overlay')||textureLinkMode||gameMode)return;const rect=c.getBoundingClientRect();m.x=((e.clientX-rect.left)/rect.width)*2-1;m.y=-((e.clientY-rect.top)/rect.height)*2+1;r.setFromCamera(m,camera);const hits=r.intersectObjects(boneVisualNodes.filter(n=>n.visible));if(hits.length){const k=hits[0].object.userData.boneKey;if(k&&skeletonBones[k]){selectedBoneKey=k;updateBonesUI();updateBoneVisualPositions();document.getElementById('pose-bone-name').textContent=boneGroups[k].label}}})}
-
-function showToast(msg){const t=document.getElementById('toast-container');t.textContent=msg;t.style.opacity='1';clearTimeout(t._to);t._to=setTimeout(()=>t.style.opacity='0',2000)}
-
-function onResize(){camera.aspect=window.innerWidth/window.innerHeight;camera.updateProjectionMatrix();renderer.setSize(window.innerWidth,window.innerHeight)}
-
-function updateCustomFX(){const l=document.getElementById('custom-fx-list');l.innerHTML=customFX.map((fx,i)=>`<div class="custom-fx-item" onclick="applyCustomFX(${i})"><span style="font-size:9px">${fx.name}</span> <span style="font-size:8px;color:#94a3b8">r:${fx.roughness} m:${fx.metalness}</span></div>`).join('')}
-function applyCustomFX(i){const fx=customFX[i];if(!fx)return;primaryMaterials.forEach(m=>{m.color.set(fx.color);m.roughness=fx.roughness;m.metalness=fx.metalness;m.needsUpdate=true});document.getElementById('mat-color-1').value=fx.color;document.getElementById('mat-roughness').value=fx.roughness;document.getElementById('mat-metalness').value=fx.metalness;showToast('FX applied')}
-
-function animate(){requestAnimationFrame(animate);const delta=clock.getDelta(),time=Date.now()*.001;if(liveRecording&&character){const pose={};Object.keys(skeletonBones).forEach(k=>{const b=skeletonBones[k];if(b)pose[k]={rx:b.rotation.x,ry:b.rotation.y,rz:b.rotation.z}});liveKeyframes.push({time:(Date.now()-liveStartTime)/1000,pose});}
-if(replayPlaying&&recordedKeyframes.length>=2){replayTime+=delta*replaySpeed;const max=recordedKeyframes.length-1;if(replayTime>=max){if(replayLoop)replayTime=0;else{replayPlaying=false;document.getElementById('btn-play-anim').innerHTML='<i class="fa-solid fa-play"></i> Play'}}applyReplayFrame(replayTime);updateTimeline()}else if(character&&!replayPlaying&&!liveRecording){applyPose(getAnimPose(time,currentAnimPreset),.2)}
-if(character){if(gameMode&&joystickActive){const speed=0.12;charPos.x+=joystickVector.x*speed;charPos.z+=joystickVector.y*speed;}if(charPos.y>0||charVel.y!==0){charPos.y+=charVel.y;charVel.y-=.018;if(charPos.y<=0){charPos.y=0;charVel.y=0}}character.position.copy(charPos);springBones.forEach((s,i)=>{const st=time+i*.7;s.bone.rotation.x+=(s.baseRotation?.x??-0.3+Math.sin(st*2.5)*.08-s.bone.rotation.x)*.08});if(skeletonHelper)skeletonHelper.update();updateBoneVisualPositions();}
-// Update camera every frame regardless of character
-const cx=charPos.x+Math.sin(cameraAngleX)*Math.cos(cameraAngleY)*cameraDistance;
-const cy=charPos.y+Math.sin(cameraAngleY)*cameraDistance+.7;
-const cz=charPos.z+Math.cos(cameraAngleX)*Math.cos(cameraAngleY)*cameraDistance;
-camera.position.lerp(new THREE.Vector3(cx,cy,cz),.12);
-camera.lookAt(charPos.x,charPos.y+.7,charPos.z);
-renderer.render(scene,camera);}
-
-window.onload=function(){initGame();switchTab('tab-pose');updateBonesUI();updatePartsUI();updateTextureHUD();setupAnimGrid();updateTimeline();showToast('Avatar Forge Pro — Final');};
+// ---------- BOOT ----------
+window.onload=function(){init();switchTab('tab-pose');updateBoneUI();updatePartsUI();updateTextureHUD();setupAnimGrid();updateTLUI();showToast('ULTIMATE AniMAstAR — Final Fix')};
+window.switchTab=switchTab;window.closeModal=closeModal;window.editPartScale=editPartScale;window.fxPart=fxPart;window.toggleParts=toggleParts;window.applyTexToPart=applyTexToPart;
 </script>
 </body>
 </html>
