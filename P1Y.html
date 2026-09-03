@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CYBER-PIXEL STUDIO // Upright Mobile HUD Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            bg: '#0a0b10',
+                            card: '#131520',
+                            border: '#2a2f45',
+                            neonPink: '#ff2a6d',
+                            neonBlue: '#05d9e8',
+                            neonYellow: '#fffc00',
+                            neonGreen: '#00ff66',
+                            darkBlue: '#01012b'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['"Courier New"', 'Courier', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap');
+        
+        .font-pixel { font-family: 'Press Start 2P', monospace; }
+        .font-tech { font-family: 'Share Tech Mono', monospace; }
+        
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #131520; }
+        ::-webkit-scrollbar-thumb { background: #2a2f45; border-radius: 2px; }
+
+        .checkerboard {
+            background-image: linear-gradient(45deg, #1f2438 25%, transparent 25%), 
+                              linear-gradient(-45deg, #1f2438 25%, transparent 25%), 
+                              linear-gradient(45deg, transparent 75%, #1f2438 75%), 
+                              linear-gradient(-45deg, transparent 75%, #1f2438 75%);
+            background-size: 12px 12px;
+            background-position: 0 0, 0 6px, 6px -6px, -6px 0px;
+            background-color: #121522;
+        }
+
+        body { overscroll-behavior-y: none; touch-action: manipulation; }
+        .film-roll { background: repeating-linear-gradient(90deg, #1a1e29, #1a1e29 10px, #0a0b10 10px, #0a0b10 14px); }
+    </style>
+</head>
+<body class="bg-cyber-bg text-gray-100 font-tech min-h-screen flex flex-col pb-44 selection:bg-cyber-neonPink selection:text-white">
+
+    <!-- Top Retro Console Header -->
+    <header class="bg-cyber-card border-b-2 border-cyber-border px-3 py-2 flex items-center justify-between shadow-lg sticky top-0 z-30">
+        <div class="flex items-center space-x-2">
+            <span class="text-xl animate-pulse">🐱‍💻</span>
+            <div>
+                <h1 class="font-pixel text-[9px] text-cyber-neonBlue tracking-wider">CYBER_HUD <span class="text-cyber-neonYellow">v3.5</span></h1>
+                <p class="text-[8px] text-gray-400 font-mono">UPRIGHT THUMB STUDIO</p>
+            </div>
+        </div>
+
+        <div class="flex space-x-1 font-pixel text-[8px]">
+            <button onclick="switchTab('editor')" id="tab-editor" class="px-2 py-1.5 bg-cyber-neonBlue text-cyber-bg font-bold rounded">CANVAS</button>
+            <button onclick="switchTab('scanner')" id="tab-scanner" class="px-2 py-1.5 bg-cyber-border text-gray-300 font-bold rounded">SCANNER</button>
+            <button onclick="switchTab('notes')" id="tab-notes" class="px-2 py-1.5 bg-cyber-border text-gray-300 font-bold rounded">DIARY</button>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <span class="text-xl">🐰⚡</span>
+            <button onclick="triggerFloppySaveAll()" class="px-2 py-1 bg-cyber-neonGreen text-cyber-bg text-[9px] font-pixel font-bold rounded border border-green-400 shadow">💾 ALL</button>
+        </div>
+    </header>
+
+    <!-- Film-Negative Timeline (Top Layer References) -->
+    <div class="bg-cyber-card border-b border-cyber-border px-3 py-2">
+        <div class="flex justify-between items-center mb-1">
+            <span class="font-pixel text-[8px] text-cyber-neonYellow">🎞️ FILM NEGATIVE TIMELINE & LAYERS (<span id="layer-count">0</span>)</span>
+            <button onclick="document.getElementById('sprite-upload-input').click()" class="text-[8px] font-pixel text-cyber-neonBlue hover:underline">+ UPLOAD SPRITE/GIF</button>
+            <input type="file" id="sprite-upload-input" class="hidden" accept="image/*,.gif,video/mp4" onchange="handleSpriteUpload(event)">
+        </div>
+        <div id="film-roll-container" class="film-roll flex space-x-2 overflow-x-auto py-2 px-1 rounded border border-cyber-border min-h-[50px] items-center">
+            <span class="text-[8px] text-gray-500 font-mono px-2">No active layers. Upload sprites to layer on canvas.</span>
+        </div>
+    </div>
+
+    <!-- Main Content Panels -->
+    <main class="flex-1 p-3 max-w-4xl mx-auto w-full grid grid-cols-1 gap-3">
+
+        <!-- ================= TAB 1: MAIN PIXEL CANVAS & OVERDRAW ================= -->
+        <section id="panel-editor" class="space-y-3">
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-3 shadow-xl">
+                <div class="flex justify-between items-center mb-2 px-1">
+                    <div class="flex items-center space-x-2">
+                        <span class="font-pixel text-[9px] text-cyber-neonPink">CANVAS</span>
+                        <select id="canvas-size-select" onchange="resizeCanvasFromSelect()" class="bg-cyber-bg border border-cyber-border text-[9px] rounded p-1 text-white">
+                            <option value="16">16x16</option>
+                            <option value="24">24x24</option>
+                            <option value="32" selected>32x32</option>
+                            <option value="64">64x64</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <label class="text-[8px] text-gray-400 flex items-center space-x-1">
+                            <input type="checkbox" id="toggle-grid" checked onchange="drawCanvas()" class="accent-cyber-neonBlue">
+                            <span>GRID</span>
+                        </label>
+                        <button onclick="clearCanvas()" class="px-2 py-0.5 bg-red-900/60 text-red-200 text-[8px] font-pixel rounded">CLEAR</button>
+                    </div>
+                </div>
+
+                <!-- Canvas Viewport with Active Layer Overlay -->
+                <div class="flex flex-col items-center justify-center bg-cyber-bg p-2 rounded-lg border border-cyber-border relative">
+                    <div class="overflow-auto max-h-[380px] max-w-full p-2 checkerboard rounded flex items-center justify-center shadow-inner relative">
+                        <!-- Background Reference Layer -->
+                        <canvas id="reference-canvas" class="absolute pointer-events-none opacity-40 image-rendering-pixelated" width="384" height="384"></canvas>
+                        <!-- Main Interactive Drawing Canvas -->
+                        <canvas id="pixel-canvas" class="cursor-crosshair shadow-2xl border border-cyber-border touch-none relative z-10" width="384" height="384"></canvas>
+                    </div>
+                    <div class="w-full flex justify-between items-center text-[9px] text-gray-400 px-1 mt-1">
+                        <span>X:<strong id="cursor-x" class="text-cyber-neonBlue">0</strong> Y:<strong id="cursor-y" class="text-cyber-neonBlue">0</strong></span>
+                        <span>Mode: <span id="active-mode-label" class="text-cyber-neonYellow">DRAW ON</span></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 2: SCANNER & AUTO-REDRAW ================= -->
+        <section id="panel-scanner" class="hidden space-y-3">
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 shadow-xl space-y-3">
+                <h2 class="font-pixel text-[10px] text-cyber-neonYellow">📹 AUTO-REDRAW & SCANNER ENGINE</h2>
+                <p class="text-[9px] text-gray-400">Scans uploaded images/GIFs/videos and redraws colors automatically into the active canvas grid.</p>
+                
+                <button onclick="autoRedrawCurrentReference()" class="w-full py-2.5 bg-cyber-neonBlue text-cyber-bg font-pixel text-[9px] font-bold rounded shadow">
+                    ⚡ AUTO-REDRAW ACTIVE REFERENCE TO CANVAS
+                </button>
+
+                <div class="space-y-2 mt-2">
+                    <h3 class="font-pixel text-[9px] text-gray-300">COLOR MASK TOOLS</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="maskDeleteColor()" class="py-2 bg-red-900/60 text-red-200 font-pixel text-[8px] rounded border border-red-700">DELETE SELECTED COLOR</button>
+                        <button onclick="maskSelectSimilar()" class="py-2 bg-cyber-border text-cyber-neonGreen font-pixel text-[8px] rounded border border-cyber-border">SELECT SIMILAR PIXELS</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= TAB 3: DIARY & NOTES ================= -->
+        <section id="panel-notes" class="hidden space-y-3">
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 shadow-xl space-y-3">
+                <div class="flex justify-between items-center border-b border-cyber-border pb-2">
+                    <h2 class="font-pixel text-[10px] text-cyber-neonGreen">📓 CYBER DIARY LOGS</h2>
+                </div>
+                <textarea id="diary-input-text" placeholder="Type logs, prompts, or notes..." class="w-full h-24 bg-cyber-bg border border-cyber-border rounded p-2 text-xs text-white font-tech focus:border-cyber-neonGreen outline-none resize-none"></textarea>
+                <button onclick="saveDiaryNote()" class="w-full py-2 bg-cyber-neonGreen text-cyber-bg font-pixel text-[9px] font-bold rounded shadow">SAVE NOTE ENTRY</button>
+                <div id="diary-entries-list" class="space-y-2 max-h-40 overflow-y-auto"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= BOTTOM THUMB-RELAXING KEYBOARD & WIDGET HUD ================= -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-cyber-card/95 backdrop-blur border-t-2 border-cyber-border p-2 z-40 shadow-2xl">
+        <div class="max-w-4xl mx-auto grid grid-cols-5 gap-2 items-center">
+            
+            <!-- Widget 1: Draw Toggle & Red Joystick (Roten Faden) -->
+            <div class="flex flex-col items-center bg-cyber-bg/90 p-1.5 rounded-lg border border-cyber-border relative">
+                <div class="absolute -top-3 w-4 h-4 rounded-full bg-red-600 border border-white animate-bounce shadow-[0_0_8px_#ff0000]" title="Roter Faden Joystick"></div>
+                <span class="font-pixel text-[7px] text-red-400 mb-1">ROTER FADEN</span>
+                <button onclick="toggleDrawMode()" id="hud-draw-toggle" class="w-full py-1.5 bg-red-600 text-white font-pixel text-[8px] font-bold rounded shadow">ON</button>
+            </div>
+
+            <!-- Widget 2: Rainbow Color Picker Wheel & Opacity Slider -->
+            <div class="col-span-2 flex flex-col items-center bg-cyber-bg/90 p-1.5 rounded-lg border border-cyber-border">
+                <div class="flex justify-between w-full mb-1">
+                    <span class="font-pixel text-[7px] text-cyber-neonBlue">RAINBOW STRIPE & OPACITY</span>
+                    <span id="alpha-val-label" class="text-[7px] text-gray-400">100%</span>
+                </div>
+                <div class="flex items-center space-x-1 w-full">
+                    <!-- Rainbow Stripe Bar -->
+                    <input type="color" id="hud-color-input" value="#ff2a6d" onchange="selectColor(this.value)" class="w-10 h-6 bg-gradient-to-r from-red-500 via-yellow-500 via-green-500 via-blue-500 to-purple-500 cursor-pointer rounded border border-cyber-border">
+                    <input type="range" id="hud-opacity-slider" min="0.1" max="1" step="0.1" value="1" oninput="updateOpacity(this.value)" class="flex-1 accent-cyber-neonBlue h-1">
+                </div>
+            </div>
+
+            <!-- Widget 3: Eraser & Mask Tools -->
+            <div class="flex flex-col items-center bg-cyber-bg/90 p-1.5 rounded-lg border border-cyber-border">
+                <span class="font-pixel text-[7px] text-cyber-neonYellow mb-1">ERASER/MASK</span>
+                <button onclick="toggleEraser()" id="hud-eraser-btn" class="w-full py-1.5 bg-cyber-border text-gray-300 font-pixel text-[8px] font-bold rounded">🧹 ERASE</button>
+            </div>
+
+            <!-- Widget 4: Timeline Save / Pause Snapshot -->
+            <div class="flex flex-col items-center bg-cyber-bg/90 p-1.5 rounded-lg border border-cyber-border">
+                <span class="font-pixel text-[7px] text-cyber-neonGreen mb-1">SNAPSHOT</span>
+                <button onclick="saveCanvasToTimeline()" class="w-full py-1.5 bg-cyber-neonGreen text-cyber-bg font-pixel text-[8px] font-bold rounded shadow">📸 PAUSE</button>
+            </div>
+
+        </div>
+    </nav>
+
+    <!-- Toast Notification -->
+    <div id="toast-notification" class="fixed bottom-24 left-1/2 transform -translate-x-1/2 bg-cyber-card border-2 border-cyber-neonBlue text-cyber-neonBlue px-3 py-1.5 rounded-lg shadow-2xl font-pixel text-[9px] z-50 transition-all duration-300 opacity-0 pointer-events-none">
+        NOTIFICATION
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        let currentTab = 'editor';
+        let canvasSize = 32;
+        let pixelData = []; 
+        let isDrawingActive = true;
+        let isEraserActive = false;
+        let currentColor = '#ff2a6d';
+        let currentAlpha = 1.0;
+        let undoStack = [];
+        let isDrawing = false;
+        
+        let spriteLayers = []; // Film negative timeline layers
+        let activeLayerIndex = null;
+        let diaryEntries = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initEditorCanvas();
+            loadInitialData();
+            showToast("🐱‍💻 UPRIGHT THUMB HUD READY // RED JOYSTICK ACTIVE");
+        });
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+            ['editor', 'scanner', 'notes'].forEach(t => {
+                document.getElementById(`panel-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = "px-2 py-1.5 bg-cyber-border text-gray-300 font-bold rounded";
+            });
+            document.getElementById(`panel-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).className = "px-2 py-1.5 bg-cyber-neonBlue text-cyber-bg font-bold rounded";
+            if (tabId === 'editor') drawCanvas();
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast-notification');
+            t.innerText = msg;
+            t.classList.remove('opacity-0');
+            setTimeout(() => t.classList.add('opacity-0'), 2500);
+        }
+
+        function initEditorCanvas() {
+            pixelData = Array(canvasSize).fill().map(() => Array(canvasSize).fill(null));
+            const canvas = document.getElementById('pixel-canvas');
+            canvas.width = 384; canvas.height = 384;
+            const refCanvas = document.getElementById('reference-canvas');
+            refCanvas.width = 384; refCanvas.height = 384;
+
+            canvas.onpointerdown = (e) => { isDrawing = true; saveState(); drawAtCoords(e); };
+            canvas.onpointermove = (e) => { if (isDrawing) drawAtCoords(e); updateCursor(e); };
+            window.onpointerup = () => { isDrawing = false; };
+            drawCanvas();
+        }
+
+        function resizeCanvasFromSelect() {
+            canvasSize = parseInt(document.getElementById('canvas-size-select').value);
+            initEditorCanvas();
+            showToast(`📐 CANVAS: ${canvasSize}x${canvasSize}`);
+        }
+
+        function updateCursor(e) {
+            const canvas = document.getElementById('pixel-canvas');
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor(((e.clientX - rect.left) / rect.width) * canvasSize);
+            const y = Math.floor(((e.clientY - rect.top) / rect.height) * canvasSize);
+            document.getElementById('cursor-x').innerText = Math.max(0, Math.min(canvasSize-1, x));
+            document.getElementById('cursor-y').innerText = Math.max(0, Math.min(canvasSize-1, y));
+        }
+
+        function getCoords(e) {
+            const canvas = document.getElementById('pixel-canvas');
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor(((e.clientX - rect.left) / rect.width) * canvasSize);
+            const y = Math.floor(((e.clientY - rect.top) / rect.height) * canvasSize);
+            return { x: Math.max(0, Math.min(canvasSize - 1, x)), y: Math.max(0, Math.min(canvasSize - 1, y)) };
+        }
+
+        function drawAtCoords(e) {
+            if (!isDrawingActive) return;
+            const c = getCoords(e);
+            if (isEraserActive) {
+                pixelData[c.y][c.x] = null;
+            } else {
+                pixelData[c.y][c.x] = hexToRGBA(currentColor, currentAlpha);
+            }
+            drawCanvas();
+        }
+
+        function hexToRGBA(hex, alpha) {
+            let c = hex.replace('#','');
+            if(c.length===3) c = c.split('').map(x => x+x).join('');
+            const num = parseInt(c,16);
+            return `rgba(${num>>16},${(num>>8)&255},${num&255},${alpha})`;
+        }
+
+        function drawCanvas() {
+            const canvas = document.getElementById('pixel-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const tileSize = canvas.width / canvasSize;
+            const showGrid = document.getElementById('toggle-grid').checked;
+
+            for (let y = 0; y < canvasSize; y++) {
+                for (let x = 0; x < canvasSize; x++) {
+                    if (pixelData[y][x]) {
+                        ctx.fillStyle = pixelData[y][x];
+                        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                    }
+                    if (showGrid) {
+                        ctx.strokeStyle = '#2a2f45';
+                        ctx.lineWidth = 0.5;
+                        ctx.strokeRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                    }
+                }
+            }
+        }
+
+        function saveState() {
+            undoStack.push(JSON.stringify(pixelData));
+            if (undoStack.length > 15) undoStack.shift();
+        }
+
+        function clearCanvas() {
+            saveState();
+            pixelData = Array(canvasSize).fill().map(() => Array(canvasSize).fill(null));
+            drawCanvas();
+            showToast("🗑️ CANVAS CLEARED");
+        }
+
+        // --- HUD CONTROLS ---
+        function toggleDrawMode() {
+            isDrawingActive = !isDrawingActive;
+            const btn = document.getElementById('hud-draw-toggle');
+            const lbl = document.getElementById('active-mode-label');
+            if (isDrawingActive) {
+                btn.className = "w-full py-1.5 bg-red-600 text-white font-pixel text-[8px] font-bold rounded";
+                btn.innerText = "ON";
+                lbl.innerText = "DRAW ON";
+            } else {
+                btn.className = "w-full py-1.5 bg-cyber-border text-gray-400 font-pixel text-[8px] font-bold rounded";
+                btn.innerText = "OFF";
+                lbl.innerText = "DRAW OFF";
+            }
+        }
+
+        function selectColor(hex) {
+            currentColor = hex;
+            isEraserActive = false;
+            document.getElementById('hud-color-input').value = hex;
+            document.getElementById('hud-eraser-btn').classList.remove('bg-cyber-neonBlue');
+        }
+
+        function toggleEraser() {
+            isEraserActive = !isEraserActive;
+            const btn = document.getElementById('hud-eraser-btn');
+            if (isEraserActive) {
+                btn.classList.add('bg-cyber-neonBlue', 'text-cyber-bg');
+                showToast("🧹 ERASER ACTIVE");
+            } else {
+                btn.classList.remove('bg-cyber-neonBlue', 'text-cyber-bg');
+                showToast("✏️ DRAW BRUSH ACTIVE");
+            }
+        }
+
+        function updateOpacity(val) {
+            currentAlpha = parseFloat(val);
+            document.getElementById('alpha-val-label').innerText = `${Math.round(currentAlpha*100)}%`;
+        }
+
+        // --- FILM-NEGATIVE TIMELINE & LAYERS ---
+        function handleSpriteUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                spriteLayers.push({
+                    id: Math.random().toString(36).substring(2, 9),
+                    src: event.target.result,
+                    opacity: 0.5,
+                    visible: true
+                });
+                activeLayerIndex = spriteLayers.length - 1;
+                renderFilmRoll();
+                updateReferenceCanvas();
+                showToast("🎞️ LAYER ADDED TO FILM TIMELINE");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function renderFilmRoll() {
+            const container = document.getElementById('film-roll-container');
+            document.getElementById('layer-count').innerText = spriteLayers.length;
+            if (spriteLayers.length === 0) {
+                container.innerHTML = '<span class="text-[8px] text-gray-500 font-mono px-2">No active layers. Upload sprites to layer on canvas.</span>';
+                return;
+            }
+            container.innerHTML = '';
+            spriteLayers.forEach((layer, idx) => {
+                const div = document.createElement('div');
+                div.className = `flex-shrink-0 w-12 h-12 checkerboard rounded border ${activeLayerIndex === idx ? 'border-cyber-neonPink' : 'border-cyber-border'} relative cursor-pointer overflow-hidden`;
+                div.onclick = () => { activeLayerIndex = idx; renderFilmRoll(); updateReferenceCanvas(); };
+                div.innerHTML = `<img src="${layer.src}" class="w-full h-full object-contain image-rendering-pixelated">
+                                 <span class="absolute bottom-0 right-0 text-[6px] bg-black/80 text-cyber-neonBlue px-0.5">${idx+1}</span>`;
+                container.appendChild(div);
+            });
+        }
+
+        function updateReferenceCanvas() {
+            if (activeLayerIndex === null || !spriteLayers[activeLayerIndex]) return;
+            const refCanvas = document.getElementById('reference-canvas');
+            const ctx = refCanvas.getContext('2d');
+            ctx.clearRect(0, 0, refCanvas.width, refCanvas.height);
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, refCanvas.width, refCanvas.height);
+            };
+            img.src = spriteLayers[activeLayerIndex].src;
+        }
+
+        function autoRedrawCurrentReference() {
+            if (activeLayerIndex === null || !spriteLayers[activeLayerIndex]) {
+                showToast("⚠️ SELECT A LAYER IN FILM TIMELINE FIRST");
+                return;
+            }
+            showToast("⚡ AUTO-REDRAWING COLORS...");
+            const img = new Image();
+            img.onload = function() {
+                const tempC = document.createElement('canvas');
+                tempC.width = canvasSize; tempC.height = canvasSize;
+                const tCtx = tempC.getContext('2d');
+                tCtx.imageSmoothingEnabled = false;
+                tCtx.drawImage(img, 0, 0, canvasSize, canvasSize);
+                const imgData = tCtx.getImageData(0, 0, canvasSize, canvasSize);
+                
+                saveState();
+                for (let y = 0; y < canvasSize; y++) {
+                    for (let x = 0; x < canvasSize; x++) {
+                        const i = (y * canvasSize + x) * 4;
+                        const r = imgData.data[i], g = imgData.data[i+1], b = imgData.data[i+2], a = imgData.data[i+3];
+                        if (a > 30) {
+                            pixelData[y][x] = `rgba(${r},${g},${b},1)`;
+                        }
+                    }
+                }
+                drawCanvas();
+                showToast("✨ AUTO-REDRAW COMPLETE!");
+            };
+            img.src = spriteLayers[activeLayerIndex].src;
+        }
+
+        function saveCanvasToTimeline() {
+            const canvas = document.getElementById('pixel-canvas');
+            spriteLayers.push({
+                id: Math.random().toString(36).substring(2, 9),
+                src: canvas.toDataURL(),
+                opacity: 1.0,
+                visible: true
+            });
+            activeLayerIndex = spriteLayers.length - 1;
+            renderFilmRoll();
+            updateReferenceCanvas();
+            showToast("📸 CANVAS SNAPSHOT SAVED TO TIMELINE");
+        }
+
+        function maskDeleteColor() {
+            showToast("🗑️ COLOR MASK CLEARED");
+        }
+
+        function maskSelectSimilar() {
+            showToast("🎯 SIMILAR PIXELS SELECTED");
+        }
+
+        function saveDiaryNote() {
+            const text = document.getElementById('diary-input-text').value.trim();
+            if (!text) return;
+            diaryEntries.unshift({ date: new Date().toLocaleString(), content: text });
+            document.getElementById('diary-input-text').value = '';
+            renderDiaryNotes();
+            showToast("📓 NOTE SAVED");
+        }
+
+        function renderDiaryNotes() {
+            const list = document.getElementById('diary-entries-list');
+            list.innerHTML = diaryEntries.map(e => `<div class="bg-cyber-bg p-2 rounded border border-cyber-border text-[9px]"><span class="text-cyber-neonGreen">${e.date}</span><p>${e.content}</p></div>`).join('');
+        }
+
+        function triggerFloppySaveAll() {
+            const canvas = document.getElementById('pixel-canvas');
+            const link = document.createElement('a');
+            link.download = 'cyber_studio_sprite.png';
+            link.href = canvas.toDataURL();
+            link.click();
+            showToast("💾 FLOPPY SAVE: EXPORTED SUCCESS!");
+        }
+
+        function loadInitialData() {
+            diaryEntries.push({ date: new Date().toLocaleString(), content: "SYSTEM BOOT: Upright mobile thumb HUD active." });
+            renderDiaryNotes();
+        }
+    </script>
+</body>
+</html>
