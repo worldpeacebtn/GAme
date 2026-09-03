@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEON GENESIS - JRPG Cutscene Engine</title>
+    <title>NEON GENESIS GRID ENGINE - JRPG Cutscene System</title>
     <style>
         :root {
             --neon-pink: #ff2d95;
@@ -43,8 +43,8 @@
         #app {
             width: 100%;
             height: 100%;
-            max-width: 1400px;
-            max-height: 900px;
+            max-width: 1600px;
+            max-height: 1000px;
             position: relative;
             display: flex;
             flex-direction: column;
@@ -54,7 +54,6 @@
             background: radial-gradient(ellipse at center, #12121f 0%, #08080e 100%);
         }
 
-        /* SCANLINE OVERLAY */
         #scanlines {
             position: absolute;
             top: 0;
@@ -63,17 +62,13 @@
             height: 100%;
             pointer-events: none;
             z-index: 50;
-            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.06) 2px, rgba(0, 0, 0, 0.06) 4px);
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
             opacity: 0.5;
             animation: scanline-drift 8s linear infinite;
         }
         @keyframes scanline-drift {
-            0% {
-                background-position: 0 0;
-            }
-            100% {
-                background-position: 0 100%;
-            }
+            0% { background-position: 0 0; }
+            100% { background-position: 0 100%; }
         }
 
         #vignette {
@@ -84,10 +79,9 @@
             height: 100%;
             pointer-events: none;
             z-index: 49;
-            background: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6) 100%);
         }
 
-        /* GLITCH OVERLAY */
         #glitch-overlay {
             position: absolute;
             top: 0;
@@ -105,29 +99,13 @@
             animation: glitch-flash 0.3s steps(3);
         }
         @keyframes glitch-flash {
-            0% {
-                transform: translate(3px, -2px) skewX(2deg);
-                filter: hue-rotate(0deg);
-            }
-            25% {
-                transform: translate(-4px, 1px) skewX(-3deg);
-                filter: hue-rotate(90deg);
-            }
-            50% {
-                transform: translate(2px, 3px) skewX(1deg);
-                filter: hue-rotate(180deg);
-            }
-            75% {
-                transform: translate(-3px, -1px) skewX(-1deg);
-                filter: hue-rotate(270deg);
-            }
-            100% {
-                transform: translate(0, 0) skewX(0);
-                filter: hue-rotate(360deg);
-            }
+            0% { transform: translate(3px, -2px) skewX(2deg); filter: hue-rotate(0deg); }
+            25% { transform: translate(-4px, 1px) skewX(-3deg); filter: hue-rotate(90deg); }
+            50% { transform: translate(2px, 3px) skewX(1deg); filter: hue-rotate(180deg); }
+            75% { transform: translate(-3px, -1px) skewX(-1deg); filter: hue-rotate(270deg); }
+            100% { transform: translate(0, 0) skewX(0); filter: hue-rotate(360deg); }
         }
 
-        /* HEADER */
         #header {
             display: flex;
             align-items: center;
@@ -152,30 +130,8 @@
             animation: logo-shimmer 3s ease-in-out infinite;
         }
         @keyframes logo-shimmer {
-            0%,
-            100% {
-                filter: brightness(1);
-            }
-            50% {
-                filter: brightness(1.6) drop-shadow(0 0 15px var(--neon-pink));
-            }
-        }
-        #header .logo.glitching {
-            animation: logo-glitch 0.2s steps(2) infinite;
-        }
-        @keyframes logo-glitch {
-            0% {
-                transform: translate(2px, -1px);
-                filter: hue-rotate(20deg);
-            }
-            50% {
-                transform: translate(-2px, 1px);
-                filter: hue-rotate(-30deg);
-            }
-            100% {
-                transform: translate(1px, 0px);
-                filter: hue-rotate(10deg);
-            }
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.6) drop-shadow(0 0 15px var(--neon-pink)); }
         }
         .header-btn {
             background: rgba(255, 255, 255, 0.06);
@@ -202,33 +158,7 @@
             transform: scale(0.95);
             transition: 0.05s;
         }
-        .header-btn .btn-dot {
-            display: inline-block;
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            margin-right: 6px;
-            animation: btn-dot-pulse 1.5s infinite;
-        }
-        .header-btn .btn-dot.pink {
-            background: var(--neon-pink);
-            box-shadow: 0 0 8px var(--neon-pink);
-        }
-        .header-btn .btn-dot.cyan {
-            background: var(--neon-cyan);
-            box-shadow: 0 0 8px var(--neon-cyan);
-        }
-        @keyframes btn-dot-pulse {
-            0%,
-            100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.3;
-            }
-        }
 
-        /* MAIN LAYOUT */
         #main-layout {
             display: flex;
             flex: 1;
@@ -237,7 +167,6 @@
             z-index: 10;
         }
 
-        /* GAME AREA */
         #game-area {
             flex: 1;
             position: relative;
@@ -260,7 +189,60 @@
             background: #0a0a14;
         }
 
-        /* DIALOG BOX */
+        /* HUD OVERLAY - BOTTOM LEFT FIXED */
+        #hud-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 25;
+            pointer-events: none;
+            max-height: 70%;
+            flex-wrap: wrap;
+            width: 200px;
+        }
+        .hud-btn {
+            pointer-events: all;
+            background: rgba(15, 15, 35, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            color: #fff;
+            padding: 8px 12px;
+            font-size: 0.65em;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-weight: 700;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hud-btn .icon {
+            font-size: 1.1em;
+        }
+        .hud-btn:hover {
+            background: rgba(255, 45, 149, 0.2);
+            border-color: var(--neon-pink);
+            box-shadow: var(--glow-pink);
+            transform: translateX(4px);
+        }
+        .hud-btn:active {
+            transform: scale(0.92);
+            transition: 0.05s;
+        }
+        .hud-btn.active {
+            background: rgba(0, 240, 255, 0.15);
+            border-color: var(--neon-cyan);
+            box-shadow: var(--glow-cyan);
+        }
+
         #dialog-box {
             background: rgba(10, 10, 25, 0.95);
             border: 2px solid rgba(255, 255, 255, 0.1);
@@ -271,7 +253,7 @@
             position: relative;
             overflow: hidden;
             flex-shrink: 0;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
         }
@@ -288,12 +270,8 @@
             opacity: 0.7;
         }
         @keyframes dialog-border-flow {
-            0% {
-                background-position: 0% 0%;
-            }
-            100% {
-                background-position: 300% 0%;
-            }
+            0% { background-position: 0% 0%; }
+            100% { background-position: 300% 0%; }
         }
         #dialog-name {
             font-size: 0.85em;
@@ -306,19 +284,12 @@
             align-items: center;
             gap: 8px;
         }
-        #dialog-name .name-tag {
-            background: rgba(0, 240, 255, 0.12);
-            padding: 2px 10px;
-            border-radius: 10px;
-            border: 1px solid rgba(0, 240, 255, 0.3);
-            font-size: 0.8em;
-        }
         #dialog-text {
             font-size: 1.05em;
             line-height: 1.5;
             color: #e8e8f0;
             min-height: 40px;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+            text-shadow: 0 0 10px rgba(255,255,255,0.1);
             white-space: pre-wrap;
         }
         #dialog-text .cursor-blink {
@@ -332,103 +303,25 @@
             box-shadow: 0 0 8px var(--neon-cyan);
         }
         @keyframes cursor-blink {
-            0%,
-            100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0;
-            }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
         }
         #dialog-advance-hint {
             position: absolute;
             right: 16px;
             bottom: 10px;
             font-size: 0.65em;
-            color: rgba(255, 255, 255, 0.4);
+            color: rgba(255,255,255,0.4);
             letter-spacing: 2px;
             animation: hint-pulse 1.5s ease-in-out infinite;
         }
         @keyframes hint-pulse {
-            0%,
-            100% {
-                opacity: 0.4;
-            }
-            50% {
-                opacity: 1;
-            }
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
         }
 
-        /* HUD OVERLAY ON GAME AREA */
-        #hud-overlay {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            z-index: 25;
-            pointer-events: none;
-        }
-        .hud-btn {
-            pointer-events: all;
-            background: rgba(15, 15, 35, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 12px;
-            color: #fff;
-            padding: 10px 14px;
-            font-size: 0.7em;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            font-weight: 700;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            position: relative;
-            overflow: hidden;
-        }
-        .hud-btn .icon {
-            font-size: 1.2em;
-        }
-        .hud-btn:hover {
-            background: rgba(255, 45, 149, 0.2);
-            border-color: var(--neon-pink);
-            box-shadow: var(--glow-pink), inset 0 0 20px rgba(255, 45, 149, 0.1);
-            transform: translateX(-4px);
-        }
-        .hud-btn:active {
-            transform: scale(0.92);
-            transition: 0.05s;
-            box-shadow: 0 0 40px var(--neon-pink), 0 0 80px var(--neon-purple);
-        }
-        .hud-btn.active {
-            background: rgba(0, 240, 255, 0.15);
-            border-color: var(--neon-cyan);
-            box-shadow: var(--glow-cyan);
-        }
-        .hud-btn .btn-glow-ring {
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(255, 45, 149, 0.3) 0%, transparent 70%);
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none;
-        }
-        .hud-btn:hover .btn-glow-ring {
-            opacity: 1;
-        }
-
-        /* SIDEBAR */
         #sidebar {
-            width: 280px;
+            width: 320px;
             background: rgba(12, 12, 25, 0.92);
             border-left: 2px solid var(--glass-border);
             display: flex;
@@ -448,7 +341,7 @@
             background: transparent;
         }
         #sidebar::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255,255,255,0.2);
             border-radius: 4px;
         }
         .sidebar-section {
@@ -460,7 +353,6 @@
         }
         .sidebar-section:hover {
             border-color: rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.05);
         }
         .sidebar-section h3 {
             font-size: 0.7em;
@@ -469,40 +361,30 @@
             color: var(--neon-purple);
             margin-bottom: 8px;
             font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .sidebar-section h3::before {
-            content: '';
-            width: 4px;
-            height: 14px;
-            background: var(--neon-purple);
-            border-radius: 2px;
-            box-shadow: 0 0 8px var(--neon-purple);
         }
         .upload-zone {
-            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border: 2px dashed rgba(255,255,255,0.2);
             border-radius: 10px;
-            padding: 20px 12px;
+            padding: 15px 12px;
             text-align: center;
             cursor: pointer;
             transition: all 0.4s;
-            font-size: 0.75em;
-            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.7em;
+            color: rgba(255,255,255,0.5);
             letter-spacing: 1px;
             position: relative;
             overflow: hidden;
+            margin-bottom: 8px;
         }
         .upload-zone:hover {
             border-color: var(--neon-cyan);
-            background: rgba(0, 240, 255, 0.05);
+            background: rgba(0,240,255,0.05);
             color: #fff;
             box-shadow: var(--glow-cyan);
         }
         .upload-zone.dragover {
             border-color: var(--neon-pink);
-            background: rgba(255, 45, 149, 0.1);
+            background: rgba(255,45,149,0.1);
             box-shadow: var(--glow-pink);
             transform: scale(1.02);
         }
@@ -515,79 +397,55 @@
             opacity: 0;
             cursor: pointer;
         }
-        .upload-zone .upload-icon {
-            font-size: 2em;
-            margin-bottom: 6px;
-            display: block;
-        }
-
         .grid-info {
-            font-size: 0.7em;
-            color: rgba(255, 255, 255, 0.5);
-            line-height: 1.6;
+            font-size: 0.65em;
+            color: rgba(255,255,255,0.5);
+            line-height: 1.5;
             letter-spacing: 0.5px;
+            margin-bottom: 8px;
         }
         .grid-info .highlight {
             color: var(--neon-gold);
             font-weight: 700;
         }
-        .grid-info .pink {
-            color: var(--neon-pink);
-        }
-        .grid-info .cyan {
-            color: var(--neon-cyan);
-        }
+        .grid-info .pink { color: var(--neon-pink); }
+        .grid-info .cyan { color: var(--neon-cyan); }
 
         .state-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
+            gap: 5px;
         }
         .state-btn {
-            padding: 8px 4px;
-            font-size: 0.6em;
+            padding: 6px 3px;
+            font-size: 0.55em;
             text-align: center;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
             color: #ccc;
             cursor: pointer;
             transition: all 0.3s;
             letter-spacing: 0.5px;
             text-transform: uppercase;
             font-weight: 600;
-            position: relative;
-            overflow: hidden;
         }
         .state-btn:hover {
-            background: rgba(255, 45, 149, 0.15);
+            background: rgba(255,45,149,0.15);
             border-color: var(--neon-pink);
-            box-shadow: 0 0 15px rgba(255, 45, 149, 0.3);
             color: #fff;
-            transform: translateY(-2px);
-        }
-        .state-btn:active {
-            transform: scale(0.9);
-            transition: 0.05s;
         }
         .state-btn.playing {
-            background: rgba(0, 240, 255, 0.2);
+            background: rgba(0,240,255,0.2);
             border-color: var(--neon-cyan);
             color: #fff;
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
             animation: state-btn-glow 0.8s ease-in-out infinite;
         }
         @keyframes state-btn-glow {
-            0%,
-            100% {
-                box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
-            }
-            50% {
-                box-shadow: 0 0 25px rgba(0, 240, 255, 0.6), 0 0 50px rgba(185, 103, 255, 0.3);
-            }
+            0%, 100% { box-shadow: 0 0 10px rgba(0,240,255,0.3); }
+            50% { box-shadow: 0 0 25px rgba(0,240,255,0.6); }
         }
 
-        /* PARTICLE CANVAS */
         #particle-canvas {
             position: absolute;
             top: 0;
@@ -598,43 +456,12 @@
             z-index: 40;
         }
 
-        /* RESPONSIVE */
-        @media (max-width: 900px) {
-            #sidebar {
-                width: 220px;
-            }
-            .state-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-        @media (max-width: 700px) {
-            #main-layout {
-                flex-direction: column;
-            }
-            #sidebar {
-                width: 100%;
-                flex-direction: row;
-                flex-wrap: wrap;
-                max-height: 200px;
-                border-left: none;
-                border-top: 2px solid var(--glass-border);
-            }
-            .sidebar-section {
-                flex: 1;
-                min-width: 150px;
-            }
-            #game-area {
-                min-height: 400px;
-            }
-        }
-
-        /* TOAST NOTIFICATION */
         #toast {
             position: absolute;
             bottom: 120px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(20, 20, 40, 0.95);
+            background: rgba(20,20,40,0.95);
             border: 1px solid var(--neon-gold);
             border-radius: 20px;
             padding: 10px 24px;
@@ -646,76 +473,86 @@
             opacity: 0;
             pointer-events: none;
             transition: all 0.4s;
-            box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            box-shadow: 0 0 30px rgba(255,215,0,0.3);
             backdrop-filter: blur(10px);
         }
         #toast.show {
             opacity: 1;
             transform: translateX(-50%) translateY(-10px);
         }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            font-size: 0.6em;
+            color: rgba(255,255,255,0.6);
+        }
+        .slider-group input[type="range"] {
+            flex: 1;
+            accent-color: var(--neon-green);
+            cursor: pointer;
+        }
+        .slider-group span {
+            color: var(--neon-green);
+            font-weight: 700;
+            min-width: 30px;
+        }
+        .grid-pos-controls {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .grid-pos-btn {
+            padding: 5px;
+            font-size: 0.6em;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #ccc;
+            cursor: pointer;
+            border-radius: 5px;
+            text-align: center;
+            transition: all 0.2s;
+        }
+        .grid-pos-btn:hover {
+            background: rgba(0,240,255,0.15);
+            border-color: var(--neon-cyan);
+        }
     </style>
 </head>
 <body>
-
     <div id="app">
-        <!-- Overlays -->
         <div id="scanlines"></div>
         <div id="vignette"></div>
         <div id="glitch-overlay"></div>
         <canvas id="particle-canvas"></canvas>
         <div id="toast"></div>
 
-        <!-- Header -->
         <div id="header">
-            <span class="logo" id="logo-text">✦ NEON GENESIS ✦</span>
-            <div style="display:flex;gap:10px;">
-                <button class="header-btn" id="btn-upload-trigger">
-                    <span class="btn-dot pink"></span>UPLOAD SPRITE
-                </button>
-                <button class="header-btn" id="btn-cutscene">
-                    <span class="btn-dot cyan"></span>▶ CUTSCENE
-                </button>
-                <button class="header-btn" id="btn-glitch">
-                    <span class="btn-dot pink"></span>GLITCH
-                </button>
+            <span class="logo" id="logo-text">✦ NEON GENESIS GRID ✦</span>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="header-btn" id="btn-upload-sprite">🎨 SPRITE</button>
+                <button class="header-btn" id="btn-upload-bg">🏞️ BG</button>
+                <button class="header-btn" id="btn-cutscene">▶ CUTSCENE</button>
+                <button class="header-btn" id="btn-glitch">⚡ GLITCH</button>
             </div>
         </div>
 
-        <!-- Main Layout -->
         <div id="main-layout">
-            <!-- Game Area -->
             <div id="game-area">
                 <div id="game-canvas-container">
                     <canvas id="game-canvas"></canvas>
-                    <!-- HUD Overlay -->
                     <div id="hud-overlay">
-                        <button class="hud-btn" data-action="idle">
-                            <span class="icon">🕴️</span> IDLE
-                            <span class="btn-glow-ring"></span>
-                        </button>
-                        <button class="hud-btn" data-action="walk">
-                            <span class="icon">🚶</span> WALK
-                            <span class="btn-glow-ring"></span>
-                        </button>
-                        <button class="hud-btn" data-action="talk">
-                            <span class="icon">💬</span> TALK
-                            <span class="btn-glow-ring"></span>
-                        </button>
-                        <button class="hud-btn" data-action="inspired">
-                            <span class="icon">💡</span> INSPIRED
-                            <span class="btn-glow-ring"></span>
-                        </button>
-                        <button class="hud-btn" data-action="happy">
-                            <span class="icon">😊</span> HAPPY
-                            <span class="btn-glow-ring"></span>
-                        </button>
-                        <button class="hud-btn" data-action="kawaii">
-                            <span class="icon">🌸</span> KAWAII
-                            <span class="btn-glow-ring"></span>
-                        </button>
+                        <button class="hud-btn" data-action="idle"><span class="icon">🕴️</span> IDLE</button>
+                        <button class="hud-btn" data-action="walk"><span class="icon">🚶</span> WALK</button>
+                        <button class="hud-btn" data-action="talk"><span class="icon">💬</span> TALK</button>
+                        <button class="hud-btn" data-action="inspired"><span class="icon">💡</span> INSPIRED</button>
+                        <button class="hud-btn" data-action="happy"><span class="icon">😊</span> HAPPY</button>
+                        <button class="hud-btn" data-action="kawaii"><span class="icon">🌸</span> KAWAII</button>
                     </div>
                 </div>
-                <!-- Dialog Box -->
                 <div id="dialog-box">
                     <div id="dialog-name">
                         <span class="name-tag" id="dialog-name-tag">YUKI</span>
@@ -726,42 +563,65 @@
                 </div>
             </div>
 
-            <!-- Sidebar -->
             <div id="sidebar">
                 <div class="sidebar-section">
-                    <h3>Sprite Upload</h3>
-                    <div class="upload-zone" id="upload-zone">
-                        <span class="upload-icon">🎨</span>
-                        <br>DROP SPRITE SHEET
-                        <br><small style="font-size:0.65em;opacity:0.6;">PNG with green screen bg</small>
-                        <input type="file" id="file-input" accept="image/*">
+                    <h3>🎨 SPRITE SHEET UPLOAD</h3>
+                    <div class="upload-zone" id="sprite-upload-zone">
+                        <span style="font-size:1.5em;">🎭</span><br>
+                        DROP CHARACTER SHEET<br>
+                        <small style="font-size:0.6em;">8-col grid • green screen</small>
+                        <input type="file" id="sprite-file-input" accept="image/*">
                     </div>
-                    <div id="upload-status" style="font-size:0.65em;color:rgba(255,255,255,0.4);margin-top:6px;letter-spacing:1px;">
-                        NO SPRITE LOADED — USING PROCEDURAL DEMO
-                    </div>
-                    <div style="margin-top:8px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-                        <label style="font-size:0.6em;color:rgba(255,255,255,0.5);letter-spacing:1px;">GREEN TOLERANCE:</label>
-                        <input type="range" id="green-tolerance" min="5" max="80" value="35" style="flex:1;accent-color:var(--neon-green);cursor:pointer;">
-                        <span id="tolerance-val" style="font-size:0.6em;color:var(--neon-green);font-weight:700;">35</span>
+                    <div id="sprite-status" style="font-size:0.6em;color:rgba(255,255,255,0.4);margin-top:4px;">
+                        USING PROCEDURAL DEMO
                     </div>
                 </div>
 
                 <div class="sidebar-section">
-                    <h3>Grid Spec — 8 Columns</h3>
+                    <h3>🏞️ BACKGROUND UPLOAD</h3>
+                    <div class="upload-zone" id="bg-upload-zone">
+                        <span style="font-size:1.5em;">🌆</span><br>
+                        DROP BACKGROUND<br>
+                        <small style="font-size:0.6em;">PNG or JPG</small>
+                        <input type="file" id="bg-file-input" accept="image/*">
+                    </div>
+                    <div id="bg-status" style="font-size:0.6em;color:rgba(255,255,255,0.4);margin-top:4px;">
+                        USING PROCEDURAL CYBER ROOM
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>📐 GRID SPECIFICATION — 8 COL</h3>
                     <div class="grid-info">
-                        <span class="highlight">X1</span> 4×4×4 <span class="pink">CUT×4</span> NORMAL•TALK•SLEEP•INSPIRED<br>
-                        <span class="highlight">X2</span> 2×3×4 <span class="cyan">VIEWS</span> FRONT•BACK•3/4•SB<br>
-                        <span class="highlight">X3</span> 4×4×4 <span class="pink">CUT×4</span> HAPPY•KAWAII•MAD•ILL<br>
+                        <span class="highlight">X1</span> 4×4×4 <span class="pink">CUT</span> NORM•TALK•SLEEP•INS<br>
+                        <span class="highlight">X2</span> 2×3×4 <span class="cyan">VIEWS</span> F•B•¾•SB<br>
+                        <span class="highlight">X3</span> 4×4×4 <span class="pink">CUT</span> HAPPY•KAWAII•MAD•ILL<br>
                         <span class="highlight">X4</span> 1×2×8 <span class="cyan">BASE+CLOTHED</span><br>
-                        <span class="highlight">X5</span> 1×1×4 + <span class="pink">4×4½</span> IDLE•WALK•SLEEP•EAT<br>
+                        <span class="highlight">X5</span> 1×1×4 + 4×4½ IDLE•WALK•SLEEP•EAT<br>
                         <span class="highlight">X6</span> 1×1×4 REPEAT•PC•DESK•DRAW<br>
-                        <span class="highlight">X7</span> 1.5×1.5×4 <span class="cyan">HAIR ASSETS</span><br>
-                        <span class="highlight">X8</span> 1.5×1.5×4 <span class="cyan">CLOTHING</span>
+                        <span class="highlight">X7</span> 1.5×1.5×4 <span class="cyan">HAIR</span><br>
+                        <span class="highlight">X8</span> 1.5×1.5×4 <span class="cyan">CLOTH</span>
                     </div>
                 </div>
 
                 <div class="sidebar-section">
-                    <h3>Emotion States</h3>
+                    <h3>🎮 GRID POSITION CONTROLS</h3>
+                    <div class="grid-info" style="margin-bottom:6px;">Adjust sprite position on canvas:</div>
+                    <div class="grid-pos-controls">
+                        <button class="grid-pos-btn" data-dir="up">⬆ UP</button>
+                        <button class="grid-pos-btn" data-dir="down">⬇ DOWN</button>
+                        <button class="grid-pos-btn" data-dir="left">⬅ LEFT</button>
+                        <button class="grid-pos-btn" data-dir="right">➡ RIGHT</button>
+                    </div>
+                    <div class="slider-group">
+                        <span>GREEN TOL:</span>
+                        <input type="range" id="green-tolerance" min="5" max="80" value="35">
+                        <span id="tolerance-val">35</span>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>😊 EMOTION STATES</h3>
                     <div class="state-grid" id="state-grid">
                         <button class="state-btn" data-state="normal">😐 NORMAL</button>
                         <button class="state-btn" data-state="talking">💬 TALK</button>
@@ -777,7 +637,7 @@
                         <button class="state-btn" data-state="computer">💻 PC</button>
                         <button class="state-btn" data-state="desk">📚 DESK</button>
                         <button class="state-btn" data-state="draw">✏️ DRAW</button>
-                        <button class="state-btn" data-state="side34">👁️ 3/4 VIEW</button>
+                        <button class="state-btn" data-state="side34">👁️ ¾ VIEW</button>
                         <button class="state-btn" data-state="back">🔙 BACK</button>
                     </div>
                 </div>
@@ -792,8 +652,6 @@
                 constructor() {
                     this.ctx = null;
                     this.initialized = false;
-                    this.ambientNode = null;
-                    this.ambientGain = null;
                     this.enabled = true;
                 }
                 init() {
@@ -802,7 +660,7 @@
                         this.ctx = new(window.AudioContext || window.webkitAudioContext)();
                         this.initialized = true;
                         this.startAmbient();
-                    } catch (e) { console.warn('Audio unavailable'); }
+                    } catch (e) {}
                 }
                 startAmbient() {
                     if (!this.initialized || !this.enabled) return;
@@ -811,9 +669,7 @@
                         const bufferSize = 2 * ctx.sampleRate;
                         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
                         const data = buffer.getChannelData(0);
-                        for (let i = 0; i < bufferSize; i++) {
-                            data[i] = (Math.random() * 2 - 1) * 0.015;
-                        }
+                        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * 0.015;
                         const noise = ctx.createBufferSource();
                         noise.buffer = buffer;
                         noise.loop = true;
@@ -826,8 +682,6 @@
                         filter.connect(gain);
                         gain.connect(ctx.destination);
                         noise.start();
-                        this.ambientNode = noise;
-                        this.ambientGain = gain;
                     } catch (e) {}
                 }
                 playTone(freq, duration, type = 'sine', vol = 0.2) {
@@ -846,47 +700,25 @@
                         osc.stop(ctx.currentTime + duration);
                     } catch (e) {}
                 }
-                playClick() {
-                    this.playTone(600 + Math.random() * 400, 0.08, 'square', 0.12);
-                    this.playTone(900 + Math.random() * 300, 0.05, 'sine', 0.08);
-                }
-                playType() {
-                    this.playTone(300 + Math.random() * 200, 0.03, 'square', 0.04);
-                }
+                playClick() { this.playTone(600 + Math.random() * 400, 0.08, 'square', 0.12); }
+                playType() { this.playTone(300 + Math.random() * 200, 0.03, 'square', 0.04); }
                 playSuccess() {
                     const notes = [523, 659, 784, 1047];
-                    notes.forEach((f, i) => {
-                        setTimeout(() => this.playTone(f, 0.3, 'sine', 0.15), i * 100);
-                    });
+                    notes.forEach((f, i) => setTimeout(() => this.playTone(f, 0.3, 'sine', 0.15), i * 100));
                 }
                 playGlitch() {
-                    for (let i = 0; i < 8; i++) {
-                        setTimeout(() => {
-                            this.playTone(100 + Math.random() * 800, 0.05, 'sawtooth', 0.1);
-                        }, i * 30);
-                    }
+                    for (let i = 0; i < 8; i++) setTimeout(() => this.playTone(100 + Math.random() * 800, 0.05, 'sawtooth', 0.1), i * 30);
                 }
                 playEmotion(emotion) {
                     const map = {
-                        happy: [523, 659, 784],
-                        kawaii: [440, 523, 659, 880],
-                        mad: [200, 150, 100],
-                        ill: [180, 160, 140],
-                        inspired: [392, 523, 659, 784, 1047],
-                        sleep: [220, 200, 180],
-                        talking: [400, 500, 600, 500, 400],
-                        normal: [440, 550],
-                        idle: [300, 350],
-                        walk: [250, 280, 310, 280],
-                        eat: [350, 300, 280, 260],
-                        computer: [500, 600, 700, 800, 900],
-                        desk: [380, 420, 460],
-                        draw: [420, 500, 580],
+                        happy: [523, 659, 784], kawaii: [440, 523, 659, 880], mad: [200, 150, 100],
+                        ill: [180, 160, 140], inspired: [392, 523, 659, 784, 1047], sleep: [220, 200, 180],
+                        talking: [400, 500, 600, 500, 400], normal: [440, 550], idle: [300, 350],
+                        walk: [250, 280, 310, 280], eat: [350, 300, 280, 260], computer: [500, 600, 700, 800, 900],
+                        desk: [380, 420, 460], draw: [420, 500, 580],
                     };
                     const seq = map[emotion] || [440, 550];
-                    seq.forEach((f, i) => {
-                        setTimeout(() => this.playTone(f, 0.15, 'triangle', 0.12), i * 80);
-                    });
+                    seq.forEach((f, i) => setTimeout(() => this.playTone(f, 0.15, 'triangle', 0.12), i * 80));
                 }
             }
 
@@ -907,16 +739,10 @@
                 spawn(x, y, count = 15, colors = ['#ff2d95', '#00f0ff', '#b967ff', '#ffd700']) {
                     for (let i = 0; i < count; i++) {
                         this.particles.push({
-                            x,
-                            y,
-                            vx: (Math.random() - 0.5) * 6,
-                            vy: (Math.random() - 0.5) * 6 - 2,
-                            life: 0.6 + Math.random() * 0.8,
-                            maxLife: 0.8 + Math.random() * 0.8,
-                            size: 2 + Math.random() * 5,
-                            color: colors[Math.floor(Math.random() * colors.length)],
-                            gravity: 0.08,
-                            friction: 0.98,
+                            x, y, vx: (Math.random() - 0.5) * 6, vy: (Math.random() - 0.5) * 6 - 2,
+                            life: 0.6 + Math.random() * 0.8, maxLife: 0.8 + Math.random() * 0.8,
+                            size: 2 + Math.random() * 5, color: colors[Math.floor(Math.random() * colors.length)],
+                            gravity: 0.08, friction: 0.98,
                         });
                     }
                     if (!this.running) this.animate();
@@ -925,17 +751,12 @@
                     this.spawn(x, y, count, ['#ff2d95', '#ff6b6b', '#ffd700', '#00f0ff', '#b967ff', '#39ff14']);
                 }
                 animate() {
-                    if (this.particles.length === 0) { this.running = false;
-                        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); return; }
+                    if (this.particles.length === 0) { this.running = false; this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); return; }
                     this.running = true;
                     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                     this.particles = this.particles.filter(p => p.life > 0);
                     this.particles.forEach(p => {
-                        p.x += p.vx;
-                        p.y += p.vy;
-                        p.vy += p.gravity;
-                        p.vx *= p.friction;
-                        p.vy *= p.friction;
+                        p.x += p.vx; p.y += p.vy; p.vy += p.gravity; p.vx *= p.friction; p.vy *= p.friction;
                         p.life -= 0.016;
                         const alpha = Math.max(0, p.life / p.maxLife);
                         this.ctx.globalAlpha = alpha;
@@ -948,12 +769,8 @@
                         this.ctx.shadowBlur = 0;
                     });
                     this.ctx.globalAlpha = 1;
-                    if (this.particles.length > 0) {
-                        requestAnimationFrame(() => this.animate());
-                    } else {
-                        this.running = false;
-                        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                    }
+                    if (this.particles.length > 0) requestAnimationFrame(() => this.animate());
+                    else { this.running = false; this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height); }
                 }
             }
 
@@ -964,19 +781,14 @@
                     const data = imageData.data;
                     const tol = tolerance / 100;
                     for (let i = 0; i < data.length; i += 4) {
-                        const r = data[i];
-                        const g = data[i + 1];
-                        const b = data[i + 2];
+                        const r = data[i], g = data[i + 1], b = data[i + 2];
                         const maxRG = Math.max(r, b);
                         const greenThreshold = 60 + tol * 180;
                         if (g > maxRG * (0.7 + tol * 0.5) && g > greenThreshold) {
                             data[i + 3] = 0;
                         } else {
-                            // Despill - reduce green tint on edges
                             const excess = Math.max(0, g - Math.max(r, b) * 0.95);
-                            if (excess > 0 && g > 80) {
-                                data[i + 1] = Math.max(r, b);
-                            }
+                            if (excess > 0 && g > 80) data[i + 1] = Math.max(r, b);
                         }
                     }
                     return imageData;
@@ -988,9 +800,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0);
                     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const processed = this.removeGreen(imageData, tolerance);
-                    ctx.putImageData(processed, 0, 0);
-                    return canvas;
+                    return this.removeGreen(imageData, tolerance);
                 }
             }
 
@@ -999,7 +809,6 @@
                 constructor() {
                     this.state = 'normal';
                     this.frame = 0;
-                    this.animSpeed = 1;
                     this.walkCycle = 0;
                 }
                 setState(s) {
@@ -1009,23 +818,14 @@
                 }
                 getEmotionColors() {
                     const base = {
-                        skin: '#ffe0c4',
-                        hair: '#ff6b9d',
-                        hairDark: '#d44a7a',
-                        eye: '#7b3fa0',
-                        eyeHighlight: '#ffd700',
-                        blush: 'rgba(255,120,160,0.4)',
-                        shirt: '#2a1a3a',
-                        shirtAccent: '#ff2d95',
-                        skirt: '#1a1a2e',
-                        cyberGlow: '#00f0ff',
+                        skin: '#ffe0c4', hair: '#ff6b9d', hairDark: '#d44a7a', eye: '#7b3fa0',
+                        eyeHighlight: '#ffd700', blush: 'rgba(255,120,160,0.4)', shirt: '#2a1a3a',
+                        shirtAccent: '#ff2d95', skirt: '#1a1a2e', cyberGlow: '#00f0ff',
                     };
                     if (this.state === 'happy') base.blush = 'rgba(255,100,140,0.6)';
                     if (this.state === 'mad') base.eye = '#cc2200';
-                    if (this.state === 'ill') { base.skin = '#d4c8b0';
-                        base.blush = 'rgba(150,200,150,0.3)'; }
-                    if (this.state === 'kawaii') { base.blush = 'rgba(255,80,130,0.7)';
-                        base.eye = '#cc4488'; }
+                    if (this.state === 'ill') { base.skin = '#d4c8b0'; base.blush = 'rgba(150,200,150,0.3)'; }
+                    if (this.state === 'kawaii') { base.blush = 'rgba(255,80,130,0.7)'; base.eye = '#cc4488'; }
                     if (this.state === 'inspired') base.eye = '#ffd700';
                     if (this.state === 'sleep') base.eye = '#aaaaaa';
                     return base;
@@ -1037,18 +837,13 @@
                     const bounce = (this.state === 'walk') ? Math.abs(Math.sin(this.walkCycle * 4)) * 4 : 0;
                     const bobY = (this.state === 'idle') ? Math.sin(f * 0.05) * 2 : 0;
                     const cy = y + bobY - bounce;
-
                     ctx.save();
                     ctx.translate(x, cy);
                     ctx.scale(s, s);
-
-                    // Shadow
                     ctx.fillStyle = 'rgba(0,0,0,0.35)';
                     ctx.beginPath();
                     ctx.ellipse(0, 52, 18, 5, 0, 0, Math.PI * 2);
                     ctx.fill();
-
-                    // Body / Dress
                     ctx.fillStyle = c.shirt;
                     ctx.beginPath();
                     const dressY = -8;
@@ -1059,21 +854,17 @@
                     ctx.quadraticCurveTo(16, dressY + 22, 10, dressTop);
                     ctx.quadraticCurveTo(0, dressTop - 3, -10, dressTop);
                     ctx.fill();
-                    // Dress accent
                     ctx.strokeStyle = c.shirtAccent;
                     ctx.lineWidth = 1.5;
                     ctx.shadowBlur = 6;
                     ctx.shadowColor = c.cyberGlow;
                     ctx.stroke();
                     ctx.shadowBlur = 0;
-                    // Belt
                     ctx.fillStyle = c.cyberGlow;
                     ctx.shadowBlur = 8;
                     ctx.shadowColor = c.cyberGlow;
                     ctx.fillRect(-11, dressY + 16, 22, 3);
                     ctx.shadowBlur = 0;
-
-                    // Arms
                     const armSwing = (this.state === 'walk') ? Math.sin(this.walkCycle * 4) * 8 : 0;
                     ctx.strokeStyle = c.skin;
                     ctx.lineWidth = 5;
@@ -1086,8 +877,6 @@
                     ctx.moveTo(10, dressY + 12);
                     ctx.quadraticCurveTo(20, dressY + 18 - armSwing, 22, dressY + 30 - armSwing);
                     ctx.stroke();
-
-                    // Cyber glow accessory
                     if (this.state === 'inspired' || this.state === 'happy') {
                         ctx.fillStyle = c.cyberGlow;
                         ctx.shadowBlur = 12;
@@ -1097,8 +886,6 @@
                         ctx.fill();
                         ctx.shadowBlur = 0;
                     }
-
-                    // Head
                     const headY = dressY - 10;
                     const headBob = (this.state === 'talking') ? Math.sin(f * 0.2) * 1.5 : 0;
                     const headCy = headY + headBob;
@@ -1106,8 +893,6 @@
                     ctx.beginPath();
                     ctx.arc(0, headCy, 16, 0, Math.PI * 2);
                     ctx.fill();
-
-                    // Hair
                     ctx.fillStyle = c.hair;
                     ctx.beginPath();
                     ctx.arc(0, headCy - 2, 17, 0.2 * Math.PI, 0.8 * Math.PI);
@@ -1115,12 +900,10 @@
                     ctx.quadraticCurveTo(0, headCy + 16, -14, headCy + 10);
                     ctx.quadraticCurveTo(-16, headCy - 4, 0, headCy - 18);
                     ctx.fill();
-                    // Hair shine
                     ctx.fillStyle = c.hairDark;
                     ctx.beginPath();
                     ctx.arc(-6, headCy - 6, 5, 0.1 * Math.PI, 0.7 * Math.PI);
                     ctx.fill();
-                    // Side hair
                     ctx.fillStyle = c.hair;
                     ctx.beginPath();
                     ctx.moveTo(-14, headCy + 4);
@@ -1132,228 +915,97 @@
                     ctx.quadraticCurveTo(18, headCy + 16, 12, headCy + 20);
                     ctx.quadraticCurveTo(8, headCy + 14, 10, headCy + 6);
                     ctx.fill();
-
-                    // Eyes
                     const eyeY = headCy + 2;
                     if (this.state === 'sleep') {
                         ctx.strokeStyle = c.eye;
                         ctx.lineWidth = 1.8;
-                        ctx.beginPath();
-                        ctx.arc(-5, eyeY, 4, 0.1 * Math.PI, 0.9 * Math.PI);
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.arc(5, eyeY, 4, 0.1 * Math.PI, 0.9 * Math.PI);
-                        ctx.stroke();
+                        ctx.beginPath(); ctx.arc(-5, eyeY, 4, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+                        ctx.beginPath(); ctx.arc(5, eyeY, 4, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
                     } else if (this.state === 'mad') {
                         ctx.strokeStyle = c.eye;
                         ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.moveTo(-10, eyeY - 3);
-                        ctx.lineTo(-2, eyeY + 2);
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.moveTo(10, eyeY - 3);
-                        ctx.lineTo(2, eyeY + 2);
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.moveTo(-6, eyeY - 2);
-                        ctx.lineTo(-1, eyeY + 1);
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.moveTo(6, eyeY - 2);
-                        ctx.lineTo(1, eyeY + 1);
-                        ctx.stroke();
-                        // Anger marks
-                        ctx.strokeStyle = '#ff3333';
-                        ctx.lineWidth = 1.5;
-                        ctx.beginPath();
-                        ctx.moveTo(-14, headCy - 12);
-                        ctx.lineTo(-10, headCy - 8);
-                        ctx.moveTo(-12, headCy - 14);
-                        ctx.lineTo(-8, headCy - 10);
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.moveTo(14, headCy - 12);
-                        ctx.lineTo(10, headCy - 8);
-                        ctx.moveTo(12, headCy - 14);
-                        ctx.lineTo(8, headCy - 10);
-                        ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(-10, eyeY - 3); ctx.lineTo(-2, eyeY + 2); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(10, eyeY - 3); ctx.lineTo(2, eyeY + 2); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(-6, eyeY - 2); ctx.lineTo(-1, eyeY + 1); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(6, eyeY - 2); ctx.lineTo(1, eyeY + 1); ctx.stroke();
                     } else if (this.state === 'kawaii') {
                         ctx.fillStyle = c.eye;
-                        ctx.beginPath();
-                        ctx.ellipse(-5, eyeY, 3.5, 4.5, 0, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.beginPath();
-                        ctx.ellipse(5, eyeY, 3.5, 4.5, 0, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.beginPath(); ctx.ellipse(-5, eyeY, 3.5, 4.5, 0, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.ellipse(5, eyeY, 3.5, 4.5, 0, 0, Math.PI * 2); ctx.fill();
                         ctx.fillStyle = '#fff';
-                        ctx.beginPath();
-                        ctx.arc(-4, eyeY - 2, 1.8, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.beginPath();
-                        ctx.arc(6, eyeY - 2, 1.8, 0, Math.PI * 2);
-                        ctx.fill();
-                        // Sparkle
+                        ctx.beginPath(); ctx.arc(-4, eyeY - 2, 1.8, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(6, eyeY - 2, 1.8, 0, Math.PI * 2); ctx.fill();
                         ctx.fillStyle = c.eyeHighlight;
-                        ctx.shadowBlur = 6;
-                        ctx.shadowColor = c.eyeHighlight;
-                        ctx.beginPath();
-                        ctx.arc(-5, eyeY - 3, 1, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.beginPath();
-                        ctx.arc(5, eyeY - 3, 1, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.shadowBlur = 6; ctx.shadowColor = c.eyeHighlight;
+                        ctx.beginPath(); ctx.arc(-5, eyeY - 3, 1, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(5, eyeY - 3, 1, 0, Math.PI * 2); ctx.fill();
                         ctx.shadowBlur = 0;
                     } else if (this.state === 'inspired') {
                         ctx.fillStyle = c.eye;
-                        ctx.beginPath();
-                        ctx.ellipse(-5, eyeY, 3, 4, 0, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.beginPath();
-                        ctx.ellipse(5, eyeY, 3, 4, 0, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.beginPath(); ctx.ellipse(-5, eyeY, 3, 4, 0, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.ellipse(5, eyeY, 3, 4, 0, 0, Math.PI * 2); ctx.fill();
                         ctx.fillStyle = c.eyeHighlight;
-                        ctx.shadowBlur = 10;
-                        ctx.shadowColor = c.eyeHighlight;
-                        ctx.beginPath();
-                        ctx.arc(-4, eyeY - 2, 2, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.beginPath();
-                        ctx.arc(6, eyeY - 2, 2, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.shadowBlur = 10; ctx.shadowColor = c.eyeHighlight;
+                        ctx.beginPath(); ctx.arc(-4, eyeY - 2, 2, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(6, eyeY - 2, 2, 0, Math.PI * 2); ctx.fill();
                         ctx.shadowBlur = 0;
-                    } else if (this.state === 'ill') {
-                        ctx.strokeStyle = c.eye;
-                        ctx.lineWidth = 1.5;
-                        ctx.beginPath();
-                        ctx.arc(-5, eyeY, 2.5, 0.1 * Math.PI, 0.9 * Math.PI);
-                        ctx.stroke();
-                        ctx.beginPath();
-                        ctx.arc(5, eyeY, 2.5, 0.1 * Math.PI, 0.9 * Math.PI);
-                        ctx.stroke();
-                        // Sick marks
-                        ctx.fillStyle = 'rgba(150,200,150,0.5)';
-                        ctx.beginPath();
-                        ctx.arc(-16, headCy - 6, 2, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.beginPath();
-                        ctx.arc(16, headCy - 6, 2, 0, Math.PI * 2);
-                        ctx.fill();
                     } else {
                         ctx.fillStyle = c.eye;
-                        ctx.beginPath();
-                        ctx.ellipse(-5, eyeY, 2.5, 3.5, 0, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.beginPath();
-                        ctx.ellipse(5, eyeY, 2.5, 3.5, 0, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.beginPath(); ctx.ellipse(-5, eyeY, 2.5, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.ellipse(5, eyeY, 2.5, 3.5, 0, 0, Math.PI * 2); ctx.fill();
                         ctx.fillStyle = '#fff';
-                        ctx.beginPath();
-                        ctx.arc(-4, eyeY - 1.5, 1.2, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.beginPath();
-                        ctx.arc(6, eyeY - 1.5, 1.2, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.beginPath(); ctx.arc(-4, eyeY - 1.5, 1.2, 0, Math.PI * 2); ctx.fill();
+                        ctx.beginPath(); ctx.arc(6, eyeY - 1.5, 1.2, 0, Math.PI * 2); ctx.fill();
                     }
-
-                    // Mouth
                     const mouthY = headCy + 8;
                     if (this.state === 'happy') {
-                        ctx.strokeStyle = '#cc4444';
-                        ctx.lineWidth = 1.8;
-                        ctx.beginPath();
-                        ctx.arc(0, mouthY - 2, 6, 0.1 * Math.PI, 0.9 * Math.PI);
-                        ctx.stroke();
+                        ctx.strokeStyle = '#cc4444'; ctx.lineWidth = 1.8;
+                        ctx.beginPath(); ctx.arc(0, mouthY - 2, 6, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
                     } else if (this.state === 'talking') {
                         const mouthOpen = Math.abs(Math.sin(f * 0.3)) * 6;
                         ctx.fillStyle = '#cc4444';
-                        ctx.beginPath();
-                        ctx.ellipse(0, mouthY, 4, mouthOpen + 1.5, 0, 0, Math.PI * 2);
-                        ctx.fill();
-                        ctx.fillStyle = '#ff8888';
-                        ctx.beginPath();
-                        ctx.ellipse(0, mouthY + 1, 2.5, Math.max(0.5, mouthOpen * 0.5), 0, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.beginPath(); ctx.ellipse(0, mouthY, 4, mouthOpen + 1.5, 0, 0, Math.PI * 2); ctx.fill();
                     } else if (this.state === 'mad') {
-                        ctx.strokeStyle = '#cc3333';
-                        ctx.lineWidth = 1.8;
-                        ctx.beginPath();
-                        ctx.arc(0, mouthY + 1, 4, 1.1 * Math.PI, 1.9 * Math.PI);
-                        ctx.stroke();
+                        ctx.strokeStyle = '#cc3333'; ctx.lineWidth = 1.8;
+                        ctx.beginPath(); ctx.arc(0, mouthY + 1, 4, 1.1 * Math.PI, 1.9 * Math.PI); ctx.stroke();
                     } else if (this.state === 'kawaii') {
-                        ctx.strokeStyle = '#cc5555';
-                        ctx.lineWidth = 1.5;
-                        ctx.beginPath();
-                        ctx.arc(0, mouthY - 1, 3, 0.1 * Math.PI, 0.9 * Math.PI);
-                        ctx.stroke();
+                        ctx.strokeStyle = '#cc5555'; ctx.lineWidth = 1.5;
+                        ctx.beginPath(); ctx.arc(0, mouthY - 1, 3, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
                     } else if (this.state === 'sleep') {
                         ctx.fillStyle = '#cc7777';
-                        ctx.beginPath();
-                        ctx.ellipse(0, mouthY + 1, 2, 1.2, 0, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.beginPath(); ctx.ellipse(0, mouthY + 1, 2, 1.2, 0, 0, Math.PI * 2); ctx.fill();
                     } else if (this.state === 'ill') {
-                        ctx.strokeStyle = '#cc8888';
-                        ctx.lineWidth = 1.2;
-                        ctx.beginPath();
-                        ctx.arc(0, mouthY + 2, 3, 1.2 * Math.PI, 1.8 * Math.PI);
-                        ctx.stroke();
+                        ctx.strokeStyle = '#cc8888'; ctx.lineWidth = 1.2;
+                        ctx.beginPath(); ctx.arc(0, mouthY + 2, 3, 1.2 * Math.PI, 1.8 * Math.PI); ctx.stroke();
                     } else {
-                        ctx.strokeStyle = '#cc6666';
-                        ctx.lineWidth = 1.2;
-                        ctx.beginPath();
-                        ctx.arc(0, mouthY, 3, 0.2 * Math.PI, 0.8 * Math.PI);
-                        ctx.stroke();
+                        ctx.strokeStyle = '#cc6666'; ctx.lineWidth = 1.2;
+                        ctx.beginPath(); ctx.arc(0, mouthY, 3, 0.2 * Math.PI, 0.8 * Math.PI); ctx.stroke();
                     }
-
-                    // Blush
                     ctx.fillStyle = c.blush;
-                    ctx.beginPath();
-                    ctx.ellipse(-9, headCy + 5, 3, 2, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.ellipse(9, headCy + 5, 3, 2, 0, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    // Cyber hair ornament
+                    ctx.beginPath(); ctx.ellipse(-9, headCy + 5, 3, 2, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.beginPath(); ctx.ellipse(9, headCy + 5, 3, 2, 0, 0, Math.PI * 2); ctx.fill();
                     if (this.state === 'inspired' || this.state === 'happy' || this.state === 'kawaii') {
                         ctx.fillStyle = c.cyberGlow;
-                        ctx.shadowBlur = 10;
-                        ctx.shadowColor = c.cyberGlow;
-                        ctx.beginPath();
-                        ctx.arc(12, headCy - 10, 3, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.shadowBlur = 10; ctx.shadowColor = c.cyberGlow;
+                        ctx.beginPath(); ctx.arc(12, headCy - 10, 3, 0, Math.PI * 2); ctx.fill();
                         ctx.shadowBlur = 0;
                         ctx.fillStyle = '#fff';
-                        ctx.beginPath();
-                        ctx.arc(11.5, headCy - 11, 1, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.beginPath(); ctx.arc(11.5, headCy - 11, 1, 0, Math.PI * 2); ctx.fill();
                     }
-
-                    // Legs (visible below dress)
                     ctx.strokeStyle = c.skin;
                     ctx.lineWidth = 4;
                     ctx.lineCap = 'round';
                     const legSwing = (this.state === 'walk') ? Math.sin(this.walkCycle * 4) * 6 : 0;
-                    ctx.beginPath();
-                    ctx.moveTo(-4, dressY + 42);
-                    ctx.lineTo(-6 + legSwing, dressY + 52);
-                    ctx.stroke();
-                    ctx.beginPath();
-                    ctx.moveTo(4, dressY + 42);
-                    ctx.lineTo(6 - legSwing, dressY + 52);
-                    ctx.stroke();
-
-                    // Shoes
+                    ctx.beginPath(); ctx.moveTo(-4, dressY + 42); ctx.lineTo(-6 + legSwing, dressY + 52); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(4, dressY + 42); ctx.lineTo(6 - legSwing, dressY + 52); ctx.stroke();
                     ctx.fillStyle = '#222';
                     ctx.fillRect(-10 + legSwing, dressY + 50, 8, 4);
                     ctx.fillRect(2 - legSwing, dressY + 50, 8, 4);
                     ctx.fillStyle = c.cyberGlow;
-                    ctx.shadowBlur = 5;
-                    ctx.shadowColor = c.cyberGlow;
+                    ctx.shadowBlur = 5; ctx.shadowColor = c.cyberGlow;
                     ctx.fillRect(-8 + legSwing, dressY + 52, 4, 2);
                     ctx.fillRect(4 - legSwing, dressY + 52, 4, 2);
                     ctx.shadowBlur = 0;
-
                     ctx.restore();
                 }
                 update() {
@@ -1368,65 +1020,27 @@
                     this.onStateChange = onStateChange;
                     this.onDialog = onDialog;
                     this.scenes = [];
-                    this.currentScene = 0;
                     this.currentLine = 0;
                     this.playing = false;
                     this.typeTimer = null;
-                    this.dialogText = '';
                     this.dialogDone = false;
                     this.characterName = 'YUKI';
                 }
                 loadScenes() {
-                    this.scenes = [{
-                        name: 'YUKI',
-                        emotion: 'normal',
-                        text: 'Another late night in Neo-Shinjuku... The neon hums outside my window like a second heartbeat.'
-                    }, {
-                        name: 'YUKI',
-                        emotion: 'talking',
-                        text: 'I\'ve been working on this new VR protocol for weeks now. If I can just crack the neural mapping...'
-                    }, {
-                        name: 'YUKI',
-                        emotion: 'inspired',
-                        text: 'Wait... that\'s it! The quantum entanglement buffer! Why didn\'t I think of that before?!'
-                    }, {
-                        name: 'YUKI',
-                        emotion: 'happy',
-                        text: 'IT WORKS! The connection is stable! I\'m officially inside my own digital world!'
-                    }, {
-                        name: 'YUKI',
-                        emotion: 'kawaii',
-                        text: 'And I decorated it with so many cute things~ The holographic sakura are my favorite!'
-                    }, {
-                        name: 'YUKI',
-                        emotion: 'mad',
-                        text: 'WHAT?! Someone is trying to breach my firewall?! I\'ll make them regret that!'
-                    }, {
-                        name: 'YUKI',
-                        emotion: 'ill',
-                        text: 'Ugh... I think I pulled an all-nighter for too many days in a row. My head is spinning...'
-                    }, {
-                        name: 'YUKI',
-                        emotion: 'sleep',
-                        text: 'Zzz... just five more minutes... the code can wait...'
-                    }, {
-                        name: 'YUKI',
-                        emotion: 'walk',
-                        text: 'Wandering through the digital streets I built. Every pixel a piece of my imagination.'
-                    }, {
-                        name: 'YUKI',
-                        emotion: 'eat',
-                        text: 'Fueling up with instant ramen while I debug. The classic hacker diet!'
-                    }, {
-                        name: 'YUKI',
-                        emotion: 'computer',
-                        text: 'My battlestation: three monitors, mechanical keyboard, and a cooling system that sounds like a jet engine.'
-                    }, {
-                        name: 'YUKI',
-                        emotion: 'happy',
-                        text: 'In this world between worlds... I am home. This is my Neon Genesis.'
-                    }];
-                    this.currentScene = 0;
+                    this.scenes = [
+                        { name: 'YUKI', emotion: 'normal', text: 'Another night in Neo-Shinjuku... The neon hums outside my window.' },
+                        { name: 'YUKI', emotion: 'talking', text: 'I\'ve been working on this VR protocol for weeks. If I can crack the mapping...' },
+                        { name: 'YUKI', emotion: 'inspired', text: 'Wait! The quantum entanglement buffer! Why didn\'t I think of that?!' },
+                        { name: 'YUKI', emotion: 'happy', text: 'IT WORKS! I\'m officially inside my own digital world!' },
+                        { name: 'YUKI', emotion: 'kawaii', text: 'And I decorated it with cute things~ Holographic sakura are my favorite!' },
+                        { name: 'YUKI', emotion: 'mad', text: 'WHAT?! Someone\'s breaching my firewall?! I\'ll make them regret it!' },
+                        { name: 'YUKI', emotion: 'ill', text: 'Ugh... too many all-nighters. My head is spinning...' },
+                        { name: 'YUKI', emotion: 'sleep', text: 'Zzz... five more minutes... the code can wait...' },
+                        { name: 'YUKI', emotion: 'walk', text: 'Wandering through digital streets. Every pixel a piece of my imagination.' },
+                        { name: 'YUKI', emotion: 'eat', text: 'Fueling up with ramen while I debug. Classic hacker diet!' },
+                        { name: 'YUKI', emotion: 'computer', text: 'My battlestation: three monitors, mechanical keyboard, jet engine cooling.' },
+                        { name: 'YUKI', emotion: 'happy', text: 'In this world between worlds... I am home. This is my Neon Genesis.' },
+                    ];
                     this.currentLine = 0;
                 }
                 start() {
@@ -1454,22 +1068,18 @@
                 }
                 typeText(text, emotion) {
                     if (this.typeTimer) clearInterval(this.typeTimer);
-                    this.dialogText = '';
                     this.dialogDone = false;
                     let idx = 0;
-                    const audioEngine = window.__audioEngine;
                     this.onDialog(this.characterName, '');
                     this.typeTimer = setInterval(() => {
                         if (idx < text.length) {
-                            this.dialogText += text[idx];
                             idx++;
-                            this.onDialog(this.characterName, this.dialogText);
-                            if (audioEngine && idx % 2 === 0) audioEngine.playType();
-                            if (audioEngine && idx % 15 === 0) audioEngine.playEmotion(emotion);
+                            this.onDialog(this.characterName, text.substring(0, idx));
+                            if (idx % 2 === 0) audioEngine.playType();
                         } else {
                             this.dialogDone = true;
                             clearInterval(this.typeTimer);
-                            this.onDialog(this.characterName, this.dialogText + ' <span class="cursor-blink"></span>');
+                            this.onDialog(this.characterName, text + ' <span class="cursor-blink"></span>');
                         }
                     }, 28);
                 }
@@ -1478,26 +1088,18 @@
                     if (!this.dialogDone) {
                         if (this.typeTimer) clearInterval(this.typeTimer);
                         const scene = this.scenes[this.currentLine];
-                        this.dialogText = scene.text;
                         this.dialogDone = true;
-                        this.onDialog(this.characterName, this.dialogText + ' <span class="cursor-blink"></span>');
+                        this.onDialog(this.characterName, scene.text + ' <span class="cursor-blink"></span>');
                         return;
                     }
                     this.currentLine++;
-                    if (this.currentLine < this.scenes.length) {
-                        this.showCurrentLine();
-                    } else {
-                        this.stop();
-                        if (window.__audioEngine) window.__audioEngine.playSuccess();
-                        this.onDialog('SYSTEM', '✦ CUTSCENE COMPLETE ✦');
-                    }
+                    if (this.currentLine < this.scenes.length) this.showCurrentLine();
+                    else { this.stop(); audioEngine.playSuccess(); this.onDialog('SYSTEM', '✦ CUTSCENE COMPLETE ✦'); }
                 }
             }
 
             // ==================== MAIN APP ====================
             const audioEngine = new AudioEngine();
-            window.__audioEngine = audioEngine;
-
             const gameCanvas = document.getElementById('game-canvas');
             const gctx = gameCanvas.getContext('2d');
             const particleCanvas = document.getElementById('particle-canvas');
@@ -1507,24 +1109,28 @@
             const glitchOverlay = document.getElementById('glitch-overlay');
             const toast = document.getElementById('toast');
             const dialogNameTag = document.getElementById('dialog-name-tag');
-            const dialogEmotion = document.getElementById('dialog-emotion');
             const dialogText = document.getElementById('dialog-text');
-            const uploadZone = document.getElementById('upload-zone');
-            const fileInput = document.getElementById('file-input');
-            const uploadStatus = document.getElementById('upload-status');
+            const spriteUploadZone = document.getElementById('sprite-upload-zone');
+            const spriteFileInput = document.getElementById('sprite-file-input');
+            const bgUploadZone = document.getElementById('bg-upload-zone');
+            const bgFileInput = document.getElementById('bg-file-input');
+            const spriteStatus = document.getElementById('sprite-status');
+            const bgStatus = document.getElementById('bg-status');
             const toleranceSlider = document.getElementById('green-tolerance');
             const toleranceVal = document.getElementById('tolerance-val');
             const logoText = document.getElementById('logo-text');
 
-            let uploadedSprite = null;
-            let uploadedCanvas = null;
-            let processedCanvas = null;
+            let uploadedSpriteCanvas = null;
+            let uploadedBackground = null;
             let currentEmotion = 'idle';
-            let gameLoopRunning = false;
+            let spriteOffsetX = 0;
+            let spriteOffsetY = 0;
+            let spriteScale = 1;
             let backgroundMode = 'cyber';
-            let cutscene = new CutsceneEngine(
-                (state) => { currentEmotion = state;
-                    character.setState(state); },
+            let greenTolerance = 35;
+
+            const cutscene = new CutsceneEngine(
+                (state) => { currentEmotion = state; character.setState(state); },
                 (name, text) => {
                     dialogNameTag.textContent = name;
                     dialogText.innerHTML = text || '<span class="cursor-blink"></span>';
@@ -1533,7 +1139,6 @@
                 }
             );
 
-            // Canvas sizing
             function resizeCanvas() {
                 const container = document.getElementById('game-canvas-container');
                 gameCanvas.width = container.offsetWidth;
@@ -1543,135 +1148,73 @@
             window.addEventListener('resize', resizeCanvas);
             resizeCanvas();
 
-            // ==================== RENDERING ====================
+            // ==================== BACKGROUND DRAWING ====================
             function drawBackground(ctx, w, h) {
+                if (uploadedBackground) {
+                    ctx.drawImage(uploadedBackground, 0, 0, w, h);
+                    return;
+                }
                 if (backgroundMode === 'cyber') {
-                    // Cyber room
                     const grad = ctx.createLinearGradient(0, 0, 0, h);
-                    grad.addColorStop(0, '#0a0015');
-                    grad.addColorStop(0.5, '#12082a');
-                    grad.addColorStop(1, '#0d0d20');
+                    grad.addColorStop(0, '#0a0015'); grad.addColorStop(0.5, '#12082a'); grad.addColorStop(1, '#0d0d20');
                     ctx.fillStyle = grad;
                     ctx.fillRect(0, 0, w, h);
-                    // Grid floor
                     ctx.strokeStyle = 'rgba(0,240,255,0.25)';
                     ctx.lineWidth = 1;
                     const floorY = h * 0.62;
                     for (let i = 0; i < 20; i++) {
                         const x = (i / 20) * w;
-                        ctx.beginPath();
-                        ctx.moveTo(x, floorY);
-                        ctx.lineTo(x + (x - w / 2) * 0.5, h);
-                        ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(x, floorY); ctx.lineTo(x + (x - w/2)*0.5, h); ctx.stroke();
                         const y = floorY + (i / 20) * (h - floorY);
-                        ctx.beginPath();
-                        ctx.moveTo(0, y);
-                        ctx.lineTo(w, y);
-                        ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
                     }
-                    // Horizon line
                     ctx.strokeStyle = 'rgba(0,240,255,0.6)';
                     ctx.lineWidth = 2;
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = 'rgba(0,240,255,0.8)';
-                    ctx.beginPath();
-                    ctx.moveTo(0, floorY);
-                    ctx.lineTo(w, floorY);
-                    ctx.stroke();
+                    ctx.shadowBlur = 15; ctx.shadowColor = 'rgba(0,240,255,0.8)';
+                    ctx.beginPath(); ctx.moveTo(0, floorY); ctx.lineTo(w, floorY); ctx.stroke();
                     ctx.shadowBlur = 0;
-                    // Neon pillars
                     for (let i = 0; i < 5; i++) {
                         const px = (i + 0.5) * (w / 5);
-                        ctx.fillStyle = `rgba(185,103,255,${0.15 + Math.random()*0.05})`;
-                        ctx.shadowBlur = 20;
-                        ctx.shadowColor = 'rgba(185,103,255,0.6)';
+                        ctx.fillStyle = 'rgba(185,103,255,0.2)';
+                        ctx.shadowBlur = 20; ctx.shadowColor = 'rgba(185,103,255,0.6)';
                         ctx.fillRect(px - 3, floorY - 80, 6, 80);
                         ctx.shadowBlur = 0;
                     }
-                    // Floating particles
-                    for (let i = 0; i < 15; i++) {
-                        const px = ((i * 137) % w);
-                        const py = ((i * 71) % (h - floorY)) + floorY - 100;
-                        ctx.fillStyle = `rgba(0,240,255,${0.2 + Math.sin(Date.now()*0.001 + i)*0.15})`;
-                        ctx.beginPath();
-                        ctx.arc(px, py, 1.5, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
                 } else {
-                    // Real room
                     const grad = ctx.createLinearGradient(0, 0, 0, h);
-                    grad.addColorStop(0, '#1a0a10');
-                    grad.addColorStop(0.6, '#2a1520');
-                    grad.addColorStop(1, '#1a1018');
+                    grad.addColorStop(0, '#1a0a10'); grad.addColorStop(0.6, '#2a1520'); grad.addColorStop(1, '#1a1018');
                     ctx.fillStyle = grad;
                     ctx.fillRect(0, 0, w, h);
-                    // Wall
-                    ctx.fillStyle = 'rgba(200,180,190,0.1)';
-                    ctx.fillRect(0, 0, w, h * 0.5);
-                    // Floor
                     ctx.fillStyle = 'rgba(100,70,80,0.4)';
                     ctx.fillRect(0, h * 0.55, w, h * 0.45);
-                    // Window
                     ctx.fillStyle = 'rgba(50,30,60,0.8)';
                     ctx.fillRect(w * 0.65, h * 0.08, w * 0.22, h * 0.28);
-                    ctx.strokeStyle = 'rgba(200,180,190,0.5)';
-                    ctx.lineWidth = 3;
-                    ctx.strokeRect(w * 0.65, h * 0.08, w * 0.22, h * 0.28);
-                    // Moon
                     ctx.fillStyle = 'rgba(255,255,200,0.7)';
-                    ctx.shadowBlur = 20;
-                    ctx.shadowColor = 'rgba(255,255,200,0.5)';
-                    ctx.beginPath();
-                    ctx.arc(w * 0.76, h * 0.16, 20, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.shadowBlur = 0;
-                    // Bookshelf
-                    ctx.fillStyle = 'rgba(120,80,100,0.5)';
-                    ctx.fillRect(w * 0.05, h * 0.15, w * 0.2, h * 0.4);
-                    for (let i = 0; i < 6; i++) {
-                        ctx.fillStyle = `rgba(${180 + i*10},${100+i*15},${140+i*20},0.6)`;
-                        ctx.fillRect(w * 0.06, h * 0.18 + i * (h * 0.055), w * 0.17, h * 0.04);
-                    }
-                    // Desk
-                    ctx.fillStyle = 'rgba(80,50,70,0.8)';
-                    ctx.fillRect(w * 0.35, h * 0.5, w * 0.35, h * 0.06);
-                    ctx.fillRect(w * 0.36, h * 0.56, w * 0.02, h * 0.18);
-                    ctx.fillRect(w * 0.66, h * 0.56, w * 0.02, h * 0.18);
-                    // Monitor
-                    ctx.fillStyle = 'rgba(30,30,50,0.9)';
-                    ctx.fillRect(w * 0.42, h * 0.35, w * 0.16, h * 0.15);
-                    ctx.fillStyle = 'rgba(0,240,255,0.3)';
-                    ctx.fillRect(w * 0.43, h * 0.36, w * 0.14, h * 0.12);
-                    // Warm lamp
-                    ctx.fillStyle = 'rgba(255,200,100,0.2)';
-                    ctx.shadowBlur = 30;
-                    ctx.shadowColor = 'rgba(255,200,100,0.6)';
-                    ctx.beginPath();
-                    ctx.arc(w * 0.3, h * 0.45, 25, 0, Math.PI * 2);
-                    ctx.fill();
+                    ctx.shadowBlur = 20; ctx.shadowColor = 'rgba(255,255,200,0.5)';
+                    ctx.beginPath(); ctx.arc(w * 0.76, h * 0.16, 20, 0, Math.PI * 2); ctx.fill();
                     ctx.shadowBlur = 0;
                 }
             }
 
-            function drawCharacterOnCanvas(ctx, w, h) {
-                const charX = w * 0.5;
-                const charY = h * 0.52;
-                if (uploadedCanvas && processedCanvas) {
-                    // Draw uploaded sprite
-                    const spriteW = processedCanvas.width;
-                    const spriteH = processedCanvas.height;
-                    const scale = Math.min(w / spriteW, h / spriteH) * 0.7;
+            // ==================== SPRITE RENDERING ====================
+            function drawSprite(ctx, w, h) {
+                const charX = w * 0.5 + spriteOffsetX;
+                const charY = h * 0.52 + spriteOffsetY;
+                if (uploadedSpriteCanvas) {
+                    const spriteW = uploadedSpriteCanvas.width;
+                    const spriteH = uploadedSpriteCanvas.height;
+                    const autoScale = Math.min(w / spriteW, h / spriteH) * 0.7;
+                    const scale = autoScale * spriteScale;
                     const drawW = spriteW * scale;
                     const drawH = spriteH * scale;
                     ctx.save();
                     ctx.shadowBlur = 20;
                     ctx.shadowColor = 'rgba(0,240,255,0.3)';
-                    ctx.drawImage(processedCanvas, (w - drawW) / 2, h * 0.5 - drawH / 2, drawW, drawH);
+                    ctx.drawImage(uploadedSpriteCanvas, (w - drawW) / 2 + spriteOffsetX, h * 0.5 - drawH / 2 + spriteOffsetY, drawW, drawH);
                     ctx.restore();
                 } else {
-                    // Procedural character
                     character.update();
-                    character.draw(ctx, charX, charY, Math.min(w, h) / 90);
+                    character.draw(ctx, charX, charY, Math.min(w, h) / 90 * spriteScale);
                 }
             }
 
@@ -1680,59 +1223,40 @@
                 const h = gameCanvas.height;
                 gctx.clearRect(0, 0, w, h);
                 drawBackground(gctx, w, h);
-                drawCharacterOnCanvas(gctx, w, h);
-
-                // Emotion indicator
+                drawSprite(gctx, w, h);
                 const emotionNames = {
-                    normal: '😐 NORMAL',
-                    talking: '💬 TALKING',
-                    sleep: '😴 SLEEPING',
-                    inspired: '💡 INSPIRED',
-                    happy: '😊 HAPPY',
-                    kawaii: '🌸 KAWAII',
-                    mad: '😡 MAD',
-                    ill: '🤒 ILL',
-                    idle: '🕴️ IDLE',
-                    walk: '🚶 WALKING',
-                    eat: '🍜 EATING',
-                    computer: '💻 AT PC',
-                    desk: '📚 AT DESK',
-                    draw: '✏️ DRAWING',
-                    side34: '👁️ 3/4 VIEW',
-                    back: '🔙 BACK VIEW',
+                    normal: '😐 NORMAL', talking: '💬 TALKING', sleep: '😴 SLEEPING', inspired: '💡 INSPIRED',
+                    happy: '😊 HAPPY', kawaii: '🌸 KAWAII', mad: '😡 MAD', ill: '🤒 ILL', idle: '🕴️ IDLE',
+                    walk: '🚶 WALKING', eat: '🍜 EATING', computer: '💻 AT PC', desk: '📚 AT DESK',
+                    draw: '✏️ DRAWING', side34: '👁️ ¾ VIEW', back: '🔙 BACK VIEW',
                 };
                 gctx.font = '10px monospace';
                 gctx.fillStyle = 'rgba(255,255,255,0.5)';
                 gctx.fillText('STATE: ' + (emotionNames[currentEmotion] || currentEmotion.toUpperCase()), 12, 20);
-
-                if (!gameLoopRunning) {
-                    gameLoopRunning = true;
-                    requestAnimationFrame(render);
-                }
                 requestAnimationFrame(render);
             }
             render();
 
-            // ==================== GREEN SCREEN PROCESSING ====================
-            function processUploadedImage(file) {
+            // ==================== FILE PROCESSING ====================
+            function processSpriteSheet(file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = new Image();
                     img.onload = () => {
-                        uploadedSprite = img;
                         const canvas = document.createElement('canvas');
                         canvas.width = img.width;
                         canvas.height = img.height;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0);
-                        uploadedCanvas = canvas;
-                        processedCanvas = greenRemover.processImage(img, toleranceSlider.value);
-                        uploadStatus.textContent = '✅ SPRITE LOADED — ' + img.width + '×' + img.height + 'px';
-                        uploadStatus.style.color = 'var(--neon-green)';
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const processedData = greenRemover.removeGreen(imageData, greenTolerance);
+                        ctx.putImageData(processedData, 0, 0);
+                        uploadedSpriteCanvas = canvas;
+                        spriteStatus.textContent = '✅ SPRITE LOADED ' + img.width + '×' + img.height + 'px';
+                        spriteStatus.style.color = 'var(--neon-green)';
                         audioEngine.playSuccess();
                         particles.burst(gameCanvas.width / 2, gameCanvas.height / 2, 40);
                         showToast('SPRITE PROCESSED ✓');
-                        // Glitch effect
                         triggerGlitch();
                     };
                     img.src = e.target.result;
@@ -1740,16 +1264,37 @@
                 reader.readAsDataURL(file);
             }
 
-            function reProcessUploaded() {
-                if (uploadedSprite) {
-                    processedCanvas = greenRemover.processImage(uploadedSprite, toleranceSlider.value);
-                    toleranceVal.textContent = toleranceSlider.value;
-                    audioEngine.playClick();
-                    particles.burst(gameCanvas.width / 2, gameCanvas.height / 3, 15);
+            function processBackground(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        uploadedBackground = img;
+                        bgStatus.textContent = '✅ BG LOADED ' + img.width + '×' + img.height + 'px';
+                        bgStatus.style.color = 'var(--neon-green)';
+                        audioEngine.playSuccess();
+                        particles.burst(gameCanvas.width / 2, gameCanvas.height / 3, 30);
+                        showToast('BACKGROUND LOADED ✓');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function reProcessSprite() {
+                if (uploadedSpriteCanvas) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = uploadedSpriteCanvas.width;
+                    canvas.height = uploadedSpriteCanvas.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(uploadedSpriteCanvas, 0, 0);
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const processedData = greenRemover.removeGreen(imageData, greenTolerance);
+                    ctx.putImageData(processedData, 0, 0);
+                    uploadedSpriteCanvas = canvas;
                 }
             }
 
-            // ==================== GLITCH EFFECT ====================
             function triggerGlitch() {
                 glitchOverlay.classList.add('active');
                 audioEngine.playGlitch();
@@ -1758,11 +1303,8 @@
                     glitchOverlay.classList.remove('active');
                     logoText.classList.remove('glitching');
                 }, 300);
-                // Random particles
                 for (let i = 0; i < 5; i++) {
-                    setTimeout(() => {
-                        particles.burst(Math.random() * gameCanvas.width, Math.random() * gameCanvas.height, 8);
-                    }, i * 40);
+                    setTimeout(() => particles.burst(Math.random() * gameCanvas.width, Math.random() * gameCanvas.height, 8), i * 40);
                 }
             }
 
@@ -1773,36 +1315,52 @@
             }
 
             // ==================== EVENT LISTENERS ====================
-            // Upload zone
-            uploadZone.addEventListener('dragover', (e) => {
+            spriteUploadZone.addEventListener('dragover', (e) => { e.preventDefault(); spriteUploadZone.classList.add('dragover'); });
+            spriteUploadZone.addEventListener('dragleave', () => spriteUploadZone.classList.remove('dragover'));
+            spriteUploadZone.addEventListener('drop', (e) => {
                 e.preventDefault();
-                uploadZone.classList.add('dragover');
+                spriteUploadZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) processSpriteSheet(e.dataTransfer.files[0]);
             });
-            uploadZone.addEventListener('dragleave', () => {
-                uploadZone.classList.remove('dragover');
-            });
-            uploadZone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadZone.classList.remove('dragover');
-                if (e.dataTransfer.files.length > 0) {
-                    processUploadedImage(e.dataTransfer.files[0]);
-                }
-            });
-            fileInput.addEventListener('change', () => {
-                if (fileInput.files.length > 0) processUploadedImage(fileInput.files[0]);
+            spriteFileInput.addEventListener('change', () => {
+                if (spriteFileInput.files.length > 0) processSpriteSheet(spriteFileInput.files[0]);
             });
 
-            // Tolerance slider
+            bgUploadZone.addEventListener('dragover', (e) => { e.preventDefault(); bgUploadZone.classList.add('dragover'); });
+            bgUploadZone.addEventListener('dragleave', () => bgUploadZone.classList.remove('dragover'));
+            bgUploadZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                bgUploadZone.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) processBackground(e.dataTransfer.files[0]);
+            });
+            bgFileInput.addEventListener('change', () => {
+                if (bgFileInput.files.length > 0) processBackground(bgFileInput.files[0]);
+            });
+
             toleranceSlider.addEventListener('input', () => {
-                toleranceVal.textContent = toleranceSlider.value;
-                reProcessUploaded();
+                greenTolerance = toleranceSlider.value;
+                toleranceVal.textContent = greenTolerance;
+                reProcessSprite();
+                audioEngine.playClick();
+            });
+
+            // Grid position controls
+            document.querySelectorAll('.grid-pos-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const dir = btn.dataset.dir;
+                    const step = 10;
+                    if (dir === 'up') spriteOffsetY -= step;
+                    if (dir === 'down') spriteOffsetY += step;
+                    if (dir === 'left') spriteOffsetX -= step;
+                    if (dir === 'right') spriteOffsetX += step;
+                    audioEngine.playClick();
+                    showToast('POSITION: ' + spriteOffsetX + ',' + spriteOffsetY);
+                });
             });
 
             // Header buttons
-            document.getElementById('btn-upload-trigger').addEventListener('click', () => {
-                audioEngine.playClick();
-                fileInput.click();
-            });
+            document.getElementById('btn-upload-sprite').addEventListener('click', () => spriteFileInput.click());
+            document.getElementById('btn-upload-bg').addEventListener('click', () => bgFileInput.click());
             document.getElementById('btn-cutscene').addEventListener('click', () => {
                 audioEngine.playClick();
                 audioEngine.playSuccess();
@@ -1810,9 +1368,7 @@
                 showToast('▶ CUTSCENE STARTED');
                 particles.burst(gameCanvas.width / 2, gameCanvas.height / 3, 30);
             });
-            document.getElementById('btn-glitch').addEventListener('click', () => {
-                triggerGlitch();
-            });
+            document.getElementById('btn-glitch').addEventListener('click', triggerGlitch);
 
             // HUD buttons
             document.querySelectorAll('.hud-btn').forEach(btn => {
@@ -1823,15 +1379,7 @@
                     audioEngine.playEmotion(action);
                     currentEmotion = action;
                     character.setState(action);
-                    particles.burst(btn.getBoundingClientRect().left, btn.getBoundingClientRect().top, 10);
-                    // Visual feedback
-                    btn.style.transform = 'scale(0.9)';
-                    setTimeout(() => { btn.style.transform = ''; }, 100);
                     showToast('✦ ' + action.toUpperCase() + ' ✦');
-                });
-                btn.addEventListener('mouseenter', () => {
-                    const rect = btn.getBoundingClientRect();
-                    particles.spawn(rect.left + rect.width / 2, rect.top + rect.height / 2, 5);
                 });
             });
 
@@ -1844,69 +1392,53 @@
                     audioEngine.playEmotion(state);
                     currentEmotion = state;
                     character.setState(state);
-                    particles.burst(btn.getBoundingClientRect().left + btn.getBoundingClientRect().width /
-                        2, btn.getBoundingClientRect().top + btn.getBoundingClientRect().height / 2, 12);
-                    showToast('✦ ' + state.toUpperCase() + ' ✦');
-                    // Highlight
                     document.querySelectorAll('.state-btn').forEach(b => b.classList.remove('playing'));
                     btn.classList.add('playing');
                     setTimeout(() => btn.classList.remove('playing'), 1000);
                 });
             });
 
-            // Dialog box advance
+            // Dialog box
             document.getElementById('dialog-box').addEventListener('click', () => {
-                if (cutscene.playing) {
-                    audioEngine.playClick();
-                    cutscene.advance();
-                }
+                if (cutscene.playing) { audioEngine.playClick(); cutscene.advance(); }
             });
             document.addEventListener('keydown', (e) => {
                 if (e.code === 'Space' || e.code === 'Enter') {
                     e.preventDefault();
-                    if (cutscene.playing) {
-                        audioEngine.playClick();
-                        cutscene.advance();
-                    }
+                    if (cutscene.playing) { audioEngine.playClick(); cutscene.advance(); }
                 }
                 if (e.code === 'KeyG') triggerGlitch();
                 if (e.code === 'KeyC') cutscene.start();
-                if (e.code === 'KeyU') fileInput.click();
+                if (e.code === 'KeyU') spriteFileInput.click();
                 if (e.code === 'KeyB') {
-                    backgroundMode = backgroundMode === 'cyber' ? 'real' : 'cyber';
-                    audioEngine.playClick();
-                    showToast('🏠 BACKGROUND: ' + backgroundMode.toUpperCase());
+                    if (!uploadedBackground) {
+                        backgroundMode = backgroundMode === 'cyber' ? 'real' : 'cyber';
+                        audioEngine.playClick();
+                        showToast('🏠 BACKGROUND: ' + backgroundMode.toUpperCase());
+                    }
                 }
+                if (e.code === 'KeyW') { spriteOffsetY -= 10; showToast('POS: ' + spriteOffsetX + ',' + spriteOffsetY); }
+                if (e.code === 'KeyS') { spriteOffsetY += 10; showToast('POS: ' + spriteOffsetX + ',' + spriteOffsetY); }
+                if (e.code === 'KeyA') { spriteOffsetX -= 10; showToast('POS: ' + spriteOffsetX + ',' + spriteOffsetY); }
+                if (e.code === 'KeyD') { spriteOffsetX += 10; showToast('POS: ' + spriteOffsetX + ',' + spriteOffsetY); }
             });
 
-            // Background toggle
-            document.getElementById('btn-glitch').addEventListener('dblclick', () => {
-                backgroundMode = backgroundMode === 'cyber' ? 'real' : 'cyber';
-                audioEngine.playSuccess();
-                showToast('🏠 BACKGROUND: ' + backgroundMode.toUpperCase());
-            });
-
-            // Initialize audio on first interaction
             document.addEventListener('click', () => audioEngine.init(), { once: true });
             document.addEventListener('keydown', () => audioEngine.init(), { once: true });
 
-            // Auto-start demo cutscene after 2 seconds
+            // Auto demo
             setTimeout(() => {
-                if (!uploadedSprite) {
+                if (!uploadedSpriteCanvas) {
                     showToast('🎮 PROCEDURAL DEMO MODE');
                     audioEngine.init();
                     audioEngine.playSuccess();
-                    setTimeout(() => {
-                        cutscene.start();
-                    }, 500);
+                    setTimeout(() => cutscene.start(), 500);
                 }
             }, 1500);
 
-            // Toast function
-            window.showToast = showToast;
-
-            console.log('✨ NEON GENESIS JRPG CUTSCENE ENGINE LOADED ✨');
-            console.log('📋 Commands: [SPACE] advance dialog | [C] cutscene | [U] upload | [B] background | [G] glitch');
+            console.log('✨ NEON GENESIS GRID ENGINE v2 LOADED ✨');
+            console.log('📋 Commands: [SPACE] dialog | [C] cutscene | [U] sprite | [B] bg | [G] glitch');
+            console.log('🎮 Position: [W][A][S][D] move sprite | [←][→][↑][↓] buttons');
         })();
     </script>
 </body>
