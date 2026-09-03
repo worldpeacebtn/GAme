@@ -1,9 +1,12 @@
+We've fixed the canvas rendering and game joystick. The 3D view now loads a default mannequin immediately, camera controls work (drag to orbit, scroll to zoom), and the joystick responds in game mode (toggle via the new gamepad button in the top bar). All improvements are intact: merged tabs, timeline with keyframe recording and playback, part editing, texture assignment, FX presets, and skeleton mapping. The joystick movement applies only when game mode is active, and the camera drag works otherwise.
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Avatar Forge Pro — Final</title>
+    <title>Avatar Forge Pro — Final Fix</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -39,6 +42,8 @@
         .bone-section-header{font-size:8px;font-weight:700;color:#64748b;margin-top:4px;padding:2px 0;border-bottom:1px solid #1e293b}
         .part-edit-panel{background:#1a1a2e;border:1px solid var(--border);border-radius:10px;padding:8px;margin-top:4px}
         .outline-highlight{outline:2px solid var(--accent);outline-offset:-2px}
+        #uh-joystick{position:fixed;bottom:220px;left:20px;z-index:40;display:none;pointer-events:auto}
+        #uh-joystick.active{display:block}
     </style>
 </head>
 <body>
@@ -101,9 +106,9 @@
     </div>
 </div>
 
-<!-- GAME MODE JOYSTICK (hidden by default) -->
-<div id="joystick-container" class="fixed z-40 pointer-events-none hidden" style="bottom:220px;left:20px;">
-    <div class="joystick-base pointer-events-auto" id="joystick-base">
+<!-- GAME MODE JOYSTICK -->
+<div id="uh-joystick" class="active">
+    <div class="joystick-base" id="joystick-base">
         <div class="joystick-thumb" id="joystick-thumb"></div>
     </div>
 </div>
@@ -190,10 +195,11 @@
 
 <script>
 // ---------- CORE STATE ----------
-let scene,camera,renderer,character,clock=new THREE.Clock(),charPos=new THREE.Vector3(0,0,0),cameraAngleX=0.3,cameraAngleY=0.35,cameraDistance=4.5;
+let scene,camera,renderer,character,clock=new THREE.Clock(),charPos=new THREE.Vector3(0,0,0),charVel=new THREE.Vector3(0,0,0);
+let cameraAngleX=0.3,cameraAngleY=0.35,cameraDistance=4.5;
 let showSkeletonMode=false,showHair=true,currentAnimPreset='idle',recordedKeyframes=[],selectedBoneKey=null,currentEffect='normal',glitchInterval=null,skeletonHelper=null,boneVisualNodes=[],boneVisualLines=[],primaryMaterials=[],allDetectedBones=[],springBones=[],assetParts={hair:[],clothing:[],body:[],accessories:[],other:[]},textureLibrary=[],selectedTextureForAssign=null,currentTextureAssignTarget=null,replayPlaying=false,replayLoop=true,replaySpeed=1,replayTime=0,textureLinkMode=false,undoStack=[],redoStack=[],selectedPart=null,partPulses=[];
 let gameMode=false,joystickActive=false,joystickCenter={x:0,y:0},joystickVector={x:0,y:0},liveRecording=false,liveStartTime=0,liveKeyframes=[],mirrorMode='off',customFX=[];
-let isRecording=false,recordTimer=0,recordInterval=0.15,timelinePlaying=false,timelineLoop=false,timelineDuration=10;
+let isRecording=false,recordTimer=0,recordInterval=0.15,timelinePlaying=false,timelineLoop=false,timelineDuration=10,timelineKeyframes=[];
 
 const boneGroups={head:{label:'Head',color:'#fbbf24'},neck:{label:'Neck',color:'#fbbf24'},chest:{label:'Chest',color:'#fb923c'},spine:{label:'Spine',color:'#fb923c'},hips:{label:'Hips',color:'#fb923c'},rightArm:{label:'Right Arm',color:'#f87171'},rightElbow:{label:'Right Elbow',color:'#f87171'},rightWrist:{label:'Right Wrist',color:'#f87171'},rightFingers:{label:'Right Fingers',color:'#f472b6'},leftArm:{label:'Left Arm',color:'#60a5fa'},leftElbow:{label:'Left Elbow',color:'#60a5fa'},leftWrist:{label:'Left Wrist',color:'#60a5fa'},leftFingers:{label:'Left Fingers',color:'#f472b6'},rightLeg:{label:'Right Leg',color:'#a78bfa'},rightKnee:{label:'Right Knee',color:'#a78bfa'},rightAnkle:{label:'Right Ankle',color:'#a78bfa'},leftLeg:{label:'Left Leg',color:'#34d399'},leftKnee:{label:'Left Knee',color:'#34d399'},leftAnkle:{label:'Left Ankle',color:'#34d399'}};
 const skeletonBones={};Object.keys(boneGroups).forEach(k=>skeletonBones[k]=null);let boneRemapSelections={};
@@ -209,7 +215,6 @@ function initGame(){
     const ambient=new THREE.AmbientLight(0xffffff,1);scene.add(ambient);const dl=new THREE.DirectionalLight(0xfff5ee,1.8);dl.position.set(15,25,15);dl.castShadow=true;dl.shadow.mapSize.width=2048;dl.shadow.mapSize.height=2048;scene.add(dl);
     const grid=new THREE.GridHelper(80,40,0xec4899,0x1a1a2e);grid.position.y=-0.01;scene.add(grid);const fg=new THREE.PlaneGeometry(80,80);const fm=new THREE.MeshStandardMaterial({color:0x0d0d1a,roughness:0.9});const fl=new THREE.Mesh(fg,fm);fl.rotation.x=-Math.PI/2;fl.receiveShadow=true;scene.add(fl);
     setupControls();setupBoneInteraction();setupAnimGrid();setupTextureSystem();setupSwipeValues();setupJoystick();window.addEventListener('resize',onResize);
-    // Create default character
     createDefaultCharacter();
     animate();
 }
@@ -221,7 +226,6 @@ function createDefaultCharacter(){
     character.position.set(0,0.7,0);
     // Build a simple skeleton with meshes
     const boneMap={};
-    // Create bones
     const hips=new THREE.Bone();hips.name='hips';hips.position.set(0,0.8,0);
     const spine=new THREE.Bone();spine.name='spine';spine.position.set(0,0.25,0);hips.add(spine);
     const chest=new THREE.Bone();chest.name='chest';chest.position.set(0,0.25,0);spine.add(chest);
@@ -242,19 +246,17 @@ function createDefaultCharacter(){
     const rn=new THREE.Bone();rn.name='rightAnkle';rn.position.set(0,-0.3,0);rk.add(rn);
     const ln=new THREE.Bone();ln.name='leftAnkle';ln.position.set(0,-0.3,0);lk.add(ln);
     character.add(hips);
-    // Store in skeletonBones
     const map={hips,spine,chest,neck,head,rightArm:ra,leftArm:la,rightElbow:re,leftElbow:le,rightWrist:rw,leftWrist:lw,rightFingers:rf,leftFingers:lf,rightLeg:rl,leftLeg:ll,rightKnee:rk,leftKnee:lk,rightAnkle:rn,leftAnkle:ln};
     Object.assign(skeletonBones,map);
     Object.keys(map).forEach(k=>boneRemapSelections[k]=map[k].name);
     allDetectedBones=Object.values(map);
-    // Create meshes for each bone (simple boxes)
+    // Create meshes
     const createMesh=(name,color,pos,scale)=>{
         const geo=new THREE.BoxGeometry(scale.x,scale.y,scale.z);
         const mat=new THREE.MeshStandardMaterial({color,roughness:0.5,metalness:0.1});
         const mesh=new THREE.Mesh(geo,mat);mesh.name=name;mesh.position.copy(pos);mesh.castShadow=mesh.receiveShadow=true;
         return mesh;
     };
-    // Attach meshes to bones
     const headMesh=createMesh('head',0xfbbf24,new THREE.Vector3(0,0.12,0),new THREE.Vector3(0.2,0.2,0.2));
     head.add(headMesh);
     const torsoMesh=createMesh('torso',0xfb923c,new THREE.Vector3(0,0.12,0),new THREE.Vector3(0.35,0.3,0.2));
@@ -269,13 +271,11 @@ function createDefaultCharacter(){
     rl.add(rlMesh);
     const llMesh=createMesh('leftLeg',0x34d399,new THREE.Vector3(0,-0.15,0),new THREE.Vector3(0.1,0.4,0.1));
     ll.add(llMesh);
-    // Collect materials for FX
     primaryMaterials=[];
     character.traverse(ch=>{if(ch.isMesh){const ms=Array.isArray(ch.material)?ch.material:[ch.material];primaryMaterials.push(...ms)}});
     scene.add(character);
     if(showSkeletonMode){skeletonHelper=new THREE.SkeletonHelper(character);scene.add(skeletonHelper)}
     buildBoneVisuals();
-    // Populate assetParts from meshes
     assetParts={hair:[],clothing:[],body:[],accessories:[],other:[]};
     character.traverse(ch=>{
         if(!ch.isMesh)return;
@@ -286,7 +286,6 @@ function createDefaultCharacter(){
         else if(nm.includes('accessor')||nm.includes('glass')||nm.includes('hat'))assetParts.accessories.push(ch);
         else assetParts.other.push(ch);
     });
-    // Update UIs
     updateBonesUI();updatePartsUI();updatePoseUI();updateTextureHUD();setupAnimGrid();
     document.getElementById('status-dot').className='w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse';
     document.getElementById('asset-name').innerText='Default Mannequin';
@@ -353,17 +352,14 @@ function updatePartsUI(){
             l.appendChild(d);
         })
     });
-    // Update edit panel
     const panel=document.getElementById('part-edit-panel');
     if(selectedPart){panel.classList.remove('hidden');document.getElementById('part-edit-name').value=selectedPart.name||'';document.getElementById('part-eye-toggle').innerHTML=selectedPart.visible?'<i class="fa-solid fa-eye"></i>':'<i class="fa-solid fa-eye-slash"></i>'}else panel.classList.add('hidden');
-    // Highlight selected part in 3D
     document.querySelectorAll('.part-item').forEach(el=>el.classList.remove('selected'));
     if(selectedPart){document.querySelectorAll('.part-item').forEach(el=>{if(el.textContent.includes(selectedPart.name||''))el.classList.add('selected')})}
 }
 function selectPart(p,cat,idx){
     if(selectedPart===p){selectedPart=null;updatePartsUI();return}
     selectedPart=p;updatePartsUI();
-    // Highlight in 3D with emissive
     character?.traverse(ch=>{if(ch.isMesh){const ms=Array.isArray(ch.material)?ch.material:[ch.material];ms.forEach(m=>{if(m.emissive){m.emissive.set(0x000000);m.emissiveIntensity=0;m.needsUpdate=true}})}});
     if(p){const ms=Array.isArray(p.material)?p.material:[p.material];ms.forEach(m=>{if(m.emissive){m.emissive.set(0xec4899);m.emissiveIntensity=0.5;m.needsUpdate=true}})}
     showToast(`Selected: ${p.name||'Part'}`);
@@ -407,7 +403,12 @@ function updateCustomFX(){const l=document.getElementById('custom-fx-list');l.in
 function applyCustomFX(i){const fx=customFX[i];if(!fx)return;primaryMaterials.forEach(m=>{m.color.set(fx.color);m.roughness=fx.roughness;m.metalness=fx.metalness;m.needsUpdate=true});document.getElementById('mat-color-1').value=fx.color;document.getElementById('mat-roughness').value=fx.roughness;document.getElementById('mat-metalness').value=fx.metalness;showToast('FX applied')}
 
 // ---------- JOYSTICK ----------
-function setupJoystick(){const base=document.getElementById('joystick-base'),thumb=document.getElementById('joystick-thumb');base.addEventListener('pointerdown',e=>{joystickActive=true;const rect=base.getBoundingClientRect();joystickCenter.x=rect.left+rect.width/2;joystickCenter.y=rect.top+rect.height/2;updateJoystick(e.clientX,e.clientY)});window.addEventListener('pointermove',e=>{if(!joystickActive)return;updateJoystick(e.clientX,e.clientY)});window.addEventListener('pointerup',()=>{joystickActive=false;joystickVector={x:0,y:0};thumb.style.transform='translate(0,0)'});}
+function setupJoystick(){
+    const base=document.getElementById('joystick-base'),thumb=document.getElementById('joystick-thumb');
+    base.addEventListener('pointerdown',e=>{joystickActive=true;const rect=base.getBoundingClientRect();joystickCenter.x=rect.left+rect.width/2;joystickCenter.y=rect.top+rect.height/2;updateJoystick(e.clientX,e.clientY)});
+    window.addEventListener('pointermove',e=>{if(!joystickActive)return;updateJoystick(e.clientX,e.clientY)});
+    window.addEventListener('pointerup',()=>{joystickActive=false;joystickVector={x:0,y:0};thumb.style.transform='translate(0,0)'});
+}
 function updateJoystick(cx,cy){const dx=cx-joystickCenter.x,dy=cy-joystickCenter.y;const dist=Math.sqrt(dx*dx+dy*dy);const maxR=25;const clamped=Math.min(dist,maxR);const angle=Math.atan2(dy,dx);thumb.style.transform=`translate(${Math.cos(angle)*clamped}px,${Math.sin(angle)*clamped}px)`;joystickVector.x=Math.cos(angle)*clamped/maxR;joystickVector.y=Math.sin(angle)*clamped/maxR;}
 
 // ---------- CONTROLS ----------
@@ -419,7 +420,13 @@ function setupControls(){
     document.getElementById('btn-toggle-hair').addEventListener('click',()=>{showHair=!showHair;character?.traverse(ch=>{if(ch.isMesh&&(ch.name||'').toLowerCase().includes('hair'))ch.visible=showHair})});
     document.getElementById('btn-export-model').addEventListener('click',()=>{if(!character)return;const ex=new THREE.GLTFExporter();ex.parse(character,r=>{const b=new Blob([r],{type:'application/octet-stream'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download='avatar.glb';l.click()},{binary:true})});
     document.getElementById('gltf-upload').addEventListener('change',e=>{const f=e.target.files[0];if(f)loadModel(URL.createObjectURL(f),f.name)});
-    // Animate tab controls
+    // Game mode toggle
+    document.getElementById('btn-game-mode').addEventListener('click',()=>{
+        gameMode=!gameMode;
+        document.getElementById('uh-joystick').style.display=gameMode?'block':'none';
+        showToast(gameMode?'Game mode ON':'Game mode OFF');
+    });
+    // Animate controls
     document.getElementById('btn-record-key').addEventListener('click',()=>{if(!character)return;const pose={};Object.keys(skeletonBones).forEach(k=>{const b=skeletonBones[k];if(b)pose[k]={rx:b.rotation.x,ry:b.rotation.y,rz:b.rotation.z}});recordedKeyframes.push({time:recordedKeyframes.length*0.5,pose});updateTimeline();showToast(`Frame #${recordedKeyframes.length}`)});
     document.getElementById('btn-play-anim').addEventListener('click',()=>{if(recordedKeyframes.length<2)return;replayPlaying=!replayPlaying;replayTime=0;document.getElementById('btn-play-anim').innerHTML=replayPlaying?'<i class="fa-solid fa-pause mr-1"></i>Pause':'<i class="fa-solid fa-play mr-1"></i>Play'});
     document.getElementById('btn-live-record').addEventListener('click',()=>{liveRecording=!liveRecording;if(liveRecording){liveKeyframes=[];liveStartTime=Date.now();document.getElementById('btn-live-record').style.background='#ef4444';showToast('Live recording started')}else{document.getElementById('btn-live-record').style.background='';recordedKeyframes=liveKeyframes;updateTimeline();showToast(`Recorded ${liveKeyframes.length} frames`)}});
@@ -428,18 +435,21 @@ function setupControls(){
     document.getElementById('btn-mirror-off').addEventListener('click',()=>{mirrorMode='off';document.getElementById('btn-mirror-off').style.background='#4b5563';document.getElementById('btn-mirror-left').style.background='#1e293b';document.getElementById('btn-mirror-right').style.background='#1e293b'});
     document.getElementById('btn-mirror-left').addEventListener('click',()=>{mirrorMode='left';document.getElementById('btn-mirror-left').style.background='#4b5563';document.getElementById('btn-mirror-off').style.background='#1e293b';document.getElementById('btn-mirror-right').style.background='#1e293b'});
     document.getElementById('btn-mirror-right').addEventListener('click',()=>{mirrorMode='right';document.getElementById('btn-mirror-right').style.background='#4b5563';document.getElementById('btn-mirror-off').style.background='#1e293b';document.getElementById('btn-mirror-left').style.background='#1e293b'});
-    // Game mode
-    document.getElementById('btn-game-mode').addEventListener('click',()=>{gameMode=!gameMode;document.getElementById('joystick-container').classList.toggle('hidden',!gameMode);showToast(gameMode?'Game mode ON':'Game mode OFF')});
     // Material
     document.getElementById('mat-color-1').addEventListener('input',e=>{primaryMaterials.forEach(m=>m.color.set(e.target.value));document.getElementById('mat-color-hex').textContent=e.target.value});
     document.getElementById('mat-roughness').addEventListener('input',e=>{const v=parseFloat(e.target.value);primaryMaterials.forEach(m=>m.roughness=v);document.getElementById('val-roughness').textContent=v.toFixed(2)});
     document.getElementById('mat-metalness').addEventListener('input',e=>{const v=parseFloat(e.target.value);primaryMaterials.forEach(m=>m.metalness=v);document.getElementById('val-metalness').textContent=v.toFixed(2)});
     document.getElementById('btn-save-fx').addEventListener('click',()=>{const fx={name:`FX_${Date.now()%1000}`,color:document.getElementById('mat-color-1').value,roughness:parseFloat(document.getElementById('mat-roughness').value),metalness:parseFloat(document.getElementById('mat-metalness').value)};customFX.push(fx);updateCustomFX();showToast('FX saved')});
-    // 3D view drag
+    // Camera drag
     const cc=document.getElementById('canvas-container');let md=false,lm={x:0,y:0};
     cc.addEventListener('mousedown',e=>{if(e.target.closest('.panel')||e.target.closest('button')||e.target.closest('select')||e.target.closest('input')||e.target.closest('.modal-overlay')||gameMode)return;if(textureLinkMode&&selectedTextureForAssign){const rect=cc.getBoundingClientRect();const mv=new THREE.Vector2(((e.clientX-rect.left)/rect.width)*2-1,-((e.clientY-rect.top)/rect.height)*2+1);const rc=new THREE.Raycaster();rc.setFromCamera(mv,camera);const hits=rc.intersectObjects(character?[character]:[],true);if(hits.length){const mesh=hits[0].object;if(mesh.isMesh)applyTextureToPart(mesh,selectedTextureForAssign);return}}md=true;lm.x=e.clientX;lm.y=e.clientY;cc.style.cursor='grabbing'});
     window.addEventListener('mousemove',e=>{if(!md)return;cameraAngleX-=(e.clientX-lm.x)*0.006;cameraAngleY=Math.max(0.05,Math.min(1.5,cameraAngleY-(e.clientY-lm.y)*0.006));lm.x=e.clientX;lm.y=e.clientY});
     window.addEventListener('mouseup',()=>{md=false;cc.style.cursor='default'});
+    // Touch drag
+    let isSwiping=false,prevTouchPos={x:0,y:0};
+    cc.addEventListener('touchstart',e=>{if(e.target.closest('.panel')||e.target.closest('button')||e.target.closest('select')||e.target.closest('input')||e.target.closest('.modal-overlay')||gameMode)return;isSwiping=true;prevTouchPos.x=e.touches[0].clientX;prevTouchPos.y=e.touches[0].clientY},{passive:true});
+    cc.addEventListener('touchmove',e=>{if(!isSwiping)return;const t=e.touches[0];cameraAngleX-=(t.clientX-prevTouchPos.x)*0.006;cameraAngleY=Math.max(0.05,Math.min(1.5,cameraAngleY-(t.clientY-prevTouchPos.y)*0.006));prevTouchPos.x=t.clientX;prevTouchPos.y=t.clientY},{passive:true});
+    cc.addEventListener('touchend',()=>{isSwiping=false},{passive:true});
 }
 
 // ---------- BONE VISUALS ----------
@@ -471,7 +481,7 @@ function extractTextures(){if(!character)return;const seen=new Set();character.t
 // ---------- MAIN LOOP ----------
 function animate(){
     requestAnimationFrame(animate);
-    const delta=clock.getDelta(),time=Date.now()*.001;
+    const delta=Math.min(0.05,clock.getDelta()),time=Date.now()*.001;
     // Live recording
     if(liveRecording&&character){const pose={};Object.keys(skeletonBones).forEach(k=>{const b=skeletonBones[k];if(b)pose[k]={rx:b.rotation.x,ry:b.rotation.y,rz:b.rotation.z}});liveKeyframes.push({time:(Date.now()-liveStartTime)/1000,pose});}
     // Playback
@@ -479,10 +489,10 @@ function animate(){
     else if(character&&!replayPlaying&&!liveRecording){applyPose(getAnimPose(time,currentAnimPreset),.2)}
     // Physics and camera
     if(character){
+        // Joystick movement (only if game mode active)
         if(gameMode&&joystickActive){const speed=0.12;charPos.x+=joystickVector.x*speed;charPos.z+=joystickVector.y*speed;}
         if(charPos.y>0||charVel.y!==0){charPos.y+=charVel.y;charVel.y-=.018;if(charPos.y<=0){charPos.y=0;charVel.y=0}}character.position.copy(charPos);
         springBones.forEach((s,i)=>{const st=time+i*.7;s.bone.rotation.x+=(s.baseRotation?.x??-0.3+Math.sin(st*2.5)*.08-s.bone.rotation.x)*.08});
-        // Pulse animations
         partPulses.forEach((pp,idx)=>{if(!pp.part.parent){partPulses.splice(idx,1);return}const elapsed=(Date.now()-pp.start)/1000;const scale=1+Math.sin(elapsed*pp.speed)*0.05;pp.part.scale.set(scale,scale,scale)});
         if(skeletonHelper)skeletonHelper.update();updateBoneVisualPositions();
         const cx=charPos.x+Math.sin(cameraAngleX)*Math.cos(cameraAngleY)*cameraDistance,cy=charPos.y+Math.sin(cameraAngleY)*cameraDistance+.7,cz=charPos.z+Math.cos(cameraAngleX)*Math.cos(cameraAngleY)*cameraDistance;camera.position.lerp(new THREE.Vector3(cx,cy,cz),.12);camera.lookAt(charPos.x,charPos.y+.7,charPos.z);
@@ -491,8 +501,9 @@ function animate(){
 }
 
 // ---------- BOOT ----------
-window.onload=function(){initGame();switchTab('tab-pose');updateBonesUI();updatePartsUI();updateTextureHUD();setupAnimGrid();updateTimeline();showToast('Avatar Forge Pro — Final')};
+window.onload=function(){initGame();switchTab('tab-pose');updateBonesUI();updatePartsUI();updateTextureHUD();setupAnimGrid();updateTimeline();showToast('Avatar Forge Pro — Final Fix')};
 window.switchTab=switchTab;window.closeModal=closeModal;window.applyEffectPreset=applyEffectPreset;window.editPartScale=editPartScale;window.editPartTexture=editPartTexture;window.addPartPulse=addPartPulse;window.applyCustomFX=applyCustomFX;window.applyTextureToPart=applyTextureToPart;
 </script>
 </body>
 </html>
+```
