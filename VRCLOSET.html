@@ -1,0 +1,2464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CYBERDOLL // SCHRANK</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a1a;
+            --bg-secondary: #12081f;
+            --bg-panel: rgba(18, 8, 31, 0.85);
+            --bg-glass: rgba(255, 255, 255, 0.03);
+            --border-glow: rgba(255, 0, 110, 0.4);
+            --border-cyan: rgba(0, 229, 255, 0.4);
+            --neon-pink: #ff006e;
+            --neon-pink-soft: #ff2d95;
+            --neon-cyan: #00e5ff;
+            --neon-cyan-soft: #64f4ff;
+            --neon-purple: #8338ec;
+            --neon-gold: #ffd700;
+            --text-primary: #f0f0ff;
+            --text-secondary: #b8b8d0;
+            --text-muted: #6a6a8a;
+            --danger: #ff3355;
+            --success: #00ff88;
+            --font-display: 'Orbitron', monospace;
+            --font-body: 'Rajdhani', 'Space Grotesk', sans-serif;
+            --panel-radius: 16px;
+            --tab-height: 62px;
+            --topbar-height: 48px;
+            --transition-speed: 0.25s;
+            --glow-pink: 0 0 20px rgba(255, 0, 110, 0.5), 0 0 60px rgba(255, 0, 110, 0.2);
+            --glow-cyan: 0 0 20px rgba(0, 229, 255, 0.5), 0 0 60px rgba(0, 229, 255, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        input,
+        textarea,
+        select {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+            touch-action: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(255, 0, 110, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.06) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+            animation: gridPulse 4s ease-in-out infinite;
+        }
+        @keyframes gridPulse {
+            0%,
+            100% {
+                opacity: 0.7;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+
+        /* Top bar */
+        #topbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--topbar-height);
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-glow);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            z-index: 100;
+            box-shadow: 0 2px 20px rgba(255, 0, 110, 0.15);
+        }
+        #topbar .logo {
+            font-family: var(--font-display);
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            background: linear-gradient(135deg, var(--neon-pink), var(--neon-cyan));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        #topbar .logo span {
+            font-size: 8px;
+            letter-spacing: 3px;
+            display: block;
+            -webkit-text-fill-color: var(--text-muted);
+            font-weight: 400;
+        }
+        #topbar .top-actions {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .btn-icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 1px solid var(--border-glow);
+            background: var(--bg-glass);
+            color: var(--neon-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all var(--transition-speed);
+            position: relative;
+        }
+        .btn-icon:hover,
+        .btn-icon:active {
+            background: rgba(255, 0, 110, 0.2);
+            border-color: var(--neon-pink);
+            box-shadow: var(--glow-pink);
+            transform: scale(1.05);
+        }
+        .btn-icon .badge {
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            background: var(--neon-pink);
+            color: #fff;
+            font-size: 8px;
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-family: var(--font-display);
+            border: 1px solid var(--bg-primary);
+        }
+
+        /* Main viewport */
+        #viewport-container {
+            position: fixed;
+            top: var(--topbar-height);
+            left: 0;
+            right: 0;
+            bottom: var(--tab-height);
+            z-index: 1;
+            cursor: grab;
+            touch-action: none;
+        }
+        #viewport-container:active {
+            cursor: grabbing;
+        }
+        #viewport-container canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Character name overlay */
+        #char-name-overlay {
+            position: fixed;
+            top: calc(var(--topbar-height) + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            font-family: var(--font-display);
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--neon-cyan);
+            text-shadow: var(--glow-cyan);
+            background: rgba(10, 10, 26, 0.6);
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            pointer-events: none;
+            transition: opacity 0.3s;
+            text-transform: uppercase;
+        }
+
+        /* Loading overlay */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 26, 0.9);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            transition: opacity 0.4s;
+        }
+        #loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loader-ring {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            border-top-color: var(--neon-pink);
+            border-right-color: var(--neon-cyan);
+            animation: spin 0.8s linear infinite;
+            position: relative;
+        }
+        .loader-ring::after {
+            content: '';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            right: 8px;
+            bottom: 8px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-bottom-color: var(--neon-purple);
+            animation: spin 0.6s linear infinite reverse;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        #loading-overlay .load-text {
+            font-family: var(--font-display);
+            font-size: 12px;
+            letter-spacing: 3px;
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            animation: textFlicker 1.5s ease-in-out infinite;
+        }
+        @keyframes textFlicker {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* Bottom tab bar */
+        #tabbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: var(--tab-height);
+            background: var(--bg-panel);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border-glow);
+            display: flex;
+            align-items: stretch;
+            z-index: 100;
+            box-shadow: 0 -2px 20px rgba(255, 0, 110, 0.15);
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+        .tab-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-family: var(--font-body);
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            position: relative;
+            text-transform: uppercase;
+            padding: 4px 0;
+            border-top: 2px solid transparent;
+        }
+        .tab-btn .tab-icon {
+            font-size: 18px;
+            line-height: 1;
+            transition: all var(--transition-speed);
+        }
+        .tab-btn.active {
+            color: var(--neon-cyan);
+            border-top-color: var(--neon-cyan);
+            text-shadow: var(--glow-cyan);
+        }
+        .tab-btn.active .tab-icon {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px rgba(0, 229, 255, 0.6));
+        }
+        .tab-btn:hover {
+            color: var(--neon-cyan-soft);
+        }
+
+        /* Slide-up panel */
+        #panel-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 150;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--transition-speed);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        #panel-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        #bottom-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-height: 70vh;
+            background: var(--bg-panel);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-top: 2px solid var(--border-glow);
+            border-radius: 20px 20px 0 0;
+            z-index: 200;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -10px 40px rgba(255, 0, 110, 0.3);
+            overflow: hidden;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+        #bottom-panel.open {
+            transform: translateY(0);
+        }
+        .panel-drag-handle {
+            width: 40px;
+            height: 4px;
+            background: var(--border-glow);
+            border-radius: 2px;
+            margin: 8px auto 4px;
+            cursor: grab;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .panel-drag-handle:active {
+            background: var(--neon-cyan);
+            width: 60px;
+        }
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 16px 10px;
+            border-bottom: 1px solid rgba(255, 0, 110, 0.15);
+            flex-shrink: 0;
+        }
+        .panel-title {
+            font-family: var(--font-display);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--neon-pink-soft);
+            text-transform: uppercase;
+        }
+        .panel-close {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid var(--border-glow);
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .panel-close:hover {
+            background: rgba(255, 0, 110, 0.2);
+            color: var(--neon-pink);
+            border-color: var(--neon-pink);
+        }
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 12px 16px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border-glow) transparent;
+        }
+        .panel-content::-webkit-scrollbar {
+            width: 4px;
+        }
+        .panel-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .panel-content::-webkit-scrollbar-thumb {
+            background: var(--border-glow);
+            border-radius: 2px;
+        }
+
+        /* Character cards */
+        .char-grid {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 8px 4px;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
+        }
+        .char-card {
+            flex: 0 0 80px;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 0, 110, 0.2);
+            background: var(--bg-glass);
+            cursor: pointer;
+            transition: all 0.25s;
+            position: relative;
+        }
+        .char-card:hover,
+        .char-card.active {
+            border-color: var(--neon-cyan);
+            box-shadow: var(--glow-cyan);
+            background: rgba(0, 229, 255, 0.06);
+        }
+        .char-card .char-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            overflow: hidden;
+        }
+        .char-card .char-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .char-card .char-name {
+            font-size: 8px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            text-align: center;
+            max-width: 70px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-transform: uppercase;
+        }
+        .char-card .char-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            font-size: 7px;
+            background: var(--neon-pink);
+            color: #fff;
+            border-radius: 6px;
+            padding: 1px 4px;
+            font-weight: 700;
+        }
+        .char-card .delete-btn {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            font-size: 9px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .char-card:hover .delete-btn {
+            opacity: 1;
+        }
+
+        /* Part cards */
+        .part-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+            gap: 8px;
+            padding: 4px;
+        }
+        .part-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+            padding: 6px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            background: var(--bg-glass);
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 60px;
+            justify-content: center;
+        }
+        .part-card:hover,
+        .part-card.active {
+            border-color: var(--neon-pink);
+            box-shadow: var(--glow-pink);
+            background: rgba(255, 0, 110, 0.06);
+        }
+        .part-card .part-icon {
+            font-size: 20px;
+        }
+        .part-card .part-name {
+            font-size: 7px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .part-card .part-source {
+            font-size: 6px;
+            color: var(--text-muted);
+        }
+
+        /* Category pills */
+        .cat-pills {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 6px;
+            overflow-x: auto;
+            padding: 6px 0;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .cat-pills::-webkit-scrollbar {
+            display: none;
+        }
+        .cat-pill {
+            flex: 0 0 auto;
+            padding: 6px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 0, 110, 0.3);
+            background: var(--bg-glass);
+            color: var(--text-secondary);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .cat-pill.active {
+            background: var(--neon-pink);
+            color: #fff;
+            border-color: var(--neon-pink);
+            box-shadow: var(--glow-pink);
+        }
+        .cat-pill:hover {
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+
+        /* Texture editor */
+        .tex-preview {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            border: 2px solid var(--border-cyan);
+            background: var(--bg-glass);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            transition: all 0.2s;
+        }
+        .tex-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .tex-preview:hover {
+            box-shadow: var(--glow-cyan);
+            border-color: var(--neon-cyan);
+        }
+        .tex-preview .tex-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            font-size: 6px;
+            text-align: center;
+            padding: 2px;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+        .color-input {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid var(--border-cyan);
+            cursor: pointer;
+            background: none;
+            padding: 0;
+            overflow: hidden;
+        }
+        .color-input::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+        .color-input::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 4px 0;
+        }
+        .slider-row label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            min-width: 60px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .slider-row input[type="range"] {
+            flex: 1;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            outline: none;
+        }
+        .slider-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--neon-pink);
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: var(--glow-pink);
+        }
+
+        /* Animation player */
+        .anim-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            background: var(--bg-glass);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .anim-row:hover,
+        .anim-row.active {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 229, 255, 0.05);
+        }
+        .anim-row .anim-name {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .anim-row .anim-duration {
+            font-size: 9px;
+            color: var(--text-muted);
+        }
+        .anim-row .anim-play-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 1px solid var(--neon-cyan);
+            background: none;
+            color: var(--neon-cyan);
+            cursor: pointer;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .anim-row .anim-play-btn:hover {
+            background: rgba(0, 229, 255, 0.2);
+            box-shadow: var(--glow-cyan);
+        }
+
+        /* Upload button */
+        .upload-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 20px;
+            border: 2px dashed var(--border-glow);
+            border-radius: 16px;
+            background: var(--bg-glass);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .upload-zone:hover,
+        .upload-zone:active {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 229, 255, 0.05);
+            box-shadow: var(--glow-cyan);
+        }
+        .upload-zone .upload-icon {
+            font-size: 32px;
+            color: var(--neon-cyan);
+        }
+        .upload-zone .upload-text {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            letter-spacing: 1px;
+        }
+
+        /* Bone tree */
+        .bone-tree {
+            font-size: 10px;
+            line-height: 1.5;
+            color: var(--text-secondary);
+            padding-left: 0;
+            list-style: none;
+        }
+        .bone-tree ul {
+            list-style: none;
+            padding-left: 16px;
+            border-left: 1px solid rgba(255, 0, 110, 0.2);
+            margin-left: 4px;
+        }
+        .bone-tree li {
+            padding: 2px 4px;
+            cursor: default;
+            transition: color 0.2s;
+        }
+        .bone-tree li:hover {
+            color: var(--neon-cyan);
+        }
+        .bone-tree .bone-icon {
+            font-size: 8px;
+            margin-right: 4px;
+            color: var(--neon-pink-soft);
+        }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: calc(var(--tab-height) + 20px);
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--bg-panel);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 12px;
+            padding: 10px 18px;
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-primary);
+            z-index: 500;
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--glow-cyan);
+            backdrop-filter: blur(10px);
+            pointer-events: none;
+            text-align: center;
+            max-width: 90vw;
+            font-family: var(--font-body);
+            letter-spacing: 0.5px;
+        }
+        #toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 380px) {
+            :root {
+                --tab-height: 52px;
+                --topbar-height: 42px;
+            }
+            .tab-btn {
+                font-size: 7px;
+            }
+            .tab-btn .tab-icon {
+                font-size: 15px;
+            }
+            #topbar .logo {
+                font-size: 11px;
+            }
+        }
+        @media (min-width: 768px) {
+            :root {
+                --tab-height: 68px;
+            }
+            .tab-btn {
+                font-size: 10px;
+            }
+            .tab-btn .tab-icon {
+                font-size: 22px;
+            }
+            .part-grid {
+                grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+            }
+            .char-card {
+                flex: 0 0 100px;
+            }
+            .char-card .char-avatar {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        /* Selected part highlight in 3D - we use emissive */
+        .part-selected-indicator {
+            position: fixed;
+            pointer-events: none;
+            z-index: 30;
+            border: 2px solid var(--neon-cyan);
+            border-radius: 4px;
+            box-shadow: var(--glow-cyan);
+            animation: pulseBorder 1.5s ease-in-out infinite;
+            display: none;
+        }
+        @keyframes pulseBorder {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        /* File input hidden */
+        #file-input {
+            display: none;
+        }
+
+        /* Empty state */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .empty-state .empty-icon {
+            font-size: 40px;
+            color: var(--neon-purple);
+            filter: drop-shadow(0 0 10px rgba(131, 56, 236, 0.5));
+        }
+        .empty-state .empty-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            max-width: 250px;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="loader-ring"></div>
+        <div class="load-text">Initializing...</div>
+    </div>
+
+    <!-- Top Bar -->
+    <div id="topbar">
+        <div class="logo">
+            CYBERDOLL
+            <span>// SCHRANK SYSTEM</span>
+        </div>
+        <div class="top-actions">
+            <button class="btn-icon" id="btn-upload" title="Upload GLB" aria-label="Upload GLB">
+                <span>📁</span>
+                <span class="badge" id="upload-badge" style="display:none;">0</span>
+            </button>
+            <button class="btn-icon" id="btn-export" title="Export GLB" aria-label="Export GLB">
+                <span>💾</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Character Name Overlay -->
+    <div id="char-name-overlay">NO CHARACTER LOADED</div>
+
+    <!-- 3D Viewport -->
+    <div id="viewport-container"></div>
+
+    <!-- Bottom Tab Bar -->
+    <div id="tabbar">
+        <button class="tab-btn active" data-tab="characters" title="Characters">
+            <span class="tab-icon">👤</span>
+            <span>Chars</span>
+        </button>
+        <button class="tab-btn" data-tab="parts" title="Parts">
+            <span class="tab-icon">🧩</span>
+            <span>Parts</span>
+        </button>
+        <button class="tab-btn" data-tab="textures" title="Textures">
+            <span class="tab-icon">🎨</span>
+            <span>Tex</span>
+        </button>
+        <button class="tab-btn" data-tab="animations" title="Animations">
+            <span class="tab-icon">🎬</span>
+            <span>Anims</span>
+        </button>
+        <button class="tab-btn" data-tab="bones" title="Skeleton">
+            <span class="tab-icon">🦴</span>
+            <span>Bones</span>
+        </button>
+    </div>
+
+    <!-- Panel Overlay -->
+    <div id="panel-overlay"></div>
+
+    <!-- Bottom Slide-up Panel -->
+    <div id="bottom-panel">
+        <div class="panel-drag-handle" id="panel-drag-handle"></div>
+        <div class="panel-header">
+            <span class="panel-title" id="panel-title">CHARACTERS</span>
+            <button class="panel-close" id="panel-close">✕</button>
+        </div>
+        <div class="panel-content" id="panel-content">
+            <!-- Dynamic content -->
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast"></div>
+
+    <!-- File Input -->
+    <input type="file" id="file-input" accept=".glb,.gltf" multiple>
+
+    <!-- Importmap for Three.js -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+        import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+        import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
+        // ============ GLOBAL STATE ============
+        const state = {
+            characters: [], // {id, name, gltf, parts, animations, bones, fileName}
+            activeCharId: null,
+            selectedPart: null, // {charId, partId, partName, meshes: [], originalMaterials: Map}
+            activeTab: 'characters',
+            activeCategory: 'all',
+            animationMixer: null,
+            animationAction: null,
+            animationPlaying: false,
+            panelOpen: false,
+            uploadQueue: [],
+            uploadCount: 0,
+            dragged: false,
+            dragStartPos: null,
+        };
+
+        // ============ THREE.JS SETUP ============
+        const viewportContainer = document.getElementById('viewport-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a1a);
+        scene.fog = new THREE.Fog(0x0a0a1a, 8, 25);
+
+        const camera = new THREE.PerspectiveCamera(50, viewportContainer.clientWidth / viewportContainer.clientHeight,
+            0.1, 100);
+        camera.position.set(0, 1.6, 3.5);
+        camera.lookAt(0, 1.1, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(viewportContainer.clientWidth, viewportContainer.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        viewportContainer.appendChild(renderer.domElement);
+
+        // Lighting - cyber aesthetic
+        const ambientLight = new THREE.AmbientLight(0x222244, 0.8);
+        scene.add(ambientLight);
+
+        const keyLight = new THREE.DirectionalLight(0xffccee, 2.0);
+        keyLight.position.set(2, 3, 3);
+        keyLight.castShadow = true;
+        keyLight.shadow.mapSize.width = 1024;
+        keyLight.shadow.mapSize.height = 1024;
+        keyLight.shadow.camera.near = 0.5;
+        keyLight.shadow.camera.far = 20;
+        keyLight.shadow.camera.left = -5;
+        keyLight.shadow.camera.right = 5;
+        keyLight.shadow.camera.top = 5;
+        keyLight.shadow.camera.bottom = -5;
+        scene.add(keyLight);
+
+        const rimLight = new THREE.DirectionalLight(0x00e5ff, 3.0);
+        rimLight.position.set(-2, 1, -2);
+        scene.add(rimLight);
+
+        const fillLight = new THREE.DirectionalLight(0x8338ec, 1.5);
+        fillLight.position.set(0, 0.5, 2);
+        scene.add(fillLight);
+
+        const bottomGlow = new THREE.PointLight(0xff006e, 1.5, 5);
+        bottomGlow.position.set(0, 0, 0.5);
+        scene.add(bottomGlow);
+
+        // Ground grid - cyber style
+        const gridHelper = new THREE.GridHelper(10, 40, 0xff006e, 0x1a1a3a);
+        gridHelper.position.y = -0.5;
+        scene.add(gridHelper);
+
+        // Subtle particles
+        const particlesGeo = new THREE.BufferGeometry();
+        const particlesCount = 200;
+        const particlePositions = new Float32Array(particlesCount * 3);
+        for (let i = 0; i < particlesCount * 3; i++) {
+            particlePositions[i] = (Math.random() - 0.5) * 12;
+        }
+        particlesGeo.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+        const particlesMat = new THREE.PointsMaterial({
+            color: 0x00e5ff,
+            size: 0.015,
+            transparent: true,
+            opacity: 0.5,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+        });
+        const particles = new THREE.Points(particlesGeo, particlesMat);
+        scene.add(particles);
+
+        // OrbitControls with mobile support
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 1.1, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 1.5;
+        controls.maxDistance = 8;
+        controls.maxPolarAngle = Math.PI * 0.85;
+        controls.minPolarAngle = Math.PI * 0.15;
+        controls.enablePan = true;
+        controls.panSpeed = 0.5;
+        controls.rotateSpeed = 0.8;
+        controls.touchRotate = true;
+        controls.touchZoom = true;
+        controls.touchPan = true;
+        controls.update();
+
+        // Group for all character meshes
+        const characterGroup = new THREE.Group();
+        characterGroup.name = 'characterGroup';
+        scene.add(characterGroup);
+
+        // Raycaster for part selection
+        const raycaster = new THREE.Raycaster();
+        const pointer = new THREE.Vector2();
+        let isPointerDown = false;
+        let pointerDownPos = { x: 0, y: 0 };
+        let pointerMoved = false;
+
+        // ============ DRACO LOADER ============
+        const dracoLoader = new DRACOLoader();
+        dracoLoader.setDecoderPath('https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/libs/draco/');
+
+        const gltfLoader = new GLTFLoader();
+        gltfLoader.setDRACOLoader(dracoLoader);
+
+        // ============ PART CATEGORIZATION ============
+        const PART_CATEGORIES = [
+            'body',
+            'head',
+            'hair',
+            'eyes',
+            'mouth',
+            'ears',
+            'nose',
+            'arms',
+            'hands',
+            'legs',
+            'feet',
+            'top',
+            'bottom',
+            'dress',
+            'shoes',
+            'socks',
+            'underwear',
+            'gloves',
+            'hats',
+            'accessories',
+            'other',
+        ];
+
+        const CATEGORY_ICONS = {
+            body: '🧍',
+            head: '👤',
+            hair: '💇',
+            eyes: '👁️',
+            mouth: '👄',
+            ears: '👂',
+            nose: '👃',
+            arms: '💪',
+            hands: '✋',
+            legs: '🦵',
+            feet: '🦶',
+            top: '👕',
+            bottom: '👖',
+            dress: '👗',
+            shoes: '👟',
+            socks: '🧦',
+            underwear: '🩲',
+            gloves: '🧤',
+            hats: '🎩',
+            accessories: '💍',
+            other: '📦',
+        };
+
+        const CATEGORY_KEYWORDS = {
+            body: ['body', 'skin', 'torso', 'chest', 'waist', 'hip', 'abdomen', 'belly', 'pelvis', 'core'],
+            head: ['head', 'face', 'skull', 'neck', 'jaw', 'chin', 'forehead', 'cheek'],
+            hair: ['hair', 'fringe', 'bangs', 'ponytail', 'braid', 'strand', 'curl', 'lock', 'mane', 'quiff',
+                'sideburn'
+            ],
+            eyes: ['eye', 'brow', 'lash', 'pupil', 'iris', 'cornea', 'sclera', 'eyeball', 'eyelid'],
+            mouth: ['mouth', 'lip', 'teeth', 'tooth', 'tongue', 'gum', 'oral'],
+            ears: ['ear', 'lobe', 'auricle'],
+            nose: ['nose', 'nostril', 'bridge'],
+            arms: ['arm', 'hand', 'elbow', 'wrist', 'shoulder', 'forearm', 'upperarm', 'bicep', 'tricep', 'palm',
+                'finger', 'thumb', 'knuckle'
+            ],
+            hands: ['hand', 'palm', 'finger', 'thumb', 'knuckle', 'fingertip'],
+            legs: ['leg', 'foot', 'ankle', 'knee', 'thigh', 'calf', 'shin', 'hip', 'pelvis', 'toe', 'heel', 'sole'],
+            feet: ['foot', 'feet', 'toe', 'heel', 'sole', 'ankle'],
+            top: ['top', 'shirt', 'jacket', 'coat', 'blouse', 'sweater', 'vest', 'hoodie', 'cardigan', 'tee', 'tank',
+                'crop'
+            ],
+            bottom: ['bottom', 'pants', 'skirt', 'shorts', 'jeans', 'trousers', 'slacks', 'culottes', 'capri'],
+            dress: ['dress', 'gown', 'robe', 'frock', 'sundress', 'kimono'],
+            shoes: ['shoe', 'boot', 'sneaker', 'heel', 'sandal', 'loafer', 'pump', 'flat', 'slipper', 'flipflop'],
+            socks: ['sock', 'stocking', 'legging', 'tight', 'hosiery', 'nylon'],
+            underwear: ['underwear', 'bra', 'panty', 'brief', 'boxer', 'thong', 'lingerie', 'slip', 'undershirt'],
+            gloves: ['glove', 'mitten', 'gauntlet'],
+            hats: ['hat', 'cap', 'beanie', 'hood', 'beret', 'fedora', 'helmet', 'crown', 'tiara', 'visor'],
+            accessories: ['accessory', 'jewelry', 'necklace', 'earring', 'ring', 'bracelet', 'scarf', 'collar', 'tie',
+                'bow', 'belt', 'watch', 'glasses', 'choker', 'chain', 'pin', 'brooch', 'pendant'
+            ],
+        };
+
+        function categorizeMesh(meshName, position) {
+            const name = (meshName || '').toLowerCase().trim();
+            // Check keywords first
+            for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+                for (const kw of keywords) {
+                    if (name.includes(kw)) {
+                        return category;
+                    }
+                }
+            }
+            // Fallback to position-based
+            if (position) {
+                const y = position.y;
+                if (y > 1.6) return 'head';
+                if (y > 1.3) return 'hair';
+                if (y > 1.2) return 'head';
+                if (y > 0.8) return 'top';
+                if (y > 0.4) return 'bottom';
+                if (y > 0.15) return 'legs';
+                if (y >= 0) return 'feet';
+            }
+            return 'other';
+        }
+
+        function getMeshWorldPosition(mesh) {
+            const box = new THREE.Box3().setFromObject(mesh);
+            const center = new THREE.Vector3();
+            box.getCenter(center);
+            return center;
+        }
+
+        // ============ CHARACTER MANAGEMENT ============
+        function generateId() {
+            return 'char_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+        }
+
+        function parseCharacterData(gltf, fileName, id) {
+            const parts = {};
+            const bones = [];
+            const animations = [];
+            const allMeshes = [];
+
+            // Collect all meshes
+            gltf.scene.traverse((node) => {
+                if (node.isMesh || node.isSkinnedMesh) {
+                    allMeshes.push(node);
+                }
+            });
+
+            // Group meshes by logical part (using parent hierarchy and naming)
+            const partGroups = new Map();
+            for (const mesh of allMeshes) {
+                // Determine part name from mesh name or parent name
+                let partName = mesh.name || 'unnamed';
+                let parentName = '';
+                if (mesh.parent) {
+                    parentName = mesh.parent.name || '';
+                }
+                const combinedName = `${mesh.name || ''} ${parentName || ''}`.toLowerCase();
+                const worldPos = getMeshWorldPosition(mesh);
+                const category = categorizeMesh(combinedName, worldPos);
+
+                // Try to find a logical part group
+                let groupKey = category;
+                // Check if there's a parent group that looks like a part
+                if (mesh.parent && mesh.parent.name && mesh.parent.name.length > 0) {
+                    const parentCategory = categorizeMesh(mesh.parent.name, null);
+                    if (parentCategory !== 'other') {
+                        groupKey = parentCategory;
+                    }
+                }
+
+                if (!partGroups.has(groupKey)) {
+                    partGroups.set(groupKey, {
+                        id: `${id}_${groupKey}`,
+                        name: groupKey,
+                        category: groupKey,
+                        meshes: [],
+                        materials: [],
+                        sourceCharId: id,
+                        sourceCharName: fileName,
+                    });
+                }
+                const group = partGroups.get(groupKey);
+                group.meshes.push(mesh);
+                if (mesh.material) {
+                    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                    for (const mat of mats) {
+                        if (!group.materials.includes(mat)) {
+                            group.materials.push(mat);
+                        }
+                    }
+                }
+            }
+
+            // Convert part groups to parts object
+            for (const [category, group] of partGroups) {
+                if (group.meshes.length > 0) {
+                    parts[category] = group;
+                }
+            }
+
+            // Collect bones
+            const boneSet = new Set();
+            gltf.scene.traverse((node) => {
+                if (node.isBone || (node.type && node.type === 'Bone')) {
+                    boneSet.add(node);
+                }
+            });
+            // Build bone hierarchy
+            const boneList = [];
+            for (const bone of boneSet) {
+                boneList.push({
+                    name: bone.name,
+                    position: bone.position.clone(),
+                    quaternion: bone.quaternion.clone(),
+                    scale: bone.scale.clone(),
+                    parent: bone.parent && bone.parent.isBone ? bone.parent.name : null,
+                });
+            }
+            // Sort bones by hierarchy depth
+            function getDepth(boneName, depth = 0) {
+                const found = boneList.find(b => b.name === boneName);
+                if (!found || !found.parent) return depth;
+                return getDepth(found.parent, depth + 1);
+            }
+            boneList.sort((a, b) => getDepth(a.name) - getDepth(b.name));
+            bones.push(...boneList);
+
+            // Collect animations
+            if (gltf.animations && gltf.animations.length > 0) {
+                for (const clip of gltf.animations) {
+                    animations.push({
+                        name: clip.name || 'animation_' + animations.length,
+                        duration: clip.duration || 0,
+                        clip: clip,
+                    });
+                }
+            }
+
+            return {
+                id,
+                name: fileName.replace(/\.(glb|gltf)$/i, ''),
+                fileName,
+                gltf,
+                parts,
+                bones,
+                animations,
+                meshCount: allMeshes.length,
+            };
+        }
+
+        function addCharacter(gltf, fileName) {
+            const id = generateId();
+            const charData = parseCharacterData(gltf, fileName, id);
+            state.characters.push(charData);
+            state.activeCharId = id;
+            updateUploadBadge();
+            return charData;
+        }
+
+        function removeCharacter(id) {
+            const idx = state.characters.findIndex(c => c.id === id);
+            if (idx === -1) return;
+            const char = state.characters[idx];
+            // Remove meshes from scene
+            if (char.gltf && char.gltf.scene) {
+                characterGroup.remove(char.gltf.scene);
+            }
+            state.characters.splice(idx, 1);
+            if (state.activeCharId === id) {
+                state.activeCharId = state.characters.length > 0 ? state.characters[0].id : null;
+            }
+            if (state.selectedPart && state.selectedPart.charId === id) {
+                state.selectedPart = null;
+            }
+            updateUploadBadge();
+            updateScene();
+            renderPanel();
+        }
+
+        function getActiveCharacter() {
+            return state.characters.find(c => c.id === state.activeCharId) || null;
+        }
+
+        function updateUploadBadge() {
+            const badge = document.getElementById('upload-badge');
+            if (state.characters.length > 0) {
+                badge.style.display = 'flex';
+                badge.textContent = state.characters.length;
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        // ============ SCENE UPDATING ============
+        function updateScene() {
+            // Clear character group
+            while (characterGroup.children.length > 0) {
+                const child = characterGroup.children[0];
+                characterGroup.remove(child);
+            }
+            // Stop animation
+            if (state.animationMixer) {
+                state.animationMixer.stopAllAction();
+                state.animationMixer = null;
+                state.animationAction = null;
+                state.animationPlaying = false;
+            }
+
+            const activeChar = getActiveCharacter();
+            if (activeChar && activeChar.gltf && activeChar.gltf.scene) {
+                characterGroup.add(activeChar.gltf.scene);
+                // Reset transforms
+                activeChar.gltf.scene.position.set(0, 0, 0);
+                activeChar.gltf.scene.rotation.set(0, 0, 0);
+                activeChar.gltf.scene.scale.set(1, 1, 1);
+
+                // Setup animation mixer
+                if (activeChar.animations.length > 0) {
+                    state.animationMixer = new THREE.AnimationMixer(activeChar.gltf.scene);
+                    // Don't auto-play
+                }
+
+                // Update overlay
+                document.getElementById('char-name-overlay').textContent = activeChar.name.toUpperCase();
+            } else {
+                document.getElementById('char-name-overlay').textContent = 'NO CHARACTER LOADED';
+            }
+            // Reset selected part
+            state.selectedPart = null;
+        }
+
+        // ============ PART SELECTION ============
+        function selectPartByMesh(mesh) {
+            const activeChar = getActiveCharacter();
+            if (!activeChar) return;
+
+            // Find the part that contains this mesh
+            for (const [category, part] of Object.entries(activeChar.parts)) {
+                if (part.meshes.includes(mesh)) {
+                    state.selectedPart = {
+                        charId: activeChar.id,
+                        partId: part.id,
+                        partName: category,
+                        meshes: part.meshes,
+                        originalMaterials: new Map(),
+                        category,
+                    };
+                    // Store original materials for reset
+                    for (const m of part.meshes) {
+                        const mats = Array.isArray(m.material) ? m.material : [m.material];
+                        for (const mat of mats) {
+                            if (!state.selectedPart.originalMaterials.has(mat.uuid)) {
+                                state.selectedPart.originalMaterials.set(mat.uuid, {
+                                    color: mat.color ? mat.color.clone() : null,
+                                    roughness: mat.roughness,
+                                    metalness: mat.metalness,
+                                    emissive: mat.emissive ? mat.emissive.clone() : null,
+                                    emissiveIntensity: mat.emissiveIntensity,
+                                    map: mat.map,
+                                });
+                            }
+                        }
+                    }
+                    showToast(`Selected: ${category.toUpperCase()}`);
+                    if (state.panelOpen && state.activeTab === 'textures') {
+                        renderPanel();
+                    }
+                    return;
+                }
+            }
+        }
+
+        // ============ TEXTURE EDITING ============
+        function applyMaterialOverride(mat, property, value) {
+            if (!mat) return;
+            if (property === 'color' && mat.color) {
+                mat.color.set(value);
+                mat.needsUpdate = true;
+            } else if (property === 'roughness') {
+                mat.roughness = value;
+                mat.needsUpdate = true;
+            } else if (property === 'metalness') {
+                mat.metalness = value;
+                mat.needsUpdate = true;
+            } else if (property === 'emissive' && mat.emissive) {
+                mat.emissive.set(value);
+                mat.needsUpdate = true;
+            } else if (property === 'emissiveIntensity') {
+                mat.emissiveIntensity = value;
+                mat.needsUpdate = true;
+            }
+        }
+
+        function applyTextureToSelectedPart(imageUrl, meshIndex = 0) {
+            if (!state.selectedPart) return;
+            const textureLoader = new THREE.TextureLoader();
+            textureLoader.load(imageUrl, (texture) => {
+                texture.colorSpace = THREE.SRGBColorSpace;
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                let applied = false;
+                for (const mesh of state.selectedPart.meshes) {
+                    const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                    for (const mat of mats) {
+                        mat.map = texture;
+                        mat.needsUpdate = true;
+                        mat.color.set(0xffffff);
+                        applied = true;
+                    }
+                }
+                if (applied) showToast('Texture applied to part!');
+            }, undefined, (err) => {
+                showToast('Failed to load texture');
+                console.error(err);
+            });
+        }
+
+        // ============ PART SWAPPING ============
+        function getPartOptionsForCategory(category) {
+            const options = [];
+            for (const char of state.characters) {
+                if (char.parts[category]) {
+                    options.push({
+                        charId: char.id,
+                        charName: char.name,
+                        partId: char.parts[category].id,
+                        partName: category,
+                        part: char.parts[category],
+                    });
+                }
+            }
+            return options;
+        }
+
+        function swapPart(activeCharId, targetCategory, sourceCharId, sourceCategory) {
+            const activeChar = state.characters.find(c => c.id === activeCharId);
+            const sourceChar = state.characters.find(c => c.id === sourceCharId);
+            if (!activeChar || !sourceChar) return;
+            if (!activeChar.parts[targetCategory] || !sourceChar.parts[sourceCategory]) return;
+
+            // Remove active char's part meshes from the scene
+            const activePart = activeChar.parts[targetCategory];
+            for (const mesh of activePart.meshes) {
+                if (mesh.parent) {
+                    mesh.parent.remove(mesh);
+                }
+            }
+
+            // Clone source part meshes and add them
+            const sourcePart = sourceChar.parts[sourceCategory];
+            const newMeshes = [];
+            for (const mesh of sourcePart.meshes) {
+                const clone = mesh.clone(true);
+                // Need to find where to attach - try to attach to the same parent structure
+                // For simplicity, we attach to the scene root of the active character
+                activeChar.gltf.scene.add(clone);
+                newMeshes.push(clone);
+                // Match transform
+                clone.position.copy(mesh.position);
+                clone.rotation.copy(mesh.rotation);
+                clone.scale.copy(mesh.scale);
+            }
+
+            // Update active char's part definition
+            activeChar.parts[targetCategory] = {
+                ...activeChar.parts[targetCategory],
+                meshes: newMeshes,
+                sourceCharId: sourceCharId,
+                sourceCharName: sourceChar.name,
+            };
+
+            showToast(`Swapped ${targetCategory} from ${sourceChar.name}`);
+            updateScene();
+            renderPanel();
+        }
+
+        // ============ EXPORT ============
+        function exportCharacter() {
+            const activeChar = getActiveCharacter();
+            if (!activeChar) {
+                showToast('No character to export');
+                return;
+            }
+            showToast('Exporting...');
+            const exporter = new GLTFExporter();
+            exporter.parse(
+                activeChar.gltf.scene,
+                (result) => {
+                    let blob;
+                    if (result instanceof ArrayBuffer) {
+                        blob = new Blob([result], { type: 'application/octet-stream' });
+                    } else {
+                        blob = new Blob([JSON.stringify(result)], { type: 'application/json' });
+                    }
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${activeChar.name}_edited.glb`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    showToast('Export complete!');
+                },
+                (err) => {
+                    showToast('Export failed: ' + err.message);
+                    console.error(err);
+                }, { binary: true }
+            );
+        }
+
+        // ============ FILE LOADING ============
+        function loadGLBFiles(files) {
+            const validFiles = Array.from(files).filter(f =>
+                f.name.toLowerCase().endsWith('.glb') || f.name.toLowerCase().endsWith('.gltf')
+            );
+            if (validFiles.length === 0) {
+                showToast('Please select .glb or .gltf files');
+                return;
+            }
+            showLoading(true);
+            let loaded = 0;
+            for (const file of validFiles) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    gltfLoader.load(e.target.result, (gltf) => {
+                        const charData = addCharacter(gltf, file.name);
+                        loaded++;
+                        if (loaded === validFiles.length) {
+                            showLoading(false);
+                            updateScene();
+                            renderPanel();
+                            showToast(`Loaded ${validFiles.length} character(s)!`);
+                        } else {
+                            updateScene();
+                            renderPanel();
+                        }
+                    }, (progress) => {
+                        // Progress updates
+                    }, (error) => {
+                        loaded++;
+                        console.error('GLB load error:', error);
+                        showToast(`Failed to load ${file.name}`);
+                        if (loaded === validFiles.length) {
+                            showLoading(false);
+                            updateScene();
+                            renderPanel();
+                        }
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function showLoading(show) {
+            const overlay = document.getElementById('loading-overlay');
+            if (show) {
+                overlay.classList.remove('hidden');
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // ============ TOAST ============
+        let toastTimeout;
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2200);
+        }
+
+        // ============ PANEL MANAGEMENT ============
+        function openPanel(tab) {
+            state.activeTab = tab;
+            state.panelOpen = true;
+            document.getElementById('bottom-panel').classList.add('open');
+            document.getElementById('panel-overlay').classList.add('visible');
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+            });
+            renderPanel();
+        }
+
+        function closePanel() {
+            state.panelOpen = false;
+            document.getElementById('bottom-panel').classList.remove('open');
+            document.getElementById('panel-overlay').classList.remove('visible');
+        }
+
+        function renderPanel() {
+            const content = document.getElementById('panel-content');
+            const title = document.getElementById('panel-title');
+            const activeChar = getActiveCharacter();
+
+            switch (state.activeTab) {
+                case 'characters':
+                    title.textContent = 'CHARACTERS';
+                    renderCharactersPanel(content, activeChar);
+                    break;
+                case 'parts':
+                    title.textContent = 'PARTS & SWAP';
+                    renderPartsPanel(content, activeChar);
+                    break;
+                case 'textures':
+                    title.textContent = 'TEXTURE EDITOR';
+                    renderTexturesPanel(content, activeChar);
+                    break;
+                case 'animations':
+                    title.textContent = 'ANIMATIONS';
+                    renderAnimationsPanel(content, activeChar);
+                    break;
+                case 'bones':
+                    title.textContent = 'SKELETON';
+                    renderBonesPanel(content, activeChar);
+                    break;
+                default:
+                    title.textContent = 'CYBERDOLL';
+                    content.innerHTML = '';
+            }
+        }
+
+        function renderCharactersPanel(container, activeChar) {
+            if (state.characters.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">👤</div>
+                        <div class="empty-text">No characters loaded yet. Upload GLB files to begin your collection.</div>
+                        <div class="upload-zone" id="empty-upload-btn">
+                            <div class="upload-icon">📁</div>
+                            <div class="upload-text">UPLOAD GLB / GLTF</div>
+                        </div>
+                    </div>
+                `;
+                const uploadBtn = container.querySelector('#empty-upload-btn');
+                if (uploadBtn) {
+                    uploadBtn.addEventListener('click', () => {
+                        document.getElementById('file-input').click();
+                    });
+                }
+                return;
+            }
+
+            let html = `
+                <div class="char-grid">
+                    ${state.characters.map(char => `
+                        <div class="char-card ${char.id === state.activeCharId ? 'active' : ''}" data-char-id="${char.id}">
+                            <div class="char-avatar">${char.meshCount > 0 ? '👤' : '❓'}</div>
+                            <div class="char-name">${char.name}</div>
+                            <div class="char-badge">${char.meshCount}m</div>
+                            <button class="delete-btn" data-delete-char="${char.id}">✕</button>
+                        </div>
+                    `).join('')}
+                    <div class="char-card" id="add-char-card" style="border-style: dashed;">
+                        <div class="char-avatar" style="background: rgba(255,255,255,0.05);">➕</div>
+                        <div class="char-name">Add New</div>
+                    </div>
+                </div>
+                <div style="margin-top: 12px; font-size: 9px; color: var(--text-muted); text-align: center;">
+                    Tap a character to switch • Swipe viewport left/right to cycle
+                </div>
+            `;
+            container.innerHTML = html;
+
+            // Event listeners
+            container.querySelectorAll('.char-card[data-char-id]').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    if (e.target.dataset.deleteChar) return;
+                    const id = card.dataset.charId;
+                    state.activeCharId = id;
+                    state.selectedPart = null;
+                    updateScene();
+                    renderPanel();
+                    showToast(`Switched to ${getActiveCharacter()?.name || 'unknown'}`);
+                });
+            });
+            container.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = btn.dataset.deleteChar;
+                    if (confirm('Remove this character?')) {
+                        removeCharacter(id);
+                        showToast('Character removed');
+                    }
+                });
+            });
+            const addCard = container.querySelector('#add-char-card');
+            if (addCard) {
+                addCard.addEventListener('click', () => {
+                    document.getElementById('file-input').click();
+                });
+            }
+        }
+
+        function renderPartsPanel(container, activeChar) {
+            if (!activeChar) {
+                container.innerHTML = `<div class="empty-state"><div class="empty-icon">🧩</div><div class="empty-text">No character selected. Load a character first.</div></div>`;
+                return;
+            }
+
+            const categories = Object.keys(activeChar.parts);
+            if (categories.length === 0) {
+                container.innerHTML = `<div class="empty-state"><div class="empty-icon">📦</div><div class="empty-text">No parts detected in this model.</div></div>`;
+                return;
+            }
+
+            // Category pills
+            let html = `<div class="cat-pills">
+                <button class="cat-pill ${state.activeCategory === 'all' ? 'active' : ''}" data-cat="all">All</button>
+                ${categories.map(cat => `
+                    <button class="cat-pill ${state.activeCategory === cat ? 'active' : ''}" data-cat="${cat}">
+                        ${CATEGORY_ICONS[cat] || '📦'} ${cat}
+                    </button>
+                `).join('')}
+            </div>`;
+
+            // Part grid for active char
+            const filteredCats = state.activeCategory === 'all' ? categories : [state.activeCategory].filter(c =>
+                categories.includes(c));
+            html += `<div style="margin-top:8px;"><strong style="font-size:10px;color:var(--neon-cyan);letter-spacing:1px;">ACTIVE CHARACTER PARTS</strong></div>`;
+            html += `<div class="part-grid">
+                ${filteredCats.map(cat => {
+                    const part = activeChar.parts[cat];
+                    return `<div class="part-card" data-part-cat="${cat}" data-part-char="${activeChar.id}" title="Select ${cat} part">
+                        <div class="part-icon">${CATEGORY_ICONS[cat] || '📦'}</div>
+                        <div class="part-name">${cat}</div>
+                        <div class="part-source">${part.meshes.length} mesh(es)</div>
+                    </div>`;
+                }).join('')}
+            </div>`;
+
+            // Swap options
+            if (state.selectedPart && state.selectedPart.category) {
+                const options = getPartOptionsForCategory(state.selectedPart.category).filter(opt => opt.charId !==
+                    activeChar.id);
+                if (options.length > 0) {
+                    html += `<div style="margin-top:16px;">
+                        <strong style="font-size:10px;color:var(--neon-pink-soft);letter-spacing:1px;">SWAP ${state.selectedPart.category.toUpperCase()} FROM:</strong>
+                        <div class="part-grid" style="margin-top:6px;">
+                            ${options.map(opt => `
+                                <div class="part-card" data-swap-from="${opt.charId}" data-swap-cat="${opt.partName}" title="Swap from ${opt.charName}">
+                                    <div class="part-icon">${CATEGORY_ICONS[opt.partName] || '📦'}</div>
+                                    <div class="part-name">${opt.charName}</div>
+                                    <div class="part-source">${opt.part.meshes.length}m</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+                } else {
+                    html += `<div style="margin-top:16px;font-size:9px;color:var(--text-muted);">No other characters have this part category to swap with.</div>`;
+                }
+            }
+
+            container.innerHTML = html;
+
+            // Events
+            container.querySelectorAll('.cat-pill').forEach(pill => {
+                pill.addEventListener('click', () => {
+                    state.activeCategory = pill.dataset.cat;
+                    renderPanel();
+                });
+            });
+            container.querySelectorAll('.part-card[data-part-cat]').forEach(card => {
+                card.addEventListener('click', () => {
+                    const cat = card.dataset.partCat;
+                    const charId = card.dataset.partChar;
+                    const char = state.characters.find(c => c.id === charId);
+                    if (char && char.parts[cat]) {
+                        // Select this part - highlight its meshes
+                        state.selectedPart = {
+                            charId: charId,
+                            partId: char.parts[cat].id,
+                            partName: cat,
+                            meshes: char.parts[cat].meshes,
+                            originalMaterials: new Map(),
+                            category: cat,
+                        };
+                        for (const mesh of char.parts[cat].meshes) {
+                            const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                            for (const mat of mats) {
+                                if (!state.selectedPart.originalMaterials.has(mat.uuid)) {
+                                    state.selectedPart.originalMaterials.set(mat.uuid, {
+                                        color: mat.color ? mat.color.clone() : null,
+                                        roughness: mat.roughness,
+                                        metalness: mat.metalness,
+                                        emissive: mat.emissive ? mat.emissive.clone() : null,
+                                        emissiveIntensity: mat
+                                        .emissiveIntensity,
+                                        map: mat.map,
+                                    });
+                                }
+                            }
+                        }
+                        showToast(`Selected: ${cat}`);
+                        renderPanel();
+                    }
+                });
+            });
+            container.querySelectorAll('.part-card[data-swap-from]').forEach(card => {
+                card.addEventListener('click', () => {
+                    const srcCharId = card.dataset.swapFrom;
+                    const srcCat = card.dataset.swapCat;
+                    const targetCat = state.selectedPart?.category;
+                    if (targetCat && srcCharId && srcCat) {
+                        swapPart(state.activeCharId, targetCat, srcCharId, srcCat);
+                        closePanel();
+                    }
+                });
+            });
+        }
+
+        function renderTexturesPanel(container, activeChar) {
+            if (!activeChar) {
+                container.innerHTML = `<div class="empty-state"><div class="empty-icon">🎨</div><div class="empty-text">No character selected.</div></div>`;
+                return;
+            }
+            if (!state.selectedPart) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🎨</div>
+                        <div class="empty-text">Select a part in the 3D view or Parts tab to edit its textures.</div>
+                        <button class="cat-pill active" id="go-to-parts">Go to Parts</button>
+                    </div>
+                `;
+                const btn = container.querySelector('#go-to-parts');
+                if (btn) {
+                    btn.addEventListener('click', () => {
+                        openPanel('parts');
+                    });
+                }
+                return;
+            }
+
+            const part = state.selectedPart;
+            const materials = new Set();
+            for (const mesh of part.meshes) {
+                const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+                for (const mat of mats) {
+                    materials.add(mat);
+                }
+            }
+            const matArray = Array.from(materials);
+
+            let html = `
+                <div style="font-size:10px;color:var(--neon-cyan);letter-spacing:1px;margin-bottom:8px;">
+                    EDITING: ${part.partName.toUpperCase()} (${matArray.length} material(s))
+                </div>
+            `;
+
+            matArray.forEach((mat, idx) => {
+                html += `
+                    <div style="padding:8px;border-radius:10px;border:1px solid rgba(255,0,110,0.2);background:var(--bg-glass);margin-bottom:8px;">
+                        <div style="font-size:9px;color:var(--text-secondary);margin-bottom:6px;font-weight:600;">MATERIAL ${idx + 1}</div>
+                        <div class="slider-row">
+                            <label>Color</label>
+                            <input type="color" class="color-input mat-color" data-mat-idx="${idx}" value="${mat.color ? '#' + mat.color.getHexString() : '#ffffff'}">
+                        </div>
+                        <div class="slider-row">
+                            <label>Rough</label>
+                            <input type="range" class="mat-roughness" data-mat-idx="${idx}" min="0" max="1" step="0.01" value="${mat.roughness ?? 0.5}">
+                            <span style="font-size:9px;color:var(--text-muted);min-width:30px;">${(mat.roughness ?? 0.5).toFixed(2)}</span>
+                        </div>
+                        <div class="slider-row">
+                            <label>Metal</label>
+                            <input type="range" class="mat-metalness" data-mat-idx="${idx}" min="0" max="1" step="0.01" value="${mat.metalness ?? 0}">
+                            <span style="font-size:9px;color:var(--text-muted);min-width:30px;">${(mat.metalness ?? 0).toFixed(2)}</span>
+                        </div>
+                        <div class="slider-row">
+                            <label>Glow</label>
+                            <input type="range" class="mat-emissiveIntensity" data-mat-idx="${idx}" min="0" max="3" step="0.05" value="${mat.emissiveIntensity ?? 0}">
+                            <span style="font-size:9px;color:var(--text-muted);min-width:30px;">${(mat.emissiveIntensity ?? 0).toFixed(2)}</span>
+                        </div>
+                        <div style="display:flex;gap:8px;align-items:center;margin-top:6px;">
+                            <span style="font-size:9px;color:var(--text-secondary);">Texture:</span>
+                            <div class="tex-preview" data-tex-upload="${idx}" title="Upload texture">
+                                ${mat.map ? '<img src="" alt="tex">' : '📷'}
+                                <span class="tex-overlay">${mat.map ? 'UPLOAD' : 'NONE'}</span>
+                            </div>
+                            ${mat.map ? `<button class="cat-pill" data-tex-remove="${idx}" style="font-size:8px;">Remove</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                    <button class="cat-pill active" id="btn-apply-all">Apply to All</button>
+                    <button class="cat-pill" id="btn-reset-mat">Reset</button>
+                </div>
+                <input type="file" id="tex-file-input" accept="image/*" style="display:none;">
+            `;
+
+            container.innerHTML = html;
+
+            // Texture upload
+            let texTargetIdx = 0;
+            container.querySelectorAll('.tex-preview[data-tex-upload]').forEach(el => {
+                el.addEventListener('click', () => {
+                    texTargetIdx = parseInt(el.dataset.texUpload);
+                    document.getElementById('tex-file-input').click();
+                });
+            });
+            container.querySelectorAll('[data-tex-remove]').forEach(el => {
+                el.addEventListener('click', () => {
+                    const idx = parseInt(el.dataset.texRemove);
+                    if (matArray[idx]) {
+                        matArray[idx].map = null;
+                        matArray[idx].needsUpdate = true;
+                        renderPanel();
+                    }
+                });
+            });
+            const texFileInput = container.querySelector('#tex-file-input');
+            if (texFileInput) {
+                texFileInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file && matArray[texTargetIdx]) {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                            const texLoader = new THREE.TextureLoader();
+                            texLoader.load(ev.target.result, (tex) => {
+                                tex.colorSpace = THREE.SRGBColorSpace;
+                                matArray[texTargetIdx].map = tex;
+                                matArray[texTargetIdx].color.set(0xffffff);
+                                matArray[texTargetIdx].needsUpdate = true;
+                                showToast('Texture updated!');
+                                renderPanel();
+                            });
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            }
+            // Color inputs
+            container.querySelectorAll('.mat-color').forEach(el => {
+                el.addEventListener('input', () => {
+                    const idx = parseInt(el.dataset.matIdx);
+                    if (matArray[idx] && matArray[idx].color) {
+                        matArray[idx].color.set(el.value);
+                        matArray[idx].needsUpdate = true;
+                    }
+                });
+            });
+            // Sliders
+            container.querySelectorAll('.mat-roughness').forEach(el => {
+                el.addEventListener('input', () => {
+                    const idx = parseInt(el.dataset.matIdx);
+                    if (matArray[idx]) {
+                        matArray[idx].roughness = parseFloat(el.value);
+                        matArray[idx].needsUpdate = true;
+                        const span = el.nextElementSibling;
+                        if (span) span.textContent = parseFloat(el.value).toFixed(2);
+                    }
+                });
+            });
+            container.querySelectorAll('.mat-metalness').forEach(el => {
+                el.addEventListener('input', () => {
+                    const idx = parseInt(el.dataset.matIdx);
+                    if (matArray[idx]) {
+                        matArray[idx].metalness = parseFloat(el.value);
+                        matArray[idx].needsUpdate = true;
+                        const span = el.nextElementSibling;
+                        if (span) span.textContent = parseFloat(el.value).toFixed(2);
+                    }
+                });
+            });
+            container.querySelectorAll('.mat-emissiveIntensity').forEach(el => {
+                el.addEventListener('input', () => {
+                    const idx = parseInt(el.dataset.matIdx);
+                    if (matArray[idx]) {
+                        matArray[idx].emissiveIntensity = parseFloat(el.value);
+                        matArray[idx].needsUpdate = true;
+                        const span = el.nextElementSibling;
+                        if (span) span.textContent = parseFloat(el.value).toFixed(2);
+                    }
+                });
+            });
+            // Reset
+            const resetBtn = container.querySelector('#btn-reset-mat');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                    for (const [uuid, orig] of state.selectedPart.originalMaterials) {
+                        const mat = Array.from(materials).find(m => m.uuid === uuid);
+                        if (mat) {
+                            if (orig.color && mat.color) mat.color.copy(orig.color);
+                            if (orig.roughness !== undefined) mat.roughness = orig.roughness;
+                            if (orig.metalness !== undefined) mat.metalness = orig.metalness;
+                            if (orig.emissive && mat.emissive) mat.emissive.copy(orig.emissive);
+                            if (orig.emissiveIntensity !== undefined) mat.emissiveIntensity = orig.emissiveIntensity;
+                            if (orig.map !== undefined) mat.map = orig.map;
+                            mat.needsUpdate = true;
+                        }
+                    }
+                    showToast('Materials reset');
+                    renderPanel();
+                });
+            }
+        }
+
+        function renderAnimationsPanel(container, activeChar) {
+            if (!activeChar) {
+                container.innerHTML = `<div class="empty-state"><div class="empty-icon">🎬</div><div class="empty-text">No character selected.</div></div>`;
+                return;
+            }
+            if (activeChar.animations.length === 0) {
+                container.innerHTML = `<div class="empty-state"><div class="empty-icon">🎬</div><div class="empty-text">No baked animations detected in this model.</div></div>`;
+                return;
+            }
+
+            let html = `
+                <div style="font-size:10px;color:var(--neon-cyan);letter-spacing:1px;margin-bottom:8px;">
+                    ${activeChar.animations.length} ANIMATION(S) DETECTED
+                </div>
+            `;
+            for (const anim of activeChar.animations) {
+                const isPlaying = state.animationPlaying && state.animationAction?.getClip?.() === anim.clip;
+                html += `
+                    <div class="anim-row ${isPlaying ? 'active' : ''}" data-anim-name="${anim.name}">
+                        <button class="anim-play-btn" data-anim-play="${anim.name}">${isPlaying ? '⏸' : '▶'}</button>
+                        <span class="anim-name">${anim.name}</span>
+                        <span class="anim-duration">${anim.duration.toFixed(1)}s</span>
+                    </div>
+                `;
+            }
+            if (state.animationPlaying) {
+                html += `
+                    <div style="margin-top:8px;display:flex;gap:6px;">
+                        <button class="cat-pill active" id="anim-stop">Stop</button>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+
+            container.querySelectorAll('[data-anim-play]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const animName = btn.dataset.animPlay;
+                    const anim = activeChar.animations.find(a => a.name === animName);
+                    if (anim && state.animationMixer) {
+                        if (state.animationAction && state.animationPlaying) {
+                            state.animationAction.stop();
+                            state.animationPlaying = false;
+                            state.animationAction = null;
+                        } else {
+                            state.animationAction = state.animationMixer.clipAction(anim.clip);
+                            state.animationAction.reset();
+                            state.animationAction.play();
+                            state.animationPlaying = true;
+                        }
+                        renderPanel();
+                    }
+                });
+            });
+            const stopBtn = container.querySelector('#anim-stop');
+            if (stopBtn) {
+                stopBtn.addEventListener('click', () => {
+                    if (state.animationAction) {
+                        state.animationAction.stop();
+                        state.animationPlaying = false;
+                        state.animationAction = null;
+                    }
+                    renderPanel();
+                });
+            }
+        }
+
+        function renderBonesPanel(container, activeChar) {
+            if (!activeChar) {
+                container.innerHTML = `<div class="empty-state"><div class="empty-icon">🦴</div><div class="empty-text">No character selected.</div></div>`;
+                return;
+            }
+            if (activeChar.bones.length === 0) {
+                container.innerHTML =
+                    `<div class="empty-state"><div class="empty-icon">🦴</div><div class="empty-text">No bones detected in this model.</div></div>`;
+                return;
+            }
+
+            // Build bone tree
+            const boneMap = new Map();
+            for (const bone of activeChar.bones) {
+                boneMap.set(bone.name, { ...bone, children: [] });
+            }
+            const roots = [];
+            for (const bone of activeChar.bones) {
+                if (bone.parent && boneMap.has(bone.parent)) {
+                    boneMap.get(bone.parent).children.push(boneMap.get(bone.name));
+                } else {
+                    roots.push(boneMap.get(bone.name));
+                }
+            }
+
+            function buildTreeHtml(bone, depth = 0) {
+                const indent = depth * 4;
+                let html =
+                    `<li style="padding-left:${indent}px;"><span class="bone-icon">🦴</span>${bone.name}</li>`;
+                if (bone.children.length > 0) {
+                    html += '<ul>';
+                    for (const child of bone.children) {
+                        html += buildTreeHtml(child, depth + 1);
+                    }
+                    html += '</ul>';
+                }
+                return html;
+            }
+
+            let treeHtml = '<ul class="bone-tree">';
+            for (const root of roots) {
+                treeHtml += buildTreeHtml(root);
+            }
+            treeHtml += '</ul>';
+
+            container.innerHTML = `
+                <div style="font-size:10px;color:var(--neon-cyan);letter-spacing:1px;margin-bottom:8px;">
+                    ${activeChar.bones.length} BONES DETECTED
+                </div>
+                ${treeHtml}
+            `;
+        }
+
+        // ============ SWIPE GESTURES ============
+        let swipeStartX = 0;
+        let swipeStartY = 0;
+        let swipeActive = false;
+
+        // ============ EVENT LISTENERS ============
+        // File upload
+        document.getElementById('btn-upload').addEventListener('click', () => {
+            document.getElementById('file-input').click();
+        });
+        document.getElementById('file-input').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                loadGLBFiles(e.target.files);
+                e.target.value = '';
+            }
+        });
+
+        // Export
+        document.getElementById('btn-export').addEventListener('click', exportCharacter);
+
+        // Tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                if (state.panelOpen && state.activeTab === tab) {
+                    closePanel();
+                } else {
+                    openPanel(tab);
+                }
+            });
+        });
+
+        // Panel close
+        document.getElementById('panel-close').addEventListener('click', closePanel);
+        document.getElementById('panel-overlay').addEventListener('click', closePanel);
+
+        // Panel drag to close (simple)
+        const dragHandle = document.getElementById('panel-drag-handle');
+        let panelDragStartY = 0;
+        let panelDragActive = false;
+        dragHandle.addEventListener('pointerdown', (e) => {
+            panelDragActive = true;
+            panelDragStartY = e.clientY;
+        });
+        document.addEventListener('pointermove', (e) => {
+            if (panelDragActive) {
+                const dy = e.clientY - panelDragStartY;
+                const panel = document.getElementById('bottom-panel');
+                if (dy > 30 && state.panelOpen) {
+                    closePanel();
+                    panelDragActive = false;
+                }
+            }
+        });
+        document.addEventListener('pointerup', () => {
+            panelDragActive = false;
+        });
+
+        // 3D viewport pointer events for part selection and swipe
+        renderer.domElement.addEventListener('pointerdown', (e) => {
+            isPointerDown = true;
+            pointerDownPos = { x: e.clientX, y: e.clientY };
+            pointerMoved = false;
+            swipeStartX = e.clientX;
+            swipeStartY = e.clientY;
+            swipeActive = true;
+        });
+
+        renderer.domElement.addEventListener('pointermove', (e) => {
+            if (isPointerDown) {
+                const dx = e.clientX - pointerDownPos.x;
+                const dy = e.clientY - pointerDownPos.y;
+                if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                    pointerMoved = true;
+                }
+            }
+        });
+
+        renderer.domElement.addEventListener('pointerup', (e) => {
+            const wasPointerDown = isPointerDown;
+            isPointerDown = false;
+            if (wasPointerDown && !pointerMoved) {
+                // Tap to select part
+                const rect = renderer.domElement.getBoundingClientRect();
+                pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(pointer, camera);
+                const activeChar = getActiveCharacter();
+                if (activeChar && activeChar.gltf) {
+                    const meshes = [];
+                    activeChar.gltf.scene.traverse((node) => {
+                        if (node.isMesh || node.isSkinnedMesh) {
+                            meshes.push(node);
+                        }
+                    });
+                    const intersects = raycaster.intersectObjects(meshes, true);
+                    if (intersects.length > 0) {
+                        const hitMesh = intersects[0].object;
+                        selectPartByMesh(hitMesh);
+                    }
+                }
+            }
+            // Check for swipe
+            if (swipeActive) {
+                const dx = e.clientX - swipeStartX;
+                const dy = e.clientY - swipeStartY;
+                if (Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                    // Horizontal swipe - switch characters
+                    const chars = state.characters;
+                    if (chars.length > 1) {
+                        const activeIdx = chars.findIndex(c => c.id === state.activeCharId);
+                        if (dx < 0 && activeIdx < chars.length - 1) {
+                            state.activeCharId = chars[activeIdx + 1].id;
+                            updateScene();
+                            renderPanel();
+                            showToast(chars[activeIdx + 1].name);
+                        } else if (dx > 0 && activeIdx > 0) {
+                            state.activeCharId = chars[activeIdx - 1].id;
+                            updateScene();
+                            renderPanel();
+                            showToast(chars[activeIdx - 1].name);
+                        }
+                    }
+                } else if (Math.abs(dy) > 80 && dy < 0 && !state.panelOpen) {
+                    // Swipe up to open panel
+                    openPanel(state.activeTab || 'characters');
+                }
+            }
+            swipeActive = false;
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'o' || e.key === 'O') {
+                document.getElementById('file-input').click();
+            }
+            if (e.key === 'e' || e.key === 'E') {
+                exportCharacter();
+            }
+            if (e.key === 'Escape') {
+                closePanel();
+            }
+            if (e.key === 'ArrowRight' && state.characters.length > 1) {
+                const idx = state.characters.findIndex(c => c.id === state.activeCharId);
+                if (idx < state.characters.length - 1) {
+                    state.activeCharId = state.characters[idx + 1].id;
+                    updateScene();
+                    renderPanel();
+                }
+            }
+            if (e.key === 'ArrowLeft' && state.characters.length > 1) {
+                const idx = state.characters.findIndex(c => c.id === state.activeCharId);
+                if (idx > 0) {
+                    state.activeCharId = state.characters[idx - 1].id;
+                    updateScene();
+                    renderPanel();
+                }
+            }
+        });
+
+        // Window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = viewportContainer.clientWidth / viewportContainer.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(viewportContainer.clientWidth, viewportContainer.clientHeight);
+        });
+
+        // ============ ANIMATION LOOP ============
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            // Update animation mixer
+            if (state.animationMixer) {
+                state.animationMixer.update(0.016);
+            }
+            // Animate particles
+            particles.rotation.y += 0.0003;
+            particles.rotation.x += 0.0001;
+            // Animate bottom glow
+            bottomGlow.intensity = 1.2 + Math.sin(Date.now() * 0.002) * 0.4;
+            renderer.render(scene, camera);
+        }
+
+        // ============ INITIALIZATION ============
+        function init() {
+            updateScene();
+            renderPanel();
+            // Hide loading overlay after a short delay
+            setTimeout(() => {
+                showLoading(false);
+            }, 800);
+            animate();
+            // Try to load a default character? No, let user upload.
+            showToast('Welcome to CYBERDOLL SCHRANK');
+            console.log('CYBERDOLL SCHRANK initialized. Upload GLB files to start.');
+        }
+
+        // Start
+        init();
+
+        // Drop zone support
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (e.dataTransfer.files.length > 0) {
+                loadGLBFiles(e.dataTransfer.files);
+            }
+        });
+
+        console.log('CYBERDOLL SCHRANK — Full System Ready');
+        console.log('Features: GLB loading, part detection, texture editing, part swapping, animation playback, bone viewer, export');
+    </script>
+</body>
+</html>
