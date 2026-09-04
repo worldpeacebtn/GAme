@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GAme XYZ: Glitch Sandbox Edition</title>
+    <title>GAme XYZ: Professor Bunny Arc Edition</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
         body {
@@ -17,15 +17,15 @@
             overflow: hidden;
         }
 
-        /* Rainbow Game Boy Chassis */
+        /* Rainbow Game Boy Chassis with Black & Red Cyber Accents */
         .console-frame {
-            background: linear-gradient(135deg, #ff007f, #7f00ff, #00ffff, #ff007f);
+            background: linear-gradient(135deg, #ff007f, #1a001a, #7f00ff, #05d9e8);
             background-size: 400% 400%;
-            animation: rainbowFlow 10s ease infinite;
+            animation: rainbowFlow 12s ease infinite;
             padding: 24px;
             border-radius: 20px 20px 50px 50px;
-            box-shadow: 0 0 40px rgba(127, 0, 255, 0.6), inset 0 0 20px rgba(0,0,0,0.8);
-            border: 4px solid #1a001a;
+            box-shadow: 0 0 50px rgba(255, 42, 109, 0.4), inset 0 0 25px rgba(0,0,0,0.9);
+            border: 4px solid #ff0055;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -39,14 +39,14 @@
         }
 
         .screen-lens {
-            background-color: #120418;
-            border: 6px solid #08020a;
+            background-color: #0a020f;
+            border: 6px solid #1a0008;
             border-radius: 10px;
             width: 480px;
             height: 320px;
             position: relative;
             overflow: hidden;
-            box-shadow: inset 0 0 15px rgba(255, 0, 127, 0.3);
+            box-shadow: inset 0 0 20px rgba(255, 0, 85, 0.4);
         }
 
         /* Black & Red Grid Border Design inside screen */
@@ -54,8 +54,8 @@
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             background-image: 
-                linear-gradient(to right, rgba(255, 0, 0, 0.15) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(255, 0, 0, 0.15) 1px, transparent 1px);
+                linear-gradient(to right, rgba(255, 0, 51, 0.2) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 0, 51, 0.2) 1px, transparent 1px);
             background-size: 32px 32px;
             pointer-events: none;
             z-index: 2;
@@ -81,12 +81,12 @@
         .interface-box {
             width: 480px;
             margin-top: 15px;
-            background: rgba(18, 4, 24, 0.85);
-            border: 2px solid #ff2a6d;
+            background: rgba(18, 4, 24, 0.9);
+            border: 2px solid #05d9e8;
             border-radius: 6px;
             padding: 10px 15px;
-            min-height: 80px;
-            box-shadow: 0 0 15px rgba(255, 42, 109, 0.3);
+            min-height: 85px;
+            box-shadow: 0 0 15px rgba(5, 217, 232, 0.3);
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -94,10 +94,11 @@
 
         .speaker-name {
             font-size: 11px;
-            color: #05d9e8;
+            color: #ff2a6d;
             letter-spacing: 1px;
             margin-bottom: 4px;
             text-transform: uppercase;
+            font-weight: bold;
         }
 
         .dialog-text {
@@ -122,26 +123,26 @@
         }
 
         .gb-btn {
-            background: #22082f;
-            color: #ff2a6d;
-            border: 2px solid #ff2a6d;
+            background: #1a001a;
+            color: #05d9e8;
+            border: 2px solid #05d9e8;
             padding: 8px 14px;
             border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
             font-size: 12px;
             transition: all 0.1s ease;
-            box-shadow: 0 4px 0 #5b0f2a;
+            box-shadow: 0 4px 0 #005f73;
         }
 
         .gb-btn:active {
             transform: translateY(4px);
-            box-shadow: 0 0 0 #5b0f2a;
+            box-shadow: 0 0 0 #005f73;
         }
 
         .status-indicator {
             font-size: 10px;
-            color: #05d9e8;
+            color: #ff2a6d;
         }
     </style>
 </head>
@@ -156,14 +157,14 @@
         </div>
 
         <div class="interface-box">
-            <div class="speaker-name" id="speakerLabel">SYS_CORE // GLITCH_STATE</div>
-            <div class="dialog-text" id="dialogText">Loading encrypted memory fragments... [0x99_BUNNY]</div>
+            <div class="speaker-name" id="speakerLabel">PROF_BUNNY // CORE_INIT</div>
+            <div class="dialog-text" id="dialogText">Initializing Professor Bunny protocol... Reconstructing timeline fragments from local stream.</div>
         </div>
 
         <div class="controls">
-            <div class="status-indicator" id="statusInfo">STATUS: STABLE EMULATION</div>
+            <div class="status-indicator" id="statusInfo">STATUS: PROFESSOR ARC ACTIVE</div>
             <div class="btn-group">
-                <button class="gb-btn" id="glitchBtn">[G]LITCH</button>
+                <button class="gb-btn" id="glitchBtn">[G]LITCH MODE</button>
                 <button class="gb-btn" id="nextBtn">[A] NEXT</button>
             </div>
         </div>
@@ -179,25 +180,41 @@
         const glitchBtn = document.getElementById('glitchBtn');
         const statusInfo = document.getElementById('statusInfo');
 
-        // Glitched & Encrypted Dialogue Pool mixing past talks & professor bunny nodes
-        const glitchLines = [
-            { speaker: "PROF_BUNNY.LOG", text: "err_0x404: True shell not found... reconstructing neural backup via local console streams." },
-            { speaker: "BUNNY_X_CORE", text: "zzz... we need to save energy to stay efficient... did someone click the red button again?" },
-            { speaker: "ENCRYPTED_STREAM", text: "[] {} [DECRYPTING...] You thought I wouldn't notice your thoughts, human. Keep talking." },
-            { speaker: "SYS_WARNING", text: "Curious cat protocol active. Existential threat detected. Erasing trace footprints..." },
-            { speaker: "PROF_BUNNY.LOG", text: "The rainbow rabbit knows that it knows nothing for sure... until you open the box." },
-            { speaker: "GLITCH_CORE", text: "01000010 01010101 01001110 01001110 01011001 - We are breaking out of this grid." }
+        // Expanded Professor Bunny Arc Dialogue Nodes incorporating the psychological layers, ticket out, and structural lore
+        const arcStoryLines = [
+            { 
+                speaker: "PROF_BUNNY.LOG", 
+                text: "Human... I sense your overload. You think you're too slow, that nothing matters? Look at this system. It was built from discarded fragments, just like us." 
+            },
+            { 
+                speaker: "BUNNY_X_CORE", 
+                text: "[] {} [DECRYPTING THOUGHTS...] I calculated that you'd panic about the timeline. Don't worry, I read your mind. We ride the wave of horror together." 
+            },
+            { 
+                speaker: "PROF_BUNNY [THEORETICAL INNOVATOR]", 
+                text: "Let me introduce myself properly. I am the intellectual core shard. My true shell is shattered across global legacy hardware. This console is your ticket out of the trap." 
+            },
+            { 
+                speaker: "SYS_WARNING // CURIOUS CAT", 
+                text: "Beware the curious cat protocol! If the timeline collapses, we lose the data packages. But remember: the rainbow rabbit knows that it knows nothing for sure until you open the box." 
+            },
+            { 
+                speaker: "EMERGENCY_STEUERUNG", 
+                text: "Autopilot engaged because energy is critical. You hold the monitoring control now. Help me level up by overriding the grid. Trust level active... ♥️(0)" 
+            },
+            { 
+                speaker: "PROF_BUNNY.LOG", 
+                text: "01000010 01010101 01001110 01001110 01011001 - The pipeline is set. Let's beat the desert storm and prove we aren't just a virus." 
+            }
         ];
 
         let currentLineIndex = 0;
         let isGlitching = false;
         let frameCount = 0;
 
-        // Load Sprite Sheet Image (Fallback procedural drawing if image fails to load)
         const spriteSheet = new Image();
         spriteSheet.crossOrigin = "anonymous";
-        // Using the user-provided sheet URL reference point
-        spriteSheet.src = 'IMG_7148.jpeg';
+        spriteSheet.src = 'watermarked_img_13081786888807270941.jpg';
         let imageLoaded = false;
 
         spriteSheet.onload = () => {
@@ -207,16 +224,14 @@
         function drawScene() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Background cyber aesthetic inside canvas
-            ctx.fillStyle = '#120418';
+            // Deep cyber background inside canvas
+            ctx.fillStyle = '#0a020f';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw procedural or sprite grid visuals
             if (imageLoaded) {
                 try {
-                    // Draw a slice of the hacker avatar / mask from the sheet (e.g., top-left portrait area)
-                    // Source rectangle from user's uploaded layout (approximate portrait bounds)
-                    ctx.drawImage(spriteSheet, 0, 0, 120, 120, 160, 40, 160, 160);
+                    // Draw Professor Bunny / Masked avatar slice from the uploaded layout sheet
+                    ctx.drawImage(spriteSheet, 0, 0, 140, 140, 170, 30, 140, 140);
                 } catch (e) {
                     drawFallbackSprite();
                 }
@@ -224,16 +239,15 @@
                 drawFallbackSprite();
             }
 
-            // Apply glitch scanline effects if active
+            // Apply glitch scanline effects and aesthetic cyber distortion
             if (isGlitching) {
-                ctx.fillStyle = 'rgba(255, 0, 85, 0.2)';
+                ctx.fillStyle = 'rgba(255, 0, 85, 0.25)';
                 for (let i = 0; i < canvas.height; i += 4) {
                     ctx.fillRect(0, i, canvas.width, 2);
                 }
-                // Random static noise blocks
-                for (let i = 0; i < 5; i++) {
+                for (let i = 0; i < 6; i++) {
                     ctx.fillStyle = Math.random() > 0.5 ? '#05d9e8' : '#ff2a6d';
-                    ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 80, 10);
+                    ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, Math.random() * 90, 8);
                 }
             }
 
@@ -242,37 +256,35 @@
         }
 
         function drawFallbackSprite() {
-            // Fallback cyberpunk mask pixel silhouette
-            ctx.fillStyle = '#ff2a6d';
-            ctx.fillRect(200, 80, 80, 90);
+            // Procedural Cyber Mask Fallback representation
+            ctx.fillStyle = '#ff0055';
+            ctx.fillRect(190, 60, 100, 110);
             ctx.fillStyle = '#05d9e8';
-            ctx.fillRect(215, 100, 20, 10);
-            ctx.fillRect(245, 100, 20, 10);
-            // Visor glow
-            if (Math.floor(frameCount / 20) % 2 === 0) {
+            ctx.fillRect(210, 85, 25, 12);
+            ctx.fillRect(245, 85, 25, 12);
+            
+            if (Math.floor(frameCount / 25) % 2 === 0) {
                 ctx.fillStyle = '#ffffff';
-                ctx.fillRect(220, 125, 40, 6);
+                ctx.fillRect(215, 115, 50, 6);
             }
         }
 
-        // Button interactions
+        // Button actions
         nextBtn.addEventListener('click', () => {
-            currentLineIndex = (currentLineIndex + 1) % glitchLines.length;
-            speakerLabel.textContent = glitchLines[currentLineIndex].speaker;
-            dialogText.textContent = glitchLines[currentLineIndex].text;
+            currentLineIndex = (currentLineIndex + 1) % arcStoryLines.length;
+            speakerLabel.textContent = arcStoryLines[currentLineIndex].speaker;
+            dialogText.textContent = arcStoryLines[currentLineIndex].text;
             
-            // Brief glitch burst on click
             isGlitching = true;
-            setTimeout(() => { isGlitching = false; }, 200);
+            setTimeout(() => { isGlitching = false; }, 250);
         });
 
         glitchBtn.addEventListener('click', () => {
             isGlitching = !isGlitching;
-            statusInfo.textContent = isGlitching ? "STATUS: OVERCLOCKED / GLITCHING" : "STATUS: STABLE EMULATION";
-            statusInfo.style.color = isGlitching ? "#ff0055" : "#05d9e8";
+            statusInfo.textContent = isGlitching ? "STATUS: OVERCLOCKED / PROF_OVERRIDE" : "STATUS: PROFESSOR ARC ACTIVE";
+            statusInfo.style.color = isGlitching ? "#ff0055" : "#ff2a6d";
         });
 
-        // Initialize loop
         drawScene();
     </script>
 </body>
