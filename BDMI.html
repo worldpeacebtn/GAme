@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>BunnyXMetaXInfinity — Holo Map</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/DeviceOrientationControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Varela+Round&display=swap');
+
+:root{
+  --neon-pink:#ff007f; --neon-purple:#b026ff; --neon-cyan:#00f3ff;
+  --neon-green:#39ff14; --neon-yellow:#fffb00; --dark-bg:#03000a;
+  --ui-bg:rgba(5,0,20,.86);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{
+  background:var(--dark-bg); color:#fff; font-family:'Varela Round',sans-serif;
+  overflow:hidden; touch-action:none; -webkit-user-select:none; user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.cyber-font{font-family:'Share Tech Mono',monospace}
+
+#camera-layer,#holo-layer{position:fixed;top:0;left:0;width:100vw;height:100vh}
+#camera-layer{object-fit:cover;z-index:1;opacity:1;transition:opacity .4s;background:#000}
+#holo-layer{z-index:2;pointer-events:none}
+#proc-canvas{display:none}
+
+/* ---------- HUD ---------- */
+.stewardess{
+  position:fixed; top:max(14px,env(safe-area-inset-top)); left:14px; right:14px;
+  background:var(--ui-bg); backdrop-filter:blur(10px); border-radius:18px;
+  padding:12px; display:flex; gap:12px; align-items:center; z-index:40;
+  border-bottom:2px solid var(--neon-pink);
+  box-shadow:0 6px 24px rgba(255,0,127,.18);
+  transform:translateY(-180%); transition:transform .45s cubic-bezier(.175,.885,.32,1.275);
+}
+.stewardess.show{transform:translateY(0)}
+.avatar-glitch{animation:glitch-anim 3.5s infinite}
+@keyframes glitch-anim{
+  0%,94%{transform:translate(0,0);opacity:1;filter:hue-rotate(0)}
+  95%{transform:translate(2px,-2px);opacity:.85;filter:hue-rotate(90deg)}
+  96%{transform:translate(-2px,2px);opacity:.9;filter:hue-rotate(-90deg)}
+  97%{transform:translate(0,0);opacity:1;filter:hue-rotate(0)}
+}
+.neon-text-pink{color:var(--neon-pink);text-shadow:0 0 8px rgba(255,0,127,.7)}
+.neon-text-cyan{color:var(--neon-cyan);text-shadow:0 0 8px rgba(0,243,255,.7)}
+
+#hud-right{
+  position:fixed; top:max(14px,env(safe-area-inset-top)); right:12px; z-index:41;
+  display:flex; flex-direction:column; gap:6px; align-items:flex-end; pointer-events:none;
+}
+.chip{
+  background:rgba(0,0,0,.62); backdrop-filter:blur(8px); padding:4px 10px; border-radius:999px;
+  border:1px solid #2a2a3d; font-size:10px; letter-spacing:.05em; pointer-events:auto;
+}
+
+#compass-arrow{
+  position:fixed; top:calc(max(14px,env(safe-area-inset-top)) + 96px); left:50%;
+  transform:translateX(-50%); z-index:39; width:46px; height:46px; opacity:0;
+  transition:opacity .3s; pointer-events:none; display:flex; align-items:center; justify-content:center;
+}
+#compass-arrow.show{opacity:.9}
+#compass-arrow .tri{
+  width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;
+  border-bottom:16px solid var(--neon-cyan); filter:drop-shadow(0 0 6px var(--neon-cyan));
+  transition:transform .12s linear;
+}
+
+#reticle{
+  position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:30;
+  width:52px;height:52px; pointer-events:none; opacity:.55;
+}
+#reticle::before,#reticle::after{
+  content:'';position:absolute;background:var(--neon-cyan);box-shadow:0 0 6px var(--neon-cyan);
+}
+#reticle::before{left:50%;top:0;width:1px;height:14px;transform:translateX(-50%)}
+#reticle::after{top:50%;left:0;height:1px;width:14px;transform:translateY(-50%)}
+
+#scan-flash{position:fixed;inset:0;background:#fff;z-index:9998;opacity:0;pointer-events:none;transition:opacity .12s}
+#scanline{
+  position:fixed;left:0;right:0;height:120px;z-index:29;pointer-events:none;opacity:0;
+  background:linear-gradient(to bottom,transparent,rgba(0,243,255,.16),transparent);
+  border-bottom:1px solid rgba(0,243,255,.5); transition:opacity .25s;
+}
+#scanline.on{opacity:1;animation:scanmove 1.6s linear infinite}
+@keyframes scanmove{0%{top:-120px}100%{top:100vh}}
+
+.eco-mode #camera-layer{filter:saturate(.55) brightness(.85)}
+.eco-mode{filter:saturate(.7)}
+
+/* ---------- Bottom dock ---------- */
+.thumb-dock{
+  position:fixed; bottom:max(14px,env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
+  width:96%; max-width:460px; z-index:50; background:var(--ui-bg); backdrop-filter:blur(14px);
+  border-radius:30px; border:1px solid rgba(0,243,255,.2);
+  box-shadow:0 12px 40px rgba(0,0,0,.85), inset 0 0 18px rgba(0,243,255,.07);
+  display:flex; flex-direction:column; gap:8px; padding:12px;
+}
+.dock-btn{
+  background:rgba(255,255,255,.05); border:1px solid transparent; border-radius:16px;
+  padding:8px 4px; display:flex; align-items:center; justify-content:center; flex-direction:column;
+  transition:all .18s; color:#cfd6e6; cursor:pointer;
+}
+.dock-btn:active{transform:scale(.94);background:rgba(255,255,255,.11)}
+.dock-btn.active{border-color:var(--neon-cyan);box-shadow:0 0 14px rgba(0,243,255,.28);color:#fff}
+.icon-btn{
+  width:52px;height:52px;border-radius:50%;background:rgba(30,32,48,.85);
+  display:flex;align-items:center;justify-content:center;border:1px solid #3a3a52;
+  flex-shrink:0; font-size:20px; cursor:pointer; transition:transform .15s;
+}
+.icon-btn:active{transform:scale(.9)}
+#btn-scan{
+  flex-grow:1;height:60px;border-radius:22px;border:none;cursor:pointer;
+  background:linear-gradient(90deg,var(--neon-cyan),var(--neon-purple));
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  box-shadow:0 0 22px rgba(0,243,255,.35); color:#fff; font-weight:700; letter-spacing:.12em;
+  transition:transform .15s, box-shadow .25s; position:relative; overflow:hidden;
+}
+#btn-scan:active{transform:scale(.97)}
+#btn-scan.on{background:linear-gradient(90deg,var(--neon-pink),var(--neon-purple));box-shadow:0 0 26px rgba(255,0,127,.55);animation:pulseBtn 1.1s ease-in-out infinite}
+@keyframes pulseBtn{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35)}}
+
+/* ---------- Sheets / Modals ---------- */
+.sheet{
+  position:fixed; inset:0; z-index:200; display:none;
+  background:rgba(2,0,8,.86); backdrop-filter:blur(10px);
+}
+.sheet.open{display:flex; align-items:flex-end; justify-content:center}
+.sheet-inner{
+  width:100%; max-width:560px; max-height:88vh; overflow-y:auto;
+  background:linear-gradient(180deg,#0a0518,#05010f);
+  border-top:1px solid rgba(0,243,255,.35); border-radius:26px 26px 0 0;
+  padding:20px 18px calc(28px + env(safe-area-inset-bottom));
+  box-shadow:0 -12px 50px rgba(0,243,255,.12);
+}
+.sheet-inner::-webkit-scrollbar{width:0}
+.field{
+  width:100%; background:rgba(255,255,255,.05); border:1px solid #2b2b42; border-radius:12px;
+  padding:11px 13px; color:#fff; font-size:14px; outline:none; margin-bottom:10px;
+  font-family:inherit;
+}
+.field:focus{border-color:var(--neon-cyan);box-shadow:0 0 12px rgba(0,243,255,.22)}
+.btn{
+  border-radius:14px; padding:12px 16px; font-weight:700; letter-spacing:.06em;
+  cursor:pointer; border:none; font-family:'Share Tech Mono',monospace; font-size:13px;
+  transition:transform .15s;
+}
+.btn:active{transform:scale(.96)}
+.btn-primary{background:linear-gradient(90deg,var(--neon-cyan),var(--neon-purple));color:#fff}
+.btn-ghost{background:rgba(255,255,255,.07);color:#dfe6f5;border:1px solid #33334d}
+.btn-danger{background:rgba(255,0,127,.16);color:#ff5fa2;border:1px solid var(--neon-pink)}
+
+.file-drop{
+  border:1.5px dashed rgba(0,243,255,.45); border-radius:16px; padding:18px;
+  text-align:center; color:#8fa4c4; font-size:12px; margin-bottom:12px; cursor:pointer;
+  background:rgba(0,243,255,.03); transition:background .2s;
+}
+.file-drop:active{background:rgba(0,243,255,.1)}
+
+.viewer-body{width:100%; display:flex; align-items:center; justify-content:center; margin:12px 0}
+.viewer-body img,.viewer-body video{max-width:100%;max-height:56vh;border-radius:14px;display:block}
+.viewer-body audio{width:100%}
+.viewer-body iframe{width:100%;height:56vh;border:1px solid #2b2b42;border-radius:14px;background:#fff}
+.viewer-body pre{
+  width:100%;max-height:52vh;overflow:auto;background:#0b0b16;border:1px solid #2b2b42;
+  border-radius:12px;padding:12px;font-size:12px;color:#b9ffdc;white-space:pre-wrap;word-break:break-word;
+}
+
+#toast{
+  position:fixed; left:50%; bottom:190px; transform:translateX(-50%) translateY(20px);
+  background:rgba(0,243,255,.12); border:1px solid var(--neon-cyan); color:#c9f8ff;
+  padding:10px 18px; border-radius:999px; font-size:12px; z-index:9999; opacity:0;
+  pointer-events:none; transition:all .3s; backdrop-filter:blur(8px); max-width:88vw; text-align:center;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+#sensor-overlay{
+  position:fixed;inset:0;background:rgba(3,0,10,.97);z-index:99999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;text-align:center;backdrop-filter:blur(12px);transition:opacity .5s;
+}
+.spinner{
+  width:64px;height:64px;border-radius:50%;
+  background:linear-gradient(135deg,var(--neon-cyan),var(--neon-purple));
+  padding:2px; margin-bottom:22px; animation:spinpulse 2.4s ease-in-out infinite;
+}
+@keyframes spinpulse{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(1.08);filter:brightness(1.4)}}
+.spinner>div{
+  width:100%;height:100%;background:#03000a;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;font-size:28px;
+}
+.hidden{display:none !important}
+</style>
+</head>
+
+<body id="app-body">
+
+<!-- ══════════════ SENSOR PERMISSION ══════════════ -->
+<div id="sensor-overlay">
+  <div class="spinner"><div>🧭</div></div>
+  <h1 class="text-2xl cyber-font neon-text-cyan mb-2">CALIBRATE SENSORS</h1>
+  <p class="text-gray-400 mb-7 max-w-xs text-sm leading-relaxed">
+    BunnyX needs camera + gyroscope for 360° spatial light-cartography.
+    No gyro? You'll get drag-look mode instead.
+  </p>
+  <button onclick="requestSensorAccess()"
+    class="px-8 py-4 rounded-3xl bg-gradient-to-r from-[#00f3ff] to-[#b026ff] font-bold tracking-widest cyber-font text-white shadow-[0_0_24px_rgba(0,243,255,.45)] active:scale-95 transition-transform">
+    INITIALIZE AR SYNC
+  </button>
+</div>
+
+<div id="scan-flash"></div>
+<div id="scanline"></div>
+<div id="reticle" class="hidden"></div>
+
+<video id="camera-layer" autoplay playsinline muted></video>
+<canvas id="holo-layer"></canvas>
+<canvas id="proc-canvas" width="96" height="96"></canvas>
+
+<!-- ══════════════ STEWARDESS ══════════════ -->
+<div id="stewardess-ui" class="stewardess">
+  <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#ff007f] to-[#b026ff] p-[2px] flex-shrink-0 avatar-glitch">
+    <div class="w-full h-full bg-[#03000a] rounded-full flex items-center justify-center text-xl">🐰</div>
+  </div>
+  <div class="flex flex-col flex-grow min-w-0">
+    <div class="flex justify-between items-center gap-2">
+      <span class="text-[10px] font-bold neon-text-pink cyber-font truncate">AI STEWARDESS // BUNNY-X</span>
+      <span id="quest-status" class="text-[9px] bg-green-900/40 text-[#39ff14] px-2 py-[2px] rounded-full border border-[#39ff14]/60 whitespace-nowrap">ONLINE</span>
+    </div>
+    <p id="stewardess-msg" class="text-[12px] mt-1 leading-snug text-gray-300 truncate-2">
+      Booting Holo-Map… ready for light cartography.
+    </p>
+  </div>
+</div>
+
+<div id="compass-arrow"><div class="tri"></div></div>
+
+<!-- ══════════════ HUD RIGHT ══════════════ -->
+<div id="hud-right">
+  <div class="chip flex items-center gap-2 pointer-events-auto" onclick="toggleEcoMode()">
+    <span id="eco-dot" class="w-2 h-2 rounded-full bg-[#39ff14]" style="box-shadow:0 0 6px #39ff14"></span>
+    <span class="cyber-font text-gray-300">ECO</span>
+  </div>
+  <div class="chip cyber-font text-gray-300">PTS <span id="pt-count" class="text-[#00f3ff]">0</span></div>
+  <div class="chip cyber-font text-gray-300">XYZ <span id="xyz-coords" class="text-[#00f3ff]">0.0, 0.0</span></div>
+</div>
+
+<!-- ══════════════ BOTTOM DOCK ══════════════ -->
+<div class="thumb-dock">
+  <div class="flex justify-between gap-2">
+    <button onclick="setMapMode('AR')"  id="btn-mode-AR"  class="dock-btn active flex-1"><span class="text-base">📷</span><span class="text-[9px] cyber-font mt-1">MIXED AR</span></button>
+    <button onclick="setMapMode('2.5D')" id="btn-mode-25D" class="dock-btn flex-1"><span class="text-base">🗺️</span><span class="text-[9px] cyber-font mt-1">CITY MAP</span></button>
+    <button onclick="setMapMode('3D')"  id="btn-mode-3D"  class="dock-btn flex-1"><span class="text-base">🧊</span><span class="text-[9px] cyber-font mt-1">HOLO CUBE</span></button>
+  </div>
+
+  <div class="flex justify-between items-center gap-3">
+    <div class="icon-btn" onclick="flipCamera()" title="Flip camera">🔄</div>
+
+    <button id="btn-scan" onclick="toggleScan()">
+      <span class="text-xl">🔦</span>
+      <span class="cyber-font text-[13px]">LIGHT SCAN</span>
+    </button>
+
+    <div class="icon-btn" onclick="openCreateSheet()" title="Place info point"
+         style="border-color:var(--neon-pink);box-shadow:0 0 10px rgba(255,0,127,.35)">➕</div>
+  </div>
+
+  <div class="flex justify-center gap-2">
+    <button class="btn btn-ghost flex-1" onclick="openMenu()">⚙ MENU</button>
+    <button class="btn btn-ghost flex-1" onclick="openMarkerList()">📜 POINTS</button>
+    <button class="btn btn-ghost flex-1" onclick="recenterView()">🧭 RECENTER</button>
+  </div>
+</div>
+
+<!-- ══════════════ CREATE SHEET ══════════════ -->
+<div id="create-sheet" class="sheet">
+  <div class="sheet-inner">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="cyber-font neon-text-cyan text-lg">NEW INFO POINT</h2>
+      <div class="icon-btn" style="width:38px;height:38px;font-size:15px" onclick="closeSheet('create-sheet')">✕</div>
+    </div>
+
+    <div class="text-[11px] text-gray-400 mb-3 cyber-font">
+      PLACED AT ▸ <span id="place-preview" class="text-[#00f3ff]">camera forward</span>
+    </div>
+
+    <input id="inp-title" class="field" placeholder="Title (e.g. St. Pauli Relic)">
+    <textarea id="inp-desc" class="field" rows="2" placeholder="Description / AI steward message…"></textarea>
+
+    <label class="file-drop" for="inp-file" id="file-drop-label">
+      <div class="text-2xl mb-1">📎</div>
+      <div>Tap to attach: image · gif · video · mp4 · audio · mp3 · pdf · html · zip · rar · glb/gltf · txt</div>
+      <div id="file-chosen" class="mt-2 text-[#00f3ff] cyber-font"></div>
+    </label>
+    <input id="inp-file" type="file" class="hidden"
+      accept="image/*,video/*,audio/*,.pdf,.html,.htm,.zip,.rar,.7z,.glb,.gltf,.txt,.md,.json,.gif,.svg,.webp,.mp3,.mp4,.webm,.ogg,.wav">
+
+    <div class="flex gap-2 mt-2">
+      <button class="btn btn-ghost flex-1" onclick="closeSheet('create-sheet')">CANCEL</button>
+      <button class="btn btn-primary flex-1" onclick="confirmCreate()">PLACE POINT</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ VIEWER SHEET ══════════════ -->
+<div id="viewer-sheet" class="sheet">
+  <div class="sheet-inner">
+    <div class="flex justify-between items-center mb-2">
+      <h2 id="viewer-title" class="cyber-font neon-text-cyan text-lg truncate pr-3">POINT</h2>
+      <div class="icon-btn" style="width:38px;height:38px;font-size:15px" onclick="closeViewer()">✕</div>
+    </div>
+    <div id="viewer-meta" class="text-[11px] text-gray-500 cyber-font mb-2"></div>
+    <p id="viewer-desc" class="text-sm text-gray-300 mb-2 leading-snug"></p>
+    <div id="viewer-body" class="viewer-body"></div>
+    <div class="flex gap-2 mt-3">
+      <button class="btn btn-ghost flex-1" onclick="focusMarker()">🎯 FACE IT</button>
+      <button class="btn btn-danger flex-1" onclick="deleteCurrentMarker()">🗑 DELETE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MENU SHEET ══════════════ -->
+<div id="menu-sheet" class="sheet">
+  <div class="sheet-inner">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="cyber-font neon-text-cyan text-lg">HOLO-MAP MENU</h2>
+      <div class="icon-btn" style="width:38px;height:38px;font-size:15px" onclick="closeSheet('menu-sheet')">✕</div>
+    </div>
+
+    <div class="text-[11px] text-gray-400 cyber-font mb-2">SHARE / TRANSFER</div>
+    <label class="flex items-center gap-2 mb-2 text-[12px] text-gray-300">
+      <input id="chk-assets" type="checkbox" class="accent-[#00f3ff]">
+      Include attached files in export (can be very large)
+    </label>
+    <div class="flex gap-2 mb-4">
+      <button class="btn btn-primary flex-1" onclick="exportMap()">⬇ EXPORT MAP</button>
+      <label class="btn btn-ghost flex-1 text-center" for="inp-import">⬆ IMPORT MAP</label>
+      <input id="inp-import" type="file" accept=".json,application/json" class="hidden">
+    </div>
+
+    <div class="text-[11px] text-gray-400 cyber-font mb-2">SCAN TUNING</div>
+    <label class="block text-[12px] text-gray-300 mb-1">Point density <span id="lbl-density" class="text-[#00f3ff]">55%</span></label>
+    <input id="rng-density" type="range" min="10" max="100" value="55" class="w-full accent-[#00f3ff] mb-3">
+
+    <label class="block text-[12px] text-gray-300 mb-1">Depth range <span id="lbl-depth" class="text-[#00f3ff]">6 – 34</span></label>
+    <input id="rng-depth" type="range" min="4" max="60" value="34" class="w-full accent-[#00f3ff] mb-4">
+
+    <div class="text-[11px] text-gray-400 cyber-font mb-2">DANGER ZONE</div>
+    <div class="flex gap-2">
+      <button class="btn btn-ghost flex-1" onclick="clearPoints()">CLEAR LIGHTMAP</button>
+      <button class="btn btn-danger flex-1" onclick="clearAll()">WIPE EVERYTHING</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ MARKER LIST SHEET ══════════════ -->
+<div id="list-sheet" class="sheet">
+  <div class="sheet-inner">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="cyber-font neon-text-cyan text-lg">INFO POINTS</h2>
+      <div class="icon-btn" style="width:38px;height:38px;font-size:15px" onclick="closeSheet('list-sheet')">✕</div>
+    </div>
+    <div id="marker-list" class="flex flex-col gap-2"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   BunnyXMetaXInfinity — Holo Map Engine
+   ═══════════════════════════════════════════════════════════════ */
+
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+/* ---------- Tunables ---------- */
+const MAX_POINTS  = 60000;
+const PROC_W = 96, PROC_H = 96;
+let   densityPct  = 0.55;     // from menu slider
+let   maxDepth    = 34;
+let   minDepth    = 6;
+
+/* ---------- State ---------- */
+let scene, camera, renderer, clock;
+let worldGroup, markersGroup, pointCloud, pointGeo, posAttr, colAttr;
+let controls = null;
+let usingGyro = false;
+let mode = 'AR';
+let scanning = false, scanTimer = null;
+let eco = false;
+let stream = null, facingMode = 'environment';
+let writePtr = 0, pointCount = 0;
+let markers = [];                 // metadata + scene refs
+let currentMarkerId = null;
+let mixers = [];                  // gltf animation mixers
+let mapOrbit = { theta: Math.PI*0.25, phi: 1.0, radius: 65, dragging:false, lastX:0, lastY:0 };
+let dragLook = { yaw: 0, pitch: 0, dragging:false, lastX:0, lastY:0, moved:0 };
+
+const video     = $('#camera-layer');
+const procCanvas= $('#proc-canvas');
+const procCtx   = procCanvas.getContext('2d', { willReadFrequently: true });
+const raycaster = new THREE.Raycaster();
+const pointerNDC= new THREE.Vector2();
+
+/* ═══════════════ BOOT ═══════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  initCamera();
+  initThree();
+  loadAllMarkers();
+  setTimeout(() => {
+    $('#stewardess-ui').classList.add('show');
+    speak("Holo-map online. Press light scan to begin cartography.");
+  }, 900);
+  wireUI();
+});
+
+/* ═══════════════ CAMERA ═══════════════ */
+async function initCamera(){
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: facingMode }, width:{ideal:1280}, height:{ideal:720} },
+      audio: false
+    });
+  } catch (e) {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video:true, audio:false });
+      facingMode = 'user';
+    } catch (e2) {
+      toast('Camera unavailable — holographic-only mode');
+      speak('Camera feed offline. Pure holographic simulation engaged.');
+      return;
+    }
+  }
+  video.srcObject = stream;
+  video.style.transform = (facingMode === 'user') ? 'scaleX(-1)' : 'none';
+  try { await video.play(); } catch(_) {}
+}
+window.flipCamera = function(){
+  facingMode = (facingMode === 'environment') ? 'user' : 'environment';
+  initCamera();
+  speak(facingMode === 'user' ? 'Front optical sensor active.' : 'Rear optical sensor active.');
+};
+
+/* ═══════════════ SENSOR PERMISSION ═══════════════ */
+window.requestSensorAccess = function(){
+  const go = () => enableSensors();
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(s => { s === 'granted' ? go() : (toast('Gyro denied — drag-look mode'), go()); })
+      .catch(() => go());
+  } else {
+    go();
+  }
+};
+
+function enableSensors(){
+  const ov = $('#sensor-overlay');
+  ov.style.opacity = '0';
+  setTimeout(() => ov.style.display = 'none', 500);
+
+  if (THREE.DeviceOrientationControls) {
+    try {
+      controls = new THREE.DeviceOrientationControls(camera);
+      usingGyro = true;
+    } catch(e) { usingGyro = false; }
+  }
+  // Detect whether orientation events actually fire (2s grace)
+  if (usingGyro) {
+    let got = false;
+    const probe = () => { got = true; };
+    window.addEventListener('deviceorientation', probe, { once:true });
+    setTimeout(() => {
+      if (!got) {
+        usingGyro = false;
+        if (controls && controls.disconnect) controls.disconnect();
+        controls = null;
+        toast('No gyro detected — drag to look around');
+        speak('Gyroscope unavailable. Drag-look navigation enabled.');
+      }
+    }, 2200);
+  }
+
+  setMapMode('AR');
+  speak("Sensors calibrated. 360 degree spatial tracking online.");
+}
+
+/* ═══════════════ THREE.JS ═══════════════ */
+function initThree(){
+  const canvas = $('#holo-layer');
+  renderer = new THREE.WebGLRenderer({ canvas, alpha:true, antialias:true, powerPreference:'high-performance' });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(75, innerWidth/innerHeight, 0.1, 2000);
+  clock = new THREE.Clock();
+
+  worldGroup = new THREE.Group();
+  scene.add(worldGroup);
+
+  /* --- Holodeck guides --- */
+  const grid = new THREE.GridHelper(240, 96, 0xb026ff, 0x1a0033);
+  grid.position.y = -12;
+  grid.material.transparent = true; grid.material.opacity = 0.55;
+  worldGroup.add(grid);
+
+  const sphere = new THREE.Mesh(
+    new THREE.SphereGeometry(120, 32, 24),
+    new THREE.MeshBasicMaterial({ color:0x00f3ff, wireframe:true, transparent:true, opacity:0.055 })
+  );
+  worldGroup.add(sphere);
+
+  /* --- Markers --- */
+  markersGroup = new THREE.Group();
+  worldGroup.add(markersGroup);
+
+  /* --- Persistent light-map point cloud --- */
+  pointGeo = new THREE.BufferGeometry();
+  const pos = new Float32Array(MAX_POINTS * 3);
+  const col = new Float32Array(MAX_POINTS * 3);
+  posAttr = new THREE.BufferAttribute(pos, 3); posAttr.setUsage(THREE.DynamicDrawUsage);
+  colAttr = new THREE.BufferAttribute(col, 3); colAttr.setUsage(THREE.DynamicDrawUsage);
+  pointGeo.setAttribute('position', posAttr);
+  pointGeo.setAttribute('color', colAttr);
+  pointGeo.setDrawRange(0, 0);
+
+  const pointMat = new THREE.PointsMaterial({
+    size: 0.34, vertexColors: true, transparent: true, opacity: 0.92,
+    blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true
+  });
+  pointCloud = new THREE.Points(pointGeo, pointMat);
+  pointCloud.frustumCulled = false;
+  worldGroup.add(pointCloud);
+
+  addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  });
+
+  animate();
+}
+
+/* ═══════════════ MAIN LOOP ═══════════════ */
+function animate(){
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.05);
+
+  if (mode === 'AR') {
+    if (usingGyro && controls) controls.update();
+    else applyDragLook();
+  } else {
+    updateOrbitCamera();
+  }
+
+  /* marker spin + gltf animation */
+  for (const m of markers) {
+    if (m.pivot) m.pivot.rotation.y += dt * 0.7;
+    if (m.mixer) m.mixer.update(dt);
+  }
+
+  /* HUD coords */
+  const p = camera.position;
+  $('#xyz-coords').textContent =
+    `${p.x.toFixed(1)}, ${p.z.toFixed(1)}`;
+
+  updateCompassArrow();
+  renderer.render(scene, camera);
+}
+
+/* ---------- Drag-look fallback ---------- */
+function applyDragLook(){
+  const e = new THREE.Euler(dragLook.pitch, dragLook.yaw, 0, 'YXZ');
+  camera.quaternion.setFromEuler(e);
+}
+function updateOrbitCamera(){
+  const { theta, phi, radius } = mapOrbit;
+  camera.position.set(
+    radius * Math.sin(phi) * Math.sin(theta),
+    radius * Math.cos(phi) + 6,
+    radius * Math.sin(phi) * Math.cos(theta)
+  );
+  camera.lookAt(0, 0, 0);
+}
+
+/* ═══════════════ MAP MODES ═══════════════ */
+window.setMapMode = function(m){
+  mode = m;
+  ['AR','25D','3D'].forEach(k => $('#btn-mode-'+k).classList.remove('active'));
+  const id = m === 'AR' ? 'AR' : (m === '2.5D' ? '25D' : '3D');
+  $('#btn-mode-'+id).classList.add('active');
+
+  if (m === 'AR') {
+    video.style.opacity = '1';
+    $('#reticle').classList.remove('hidden');
+    camera.position.set(0,0,0);
+    if (usingGyro && controls) controls.update();
+    else applyDragLook();
+    speak('Mixed Reality AR engaged. Look around and scan.');
+  } else if (m === '2.5D') {
+    video.style.opacity = eco ? '0' : '0.12';
+    $('#reticle').classList.add('hidden');
+    mapOrbit.theta = Math.PI * 0.25;
+    mapOrbit.phi   = 1.0;
+    mapOrbit.radius= 75;
+    speak('City topo-map loaded. Drag to orbit.');
+  } else {
+    video.style.opacity = '0';
+    $('#reticle').classList.add('hidden');
+    mapOrbit.theta = 0;
+    mapOrbit.phi   = 1.25;
+    mapOrbit.radius= 45;
+    speak('Immersive holo-cube initiated.');
+  }
+};
+
+window.recenterView = function(){
+  if (mode !== 'AR') { mapOrbit.theta = 0; mapOrbit.phi = 1.0; return; }
+  if (usingGyro && controls && controls.deviceOrientation && controls.deviceOrientation.alpha != null) {
+    controls.alphaOffset = -THREE.MathUtils.degToRad(controls.deviceOrientation.alpha);
+    toast('View recentered');
+  } else {
+    dragLook.yaw = 0; dragLook.pitch = 0;
+    toast('View recentered');
+  }
+};
+
+/* ═══════════════ POINTER INPUT ═══════════════ */
+function wireUI(){
+  const canvas = $('#holo-layer');
+
+  const down = (x, y) => {
+    dragLook.moved = 0;
+    if (mode === 'AR') { dragLook.dragging = true; dragLook.lastX = x; dragLook.lastY = y; }
+    else { mapOrbit.dragging = true; mapOrbit.lastX = x; mapOrbit.lastY = y; }
+  };
+  const move = (x, y) => {
+    if (mode === 'AR' && dragLook.dragging && !usingGyro) {
+      const dx = x - dragLook.lastX, dy = y - dragLook.lastY;
+      dragLook.yaw   -= dx * 0.0042;
+      dragLook.pitch -= dy * 0.0042;
+      dragLook.pitch = Math.max(-1.45, Math.min(1.45, dragLook.pitch));
+      dragLook.moved += Math.abs(dx) + Math.abs(dy);
+      dragLook.lastX = x; dragLook.lastY = y;
+    } else if (mode !== 'AR' && mapOrbit.dragging) {
+      const dx = x - mapOrbit.lastX, dy = y - mapOrbit.lastY;
+      mapOrbit.theta -= dx * 0.006;
+      mapOrbit.phi   = Math.max(0.18, Math.min(1.52, mapOrbit.phi - dy * 0.006));
+      dragLook.moved += Math.abs(dx) + Math.abs(dy);
+      mapOrbit.lastX = x; mapOrbit.lastY = y;
+    }
+  };
+  const up = (x, y) => {
+    const wasDragging = dragLook.dragging || mapOrbit.dragging;
+    dragLook.dragging = false; mapOrbit.dragging = false;
+    if (wasDragging && dragLook.moved < 10) handleTap(x, y);
+  };
+
+  canvas.style.pointerEvents = 'auto';
+  canvas.addEventListener('pointerdown', e => { canvas.setPointerCapture(e.pointerId); down(e.clientX, e.clientY); });
+  canvas.addEventListener('pointermove', e => move(e.clientX, e.clientY));
+  canvas.addEventListener('pointerup',   e => up(e.clientX, e.clientY));
+  canvas.addEventListener('pointercancel', () => { dragLook.dragging = false; mapOrbit.dragging = false; });
+
+  /* Pinch zoom in map modes */
+  let pinchStart = 0, startRadius = 0;
+  canvas.addEventListener('touchstart', e => {
+    if (e.touches.length === 2 && mode !== 'AR') {
+      pinchStart = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      startRadius = mapOrbit.radius;
+    }
+  }, { passive:true });
+  canvas.addEventListener('touchmove', e => {
+    if (e.touches.length === 2 && mode !== 'AR' && pinchStart) {
+      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+      mapOrbit.radius = Math.max(15, Math.min(220, startRadius * (pinchStart / d)));
+    }
+  }, { passive:true });
+
+  /* File input for creation */
+  $('#inp-file').addEventListener('change', e => {
+    const f = e.target.files[0];
+    $('#file-chosen').textContent = f ? `▸ ${f.name}  (${fmtSize(f.size)})` : '';
+  });
+
+  /* Import */
+  $('#inp-import').addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (f) importMap(f);
+    e.target.value = '';
+  });
+
+  /* Sliders */
+  $('#rng-density').addEventListener('input', e => {
+    densityPct = e.target.value / 100;
+    $('#lbl-density').textContent = e.target.value + '%';
+  });
+  $('#rng-depth').addEventListener('input', e => {
+    maxDepth = +e.target.value;
+    $('#lbl-depth').textContent = `${minDepth} – ${maxDepth}`;
+  });
+}
+
+function handleTap(clientX, clientY){
+  pointerNDC.x = (clientX / innerWidth) * 2 - 1;
+  pointerNDC.y = -(clientY / innerHeight) * 2 + 1;
+  raycaster.setFromCamera(pointerNDC, camera);
+
+  const targets = [];
+  markers.forEach(m => { if (m.hit) targets.push(m.hit); });
+  const hits = raycaster.intersectObjects(targets, false);
+  if (hits.length) {
+    const marker = markers.find(m => m.hit === hits[0].object);
+    if (marker) openViewer(marker.id);
+  }
+}
+
+/* ═══════════════ LIGHT CARTOGRAPHY ═══════════════ */
+window.toggleScan = function(){
+  scanning = !scanning;
+  $('#btn-scan').classList.toggle('on', scanning);
+  $('#scanline').classList.toggle('on', scanning);
+
+  if (scanning) {
+    speak('Continuous light cartography engaged.');
+    doScanPass();
+    scanTimer = setInterval(doScanPass, 220);
+  } else {
+    clearInterval(scanTimer); scanTimer = null;
+    speak('Cartography paused.');
+    flushPoints();
+  }
+};
+
+function flashScreen(){
+  const f = $('#scan-flash');
+  f.style.opacity = '1';
+  setTimeout(() => f.style.opacity = '0', 90);
+}
+
+function doScanPass(){
+  if (!video.videoWidth) return;
+
+  /* --- 1. Grab a frame cropped to the on-screen aspect --- */
+  const vw = video.videoWidth, vh = video.videoHeight;
+  const targetAspect = innerWidth / innerHeight;
+  let sw = vw, sh = vh, sx = 0, sy = 0;
+  if (vw / vh > targetAspect) { sw = vh * targetAspect; sx = (vw - sw) / 2; }
+  else                        { sh = vw / targetAspect; sy = (vh - sh) / 2; }
+
+  procCtx.drawImage(video, sx, sy, sw, sh, 0, 0, PROC_W, PROC_H);
+  let data;
+  try { data = procCtx.getImageData(0, 0, PROC_W, PROC_H).data; }
+  catch(e) { return; }
+
+  /* --- 2. Luminance buffer --- */
+  const lum = new Float32Array(PROC_W * PROC_H);
+  for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+    lum[p] = data[i]*0.299 + data[i+1]*0.587 + data[i+2]*0.114;
+  }
+
+  /* --- 3. Camera world transform --- */
+  camera.updateMatrixWorld();
+  const camPos = new THREE.Vector3().setFromMatrixPosition(camera.matrixWorld);
+  const dir = new THREE.Vector3();
+
+  /* --- 4. Sobel + brightness feature extraction --- */
+  const passStart = writePtr;
+  let written = 0, wrapped = false;
+  const rnd = Math.random;
+
+  for (let y = 1; y < PROC_H - 1; y++) {
+    for (let x = 1; x < PROC_W - 1; x++) {
+      const p = y * PROC_W + x;
+
+      const gx =
+        -lum[p - 1 - PROC_W] - 2*lum[p - 1] - lum[p - 1 + PROC_W] +
+         lum[p + 1 - PROC_W] + 2*lum[p + 1] + lum[p + 1 + PROC_W];
+      const gy =
+        -lum[p - PROC_W - 1] - 2*lum[p - PROC_W] - lum[p - PROC_W + 1] +
+         lum[p + PROC_W - 1] + 2*lum[p + PROC_W] + lum[p + PROC_W + 1];
+
+      const edge  = Math.sqrt(gx*gx + gy*gy) * 0.25;
+      const bright= lum[p];
+      const score = bright * 0.62 + edge * 1.15;
+
+      if (score < 58) continue;
+      if (rnd() > densityPct) continue;
+
+      /* Screen → NDC */
+      let nx = ((x + 0.5) / PROC_W) * 2 - 1;
+      const ny = -(((y + 0.5) / PROC_H) * 2 - 1);
+      if (facingMode === 'user') nx = -nx;   // mirrored front cam
+
+      /* NDC → world ray direction */
+      dir.set(nx, ny, 0.5).unproject(camera).sub(camPos).normalize();
+
+      /* Stable pseudo-depth from quantised direction → surfaces, not noise */
+      const az = Math.atan2(dir.x, dir.z);
+      const el = Math.asin(Math.max(-1, Math.min(1, dir.y)));
+      const h  = hash2(Math.round(az * 42), Math.round(el * 42));
+      let depth = minDepth + h * (maxDepth - minDepth);
+      depth *= (1.35 - (bright / 255) * 0.55);        // bright = nearer
+      depth += (rnd() - 0.5) * 1.4;                    // slight scatter
+
+      /* Write point */
+      const i3 = writePtr * 3;
+      posAttr.array[i3]     = camPos.x + dir.x * depth;
+      posAttr.array[i3 + 1] = camPos.y + dir.y * depth;
+      posAttr.array[i3 + 2] = camPos.z + dir.z * depth;
+
+      const i4 = p * 4;
+      colAttr.array[i3]     = Math.min(1, (data[i4]     / 255) * 1.25 + 0.05);
+      colAttr.array[i3 + 1] = Math.min(1, (data[i4 + 1] / 255) * 1.40 + 0.06);
+      colAttr.array[i3 + 2] = Math.min(1, (data[i4 + 2] / 255) * 1.55 + 0.10);
+
+      writePtr = (writePtr + 1) % MAX_POINTS;
+      written++;
+      if (pointCount < MAX_POINTS) pointCount++;
+      if (writePtr === 0) wrapped = true;
+    }
+  }
+
+  /* --- 5. Upload --- */
+  if (written > 0) {
+    if (!wrapped && passStart + written <= MAX_POINTS) {
+      posAttr.updateRange = { offset: passStart * 3, count: written * 3 };
+      colAttr.updateRange = { offset: passStart * 3, count: written * 3 };
+    } else {
+      posAttr.updateRange = { offset: 0, count: -1 };
+      colAttr.updateRange = { offset: 0, count: -1 };
+    }
+    posAttr.needsUpdate = true;
+    colAttr.needsUpdate = true;
+    pointGeo.setDrawRange(0, pointCount);
+    $('#pt-count').textContent = pointCount.toLocaleString();
+  }
+}
+
+/* Full-buffer flush (used when scan stops) */
+function flushPoints(){
+  posAttr.updateRange = { offset:0, count:-1 };
+  colAttr.updateRange = { offset:0, count:-1 };
+  posAttr.needsUpdate = true;
+  colAttr.needsUpdate = true;
+  pointGeo.setDrawRange(0, pointCount);
+}
+
+function hash2(x, y){
+  const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return n - Math.floor(n);
+}
+
+/* Legacy single-shot scan (screen flash + torch) */
+window.triggerLightScan = function(){
+  flashScreen();
+  if (stream) {
+    const track = stream.getVideoTracks()[0];
+    const caps = track.getCapabilities ? track.getCapabilities() : {};
+    if (caps.torch) {
+      track.applyConstraints({ advanced:[{ torch:true }] })
+        .then(() => setTimeout(() => track.applyConstraints({ advanced:[{ torch:false }] }), 260))
+        .catch(()=>{});
+    }
+  }
+  doScanPass();
+  speak('Scanning spatial geometry.');
+};
+
+/* ═══════════════ POINT-CLOUD UTILITIES ═══════════════ */
+function clearPoints(){
+  writePtr = 0; pointCount = 0;
+  posAttr.array.fill(0); colAttr.array.fill(0);
+  flushPoints();
+  $('#pt-count').textContent = '0';
+  toast('Light-map cleared');
+}
+
+window.clearPoints = clearPoints;
+window.clearAll = async function(){
+  if (!confirm('Wipe all info points, files and the light-map?')) return;
+  clearPoints();
+  for (const m of markers) disposeMarker(m);
+  markers = [];
+  markersGroup.clear();
+  try {
+    const d = await idb();
+    const tx = d.transaction(['markers','assets'], 'readwrite');
+    tx.objectStore('markers').clear();
+    tx.objectStore('assets').clear();
+  } catch(e) {}
+  closeSheet('menu-sheet');
+  toast('Everything wiped');
+};
+
+/* ═══════════════ MARKER SYSTEM ═══════════════ */
+function markerPositionFromView(){
+  camera.updateMatrixWorld();
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  const pos = new THREE.Vector3().copy(camera.position).addScaledVector(dir, 6.5);
+  pos.y = Math.max(-8, Math.min(14, pos.y));
+  return pos;
+}
+
+function makeLabelSprite(text, color){
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 128;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, 512, 128);
+  ctx.fillStyle = 'rgba(3,0,10,0.78)';
+  roundRect(ctx, 8, 34, 496, 60, 30); ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 3;
+  roundRect(ctx, 8, 34, 496, 60, 30); ctx.stroke();
+  ctx.font = 'bold 38px "Share Tech Mono", monospace';
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  const label = text.length > 22 ? text.slice(0, 21) + '…' : text;
+  ctx.fillText(label, 256, 65);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: tex, transparent:true, depthTest:false, depthWrite:false
+  }));
+  sprite.scale.set(4.2, 1.05, 1);
+  sprite.position.y = 2.6;
+  return sprite;
+}
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y,   x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x,   y+h, r);
+  ctx.arcTo(x,   y+h, x,   y,   r);
+  ctx.arcTo(x,   y,   x+w, y,   r);
+  ctx.closePath();
+}
+
+function buildMarkerVisual(marker){
+  const group = new THREE.Group();
+  group.position.set(marker.x, marker.y, marker.z);
+
+  const isArena = marker.kind === 'model' || marker.arena;
+  const color   = isArena ? 0xff007f : 0x00f3ff;
+
+  const pivot = new THREE.Group();
+  group.add(pivot);
+
+  const shell = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.85, 0),
+    new THREE.MeshBasicMaterial({ color, wireframe:true, transparent:true, opacity:0.95 })
+  );
+  pivot.add(shell);
+
+  const core = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.35, 0),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent:true, opacity:0.85 })
+  );
+  pivot.add(core);
+
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(1.35, 0.035, 8, 48),
+    new THREE.MeshBasicMaterial({ color: 0x39ff14, transparent:true, opacity:0.7 })
+  );
+  ring.rotation.x = Math.PI / 2;
+  pivot.add(ring);
+
+  /* Invisible hit-sphere for raycasting */
+  const hit = new THREE.Mesh(
+    new THREE.SphereGeometry(1.6, 10, 8),
+    new THREE.MeshBasicMaterial({ visible:false })
+  );
+  group.add(hit);
+
+  /* Label */
+  const label = makeLabelSprite(marker.title || 'POINT', isArena ? '#ff007f' : '#00f3ff');
+  group.add(label);
+
+  return { group, pivot, hit, label, ring };
+}
+
+function addMarkerToScene(marker){
+  const v = buildMarkerVisual(marker);
+  marker.group = v.group;
+  marker.pivot = v.pivot;
+  marker.hit   = v.hit;
+  marker.label = v.label;
+  marker.ring  = v.ring;
+  markersGroup.add(v.group);
+  markers.push(marker);
+
+  if (marker.kind === 'model' && marker.assetId) loadModelForMarker(marker);
+}
+
+function disposeMarker(m){
+  if (m.mixer) { try { m.mixer.stopAllAction(); } catch(e){} m.mixer = null; }
+  if (m.group) {
+    m.group.traverse(o => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) {
+        const mats = Array.isArray(o.material) ? o.material : [o.material];
+        mats.forEach(mat => {
+          if (mat.map) mat.map.dispose();
+          mat.dispose();
+        });
+      }
+    });
+    markersGroup.remove(m.group);
+  }
+}
+
+/* ---------- GLB / GLTF loading ---------- */
+function loadModelForMarker(marker){
+  idbGetAsset(marker.assetId).then(blob => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const loader = new THREE.GLTFLoader();
+
+    loader.load(url, gltf => {
+      const model = gltf.scene;
+
+      /* Fit to ~2.4 world units */
+      const box  = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      const s = 2.4 / maxDim;
+      model.scale.setScalar(s);
+
+      const box2 = new THREE.Box3().setFromObject(model);
+      const c2 = box2.getCenter(new THREE.Vector3());
+      model.position.sub(c2);                     // centre on origin
+      model.position.y += (box2.max.y - box2.min.y) * 0.5 - (c2.y - (box2.max.y - box2.min.y)*0.5);
+
+      /* Materials: keep textures, force double-side for thin geo */
+      model.traverse(o => {
+        if (o.isMesh) {
+          o.frustumCulled = false;
+          if (o.material) {
+            const mats = Array.isArray(o.material) ? o.material : [o.material];
+            mats.forEach(mat => { if (mat.map) mat.map.encoding = THREE.sRGBEncoding; });
+          }
+        }
+      });
+
+      /* Hide the wireframe octahedron, keep the ring + label */
+      if (marker.pivot) marker.pivot.visible = false;
+      if (marker.group) marker.group.add(model);
+
+      /* Animations */
+      if (gltf.animations && gltf.animations.length) {
+        const mixer = new THREE.AnimationMixer(model);
+        gltf.animations.forEach(clip => mixer.clipAction(clip).play());
+        marker.mixer = mixer;
+        mixers.push(mixer);
+      }
+
+      URL.revokeObjectURL(url);
+      toast('3D model loaded: ' + (marker.assetName || ''));
+    },
+    undefined,
+    err => {
+      URL.revokeObjectURL(url);
+      console.error('GLTF load failed', err);
+      toast('3D load failed — use .glb (self-contained)');
+    });
+  });
+}
+
+/* ═══════════════ CREATE POINT ═══════════════ */
+window.openCreateSheet = function(){
+  const p = markerPositionFromView();
+  $('#place-preview').textContent = `${p.x.toFixed(1)}, ${p.y.toFixed(1)}, ${p.z.toFixed(1)}`;
+  $('#inp-title').value = '';
+  $('#inp-desc').value  = '';
+  $('#inp-file').value  = '';
+  $('#file-chosen').textContent = '';
+  $('#create-sheet').classList.add('open');
+};
+
+window.confirmCreate = async function(){
+  const title = ($('#inp-title').value || '').trim() || 'Untitled Point';
+  const desc  = ($('#inp-desc').value || '').trim();
+  const file  = $('#inp-file').files[0] || null;
+
+  const pos  = markerPositionFromView();
+  const id   = 'm_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const kind = file ? detectKind(file) : 'note';
+
+  let assetId = null;
+  if (file) {
+    assetId = id + '_a';
+    try { await idbPutAsset(assetId, file); }
+    catch(e) { toast('Could not store file (storage full?)'); assetId = null; }
+  }
+
+  const marker = {
+    id, title, text: desc, kind,
+    assetId,
+    assetName: file ? file.name : null,
+    assetType: file ? (file.type || '') : null,
+    assetSize: file ? file.size : 0,
+    x: pos.x, y: pos.y, z: pos.z,
+    createdAt: Date.now()
+  };
+
+  try { await idbPutMarker(marker); } catch(e) {}
+  addMarkerToScene(marker);
+
+  closeSheet('create-sheet');
+  flashScreen();
+  toast('Info point placed: ' + title);
+  speak(`${title} placed. Tap it in AR to open.`);
+};
+
+function detectKind(file){
+  const name = file.name.toLowerCase();
+  const ext  = name.includes('.') ? name.split('.').pop() : '';
+  const mime = file.type || '';
+
+  if (ext === 'glb' || ext === 'gltf') return 'model';
+  if (ext === 'pdf' || mime === 'application/pdf') return 'pdf';
+  if (ext === 'html' || ext === 'htm') return 'html';
+  if (['zip','rar','7z','tar','gz'].includes(ext)) return 'archive';
+  if (mime.startsWith('image/')) return 'image';
+  if (mime.startsWith('video/')) return 'video';
+  if (mime.startsWith('audio/')) return 'audio';
+  if (['txt','md','json','csv','log'].includes(ext) || mime.startsWith('text/')) return 'text';
+  return 'file';
+}
+
+/* ═══════════════ VIEWER ═══════════════ */
+window.openViewer = async function(id){
+  const m = markers.find(x => x.id === id);
+  if (!m) return;
+  currentMarkerId = id;
+
+  $('#viewer-title').textContent = m.title || 'Point';
+  $('#viewer-meta').textContent =
+    `${(m.kind || 'note').toUpperCase()}  ·  ${m.x.toFixed(1)}, ${m.y.toFixed(1)}, ${m.z.toFixed(1)}` +
+    (m.assetName ? `  ·  ${m.assetName} (${fmtSize(m.assetSize)})` : '');
+  $('#viewer-desc').textContent = m.text || '';
+
+  const body = $('#viewer-body');
+  body.innerHTML = '';
+
+  if (!m.assetId) {
+    body.innerHTML = '<div class="text-gray-500 text-xs cyber-font">— no attachment —</div>';
+    $('#viewer-sheet').classList.add('open');
+    return;
+  }
+
+  const blob = await idbGetAsset(m.assetId);
+  if (!blob) {
+    body.innerHTML = '<div class="text-[#ff5fa2] text-xs">File missing from storage.</div>';
+    $('#viewer-sheet').classList.add('open');
+    return;
+  }
+  const url = URL.createObjectURL(blob);
+
+  switch (m.kind) {
+    case 'image':
+      body.innerHTML = `<img src="${url}" alt="">`;
+      break;
+    case 'video':
+      body.innerHTML = `<video src="${url}" controls playsinline preload="metadata"></video>`;
+      break;
+    case 'audio':
+      body.innerHTML = `<audio src="${url}" controls preload="metadata"></audio>`;
+      break;
+    case 'pdf':
+      body.innerHTML = `<iframe src="${url}" title="pdf"></iframe>`;
+      break;
+    case 'html':
+      body.innerHTML = `<iframe src="${url}" sandbox="allow-scripts allow-forms allow-popups allow-modals" title="html"></iframe>`;
+      break;
+    case 'text':
+      body.innerHTML = `<pre>${escapeHtml(await blob.text())}</pre>`;
+      break;
+    case 'model':
+      body.innerHTML = `
+        <div class="text-center text-xs text-gray-400 cyber-font leading-relaxed">
+          🧊 3D model rendered live in the AR world at this point.<br>
+          Textures &amp; animations are active.
+          <div class="mt-3"><a href="${url}" download="${m.assetName}" class="btn btn-ghost inline-block">⬇ DOWNLOAD ORIGINAL</a></div>
+        </div>`;
+      break;
+    case 'archive':
+      body.innerHTML = `
+        <div class="text-center text-xs text-gray-400 cyber-font leading-relaxed">
+          📦 Archive package — cannot be previewed in-browser.
+          <div class="mt-3"><a href="${url}" download="${m.assetName}" class="btn btn-primary inline-block">⬇ DOWNLOAD ARCHIVE</a></div>
+        </div>`;
+      break;
+    default:
+      body.innerHTML = `
+        <div class="text-center text-xs text-gray-400 cyber-font">
+          <div class="mb-3">Unsupported inline preview.</div>
+          <a href="${url}" download="${m.assetName || 'file'}" class="btn btn-primary inline-block">⬇ DOWNLOAD</a>
+        </div>`;
+  }
+
+  $('#viewer-sheet').classList.add('open');
+};
+
+window.closeViewer = function(){
+  const v = $('#viewer-body');
+  if (v) v.innerHTML = '';
+  $('#viewer-sheet').classList.remove('open');
+  currentMarkerId = null;
+};
+
+window.deleteCurrentMarker = async function(){
+  const m = markers.find(x => x.id === currentMarkerId);
+  if (!m) return;
+  if (!confirm('Delete "' + m.title + '"?')) return;
+
+  disposeMarker(m);
+  markers = markers.filter(x => x.id !== m.id);
+
+  try {
+    await idbDelMarker(m.id);
+    if (m.assetId) await idbDelAsset(m.assetId);
+  } catch(e) {}
+
+  closeViewer();
+  toast('Point deleted');
+};
+
+window.focusMarker = function(){
+  const m = markers.find(x => x.id === currentMarkerId);
+  if (!m) return;
+  if (mode !== 'AR') { setMapMode('AR'); }
+  if (usingGyro && controls) {
+    // Best-effort: recenter then let user turn
+    toast('Turn toward the arrow to find it');
+  } else {
+    const dir = new THREE.Vector3(m.x, m.y, m.z).normalize();
+    dragLook.yaw   = Math.atan2(-dir.x, -dir.z);
+    dragLook.pitch = Math.asin(Math.max(-1, Math.min(1, dir.y)));
+  }
+  closeViewer();
+};
+
+/* ═══════════════ MARKER LIST ═══════════════ */
+window.openMarkerList = function(){
+  const list = $('#marker-list');
+  list.innerHTML = '';
+  if (!markers.length) {
+    list.innerHTML = '<div class="text-gray-500 text-xs cyber-font text-center py-6">No info points yet. Tap ➕ to place one.</div>';
+  }
+  markers.forEach(m => {
+    const el = document.createElement('div');
+    el.className = 'flex items-center gap-3 p-3 rounded-xl border border-[#2b2b42] bg-white/[0.03] active:bg-white/[0.08]';
+    el.innerHTML = `
+      <div class="text-xl">${kindIcon(m.kind)}</div>
+      <div class="flex-grow min-w-0">
+        <div class="text-sm truncate">${escapeHtml(m.title)}</div>
+        <div class="text-[10px] text-gray-500 cyber-font truncate">
+          ${(m.kind||'note').toUpperCase()}${m.assetName ? ' · ' + escapeHtml(m.assetName) : ''}
+        </div>
+      </div>
+      <div class="text-[10px] text-[#00f3ff] cyber-font">${m.x.toFixed(0)},${m.z.toFixed(0)}</div>
+    `;
+    el.onclick = () => { closeSheet('list-sheet'); openViewer(m.id); };
+    list.appendChild(el);
+  });
+  $('#list-sheet').classList.add('open');
+};
+
+function kindIcon(k){
+  return ({ image:'🖼️', video:'🎬', audio:'🎵', pdf:'📕', html:'🌐',
+            archive:'📦', model:'🧊', text:'📄', note:'📌', file:'📎' })[k] || '📎';
+}
+
+/* ═══════════════ COMPASS ARROW ═══════════════ */
+function updateCompassArrow(){
+  const el = $('#compass-arrow');
+  if (mode !== 'AR' || !markers.length) { el.classList.remove('show'); return; }
+
+  camera.updateMatrixWorld();
+  const camPos = new THREE.Vector3().setFromMatrixPosition(camera.matrixWorld);
+  const camDir = new THREE.Vector3();
+  camera.getWorldDirection(camDir);
+
+  /* Nearest marker */
+  let best = null, bestD = Infinity;
+  for (const m of markers) {
+    const d = camPos.distanceToSquared(new THREE.Vector3(m.x, m.y, m.z));
+    if (d < bestD) { bestD = d; best = m; }
+  }
+  if (!best) { el.classList.remove('show'); return; }
+
+  const to = new THREE.Vector3(best.x, best.y, best.z).sub(camPos).normalize();
+  const right = new THREE.Vector3().crossVectors(camDir, new THREE.Vector3(0,1,0)).normalize();
+  const up    = new THREE.Vector3().crossVectors(right, camDir).normalize();
+  const x = to.dot(right), y = to.dot(up);
+  const angle = Math.atan2(x, y) * 180 / Math.PI;
+
+  el.classList.add('show');
+  el.querySelector('.tri').style.transform = `rotate(${angle}deg)`;
+}
+
+/* ═══════════════ ECO MODE ═══════════════ */
+window.toggleEcoMode = function(){
+  eco = !eco;
+  document.body.classList.toggle('eco-mode', eco);
+  const dot = $('#eco-dot');
+  if (eco) {
+    dot.style.backgroundColor = 'gray';
+    dot.style.boxShadow = 'none';
+    renderer.setPixelRatio(1);
+    speak('Eco mode enabled. Conserving energy.');
+  } else {
+    dot.style.backgroundColor = '#39ff14';
+    dot.style.boxShadow = '0 0 6px #39ff14';
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    speak('Full immersive mode restored.');
+  }
+  /* re-apply video opacity for current mode */
+  setMapMode(mode);
+};
+
+/* ═══════════════ SHEETS ═══════════════ */
+window.openMenu = () => $('#menu-sheet').classList.add('open');
+window.closeSheet = id => $('#' + id).classList.remove('open');
+
+/* ═══════════════ INDEXEDDB STORAGE ═══════════════ */
+let _db = null;
+function idb(){
+  return new Promise((res, rej) => {
+    if (_db) return res(_db);
+    const r = indexedDB.open('bunnyx_holo', 1);
+    r.onupgradeneeded = e => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('markers')) d.createObjectStore('markers', { keyPath:'id' });
+      if (!d.objectStoreNames.contains('assets'))  d.createObjectStore('assets');
+    };
+    r.onsuccess = () => { _db = r.result; res(_db); };
+    r.onerror   = () => rej(r.error);
+  });
+}
+function tx(store, mode, fn){
+  return idb().then(d => new Promise((res, rej) => {
+    const t = d.transaction(store, mode);
+    const s = t.objectStore(store);
+    const req = fn(s);
+    t.oncomplete = () => res(req ? req.result : undefined);
+    t.onerror    = () => rej(t.error);
+  }));
+}
+const idbPutMarker = m => tx('markers','readwrite', s => s.put(m));
+const idbDelMarker = id => tx('markers','readwrite', s => s.delete(id));
+const idbAllMarkers= () => tx('markers','readonly',  s => s.getAll());
+const idbPutAsset  = (k, blob) => tx('assets','readwrite', s => s.put(blob, k));
+const idbGetAsset  = k => tx('assets','readonly',  s => s.get(k));
+const idbDelAsset  = k => tx('assets','readwrite', s => s.delete(k));
+
+async function loadAllMarkers(){
+  try {
+    const all = await idbAllMarkers();
+    if (!all) return;
+    for (const m of all) addMarkerToScene(m);
+    if (markers.length) {
+      toast(markers.length + ' info point(s) restored');
+    }
+  } catch(e) { console.warn('IDB load failed', e); }
+}
+
+/* ═══════════════ EXPORT / IMPORT ═══════════════ */
+window.exportMap = async function(){
+  const includeAssets = $('#chk-assets').checked;
+  toast('Packing map…');
+
+  /* Subsample the point cloud */
+  const arr = posAttr.array, carr = colAttr.array;
+  const total = Math.max(pointCount, 1);
+  const step = Math.max(1, Math.floor(total / 30000));
+  const pts = [];
+  for (let i = 0; i < total; i += step) {
+    const i3 = i * 3;
+    pts.push(
+      +arr[i3].toFixed(3),   +arr[i3+1].toFixed(3), +arr[i3+2].toFixed(3),
+      +carr[i3].toFixed(3),  +carr[i3+1].toFixed(3),+carr[i3+2].toFixed(3)
+    );
+  }
+
+  const outMarkers = [];
+  for (const m of markers) {
+    const copy = {
+      id: m.id, title: m.title, text: m.text, kind: m.kind,
+      x: m.x, y: m.y, z: m.z, createdAt: m.createdAt,
+      assetName: m.assetName, assetType: m.assetType, assetSize: m.assetSize,
+      assetId: m.assetId
+    };
+    if (includeAssets && m.assetId) {
+      const blob = await idbGetAsset(m.assetId);
+      if (blob) copy.assetData = await blobToDataURL(blob);
+    }
+    outMarkers.push(copy);
+  }
+
+  const pack = {
+    format: 'bunnyx-holomap',
+    version: 2,
+    created: new Date().toISOString(),
+    pointCount: total,
+    points: pts,
+    markers: outMarkers
+  };
+
+  const blob = new Blob([JSON.stringify(pack)], { type:'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `bunnyx-holomap-${Date.now()}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  closeSheet('menu-sheet');
+  toast('Map exported (' + fmtSize(blob.size) + ')');
+};
+
+async function importMap(file){
+  try {
+    const text = await file.text();
+    const pack = JSON.parse(text);
+    if (pack.format !== 'bunnyx-holomap') { toast('Not a BunnyX holo-map file'); return; }
+
+    /* Points */
+    const p = pack.points || [];
+    let added = 0;
+    for (let i = 0; i + 5 < p.length; i += 6) {
+      const i3 = writePtr * 3;
+      posAttr.array[i3]     = p[i];
+      posAttr.array[i3 + 1] = p[i+1];
+      posAttr.array[i3 + 2] = p[i+2];
+      colAttr.array[i3]     = p[i+3];
+      colAttr.array[i3 + 1] = p[i+4];
+      colAttr.array[i3 + 2] = p[i+5];
+      writePtr = (writePtr + 1) % MAX_POINTS;
+      if (pointCount < MAX_POINTS) pointCount++;
+      added++;
+      if (added > MAX_POINTS) break;
+    }
+    flushPoints();
+    $('#pt-count').textContent = pointCount.toLocaleString();
+
+    /* Markers */
+    let mAdded = 0;
+    for (const m of (pack.markers || [])) {
+      const id = m.id || ('m_' + Math.random().toString(36).slice(2, 10));
+      let assetId = null;
+
+      if (m.assetData) {
+        assetId = id + '_a';
+        try {
+          const blob = dataURLToBlob(m.assetData);
+          await idbPutAsset(assetId, blob);
+        } catch(e) { assetId = null; }
+      }
+
+      const marker = {
+        id, title: m.title || 'Imported Point', text: m.text || '',
+        kind: m.kind || 'note', assetId,
+        assetName: m.assetName || null,
+        assetType: m.assetType || null,
+        assetSize: m.assetSize || 0,
+        x: +m.x || 0, y: +m.y || 0, z: +m.z || 0,
+        createdAt: m.createdAt || Date.now()
+      };
+      try { await idbPutMarker(marker); } catch(e) {}
+      addMarkerToScene(marker);
+      mAdded++;
+    }
+
+    closeSheet('menu-sheet');
+    toast(`Imported ${added} points, ${mAdded} info points`);
+    speak('Map package imported.');
+  } catch(e) {
+    console.error(e);
+    toast('Import failed — invalid file');
+  }
+}
+
+function blobToDataURL(blob){
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(blob);
+  });
+}
+function dataURLToBlob(dataURL){
+  const [head, body] = dataURL.split(',');
+  const mime = (head.match(/:(.*?);/) || [])[1] || 'application/octet-stream';
+  const bin  = atob(body);
+  const u8   = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  return new Blob([u8], { type: mime });
+}
+
+/* ═══════════════ AI STEWARDESS ═══════════════ */
+const quests = [
+  { title:'LOST SIGNAL',   text:'Sweep the dark corners. Let the light map the unknown.',  audio:'System online. Begin your sweep.' },
+  { title:'HAMBURG RELIC', text:'A digital artifact is nearby. Look for the pink diamond.', audio:'A relic is close. Follow the compass arrow.' },
+  { title:'MEMORY ECHO',   text:'Drop an info point and share your city with the world.',    audio:'Leave a memory behind.' }
+];
+let questIdx = 0;
+
+window.advanceQuest = function(){
+  questIdx = (questIdx + 1) % quests.length;
+  const q = quests[questIdx];
+  $('#stewardess-msg').innerHTML = `<strong class="neon-text-cyan">${q.title}:</strong> ${q.text}`;
+  speak(q.audio);
+};
+
+let lastSpeak = 0;
+function speak(text, force){
+  const now = Date.now();
+  if (!force && now - lastSpeak < 1800) return;
+  lastSpeak = now;
+
+  const msgEl = $('#stewardess-msg');
+  if (msgEl && !msgEl.innerHTML.includes(text)) msgEl.textContent = text;
+
+  if ('speechSynthesis' in window) {
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.pitch = 1.35; u.rate = 1.06; u.volume = 0.85;
+      window.speechSynthesis.speak(u);
+    } catch(e) {}
+  }
+  const av = document.querySelector('.avatar-glitch');
+  if (av) {
+    av.style.animationDuration = '0.25s';
+    setTimeout(() => { av.style.animationDuration = '3.5s'; }, 800);
+  }
+}
+window.stewardessSpeak = speak;
+
+/* ═══════════════ MISC ═══════════════ */
+function toast(msg, ms = 2400){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), ms);
+}
+window.toast = toast;
+
+function fmtSize(b){
+  if (!b && b !== 0) return '—';
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(2) + ' MB';
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+/* Prevent iOS bounce / accidental zoom */
+document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('touchmove', e => {
+  if (e.target.closest('.sheet-inner')) return;
+  e.preventDefault();
+}, { passive:false });
+</script>
+</body>
+</html>
