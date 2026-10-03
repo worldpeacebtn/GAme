@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>BunnyXMetaXInfinity - Holo Map</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/DeviceOrientationControls.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Varela+Round&display=swap');
+
+        :root {
+            --neon-pink: #ff007f;
+            --neon-purple: #b026ff;
+            --neon-cyan: #00f3ff;
+            --neon-green: #39ff14;
+            --neon-yellow: #fffb00;
+            --dark-bg: #03000a;
+            --ui-bg: rgba(5, 0, 20, 0.85);
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            color: #fff;
+            font-family: 'Varela Round', sans-serif;
+            overflow: hidden;
+            touch-action: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        .cyber-font { font-family: 'Share Tech Mono', monospace; }
+
+        /* Eye-friendly Neon Variations */
+        .neon-border-pink { border: 1px solid var(--neon-pink); box-shadow: 0 0 8px rgba(255,0,127,0.5); }
+        .neon-border-cyan { border: 1px solid var(--neon-cyan); box-shadow: 0 0 8px rgba(0,243,255,0.5); }
+        
+        .neon-text-pink { color: var(--neon-pink); text-shadow: 0 0 8px rgba(255,0,127,0.6); }
+        .neon-text-cyan { color: var(--neon-cyan); text-shadow: 0 0 8px rgba(0,243,255,0.6); }
+
+        /* Full Screen Layers */
+        #camera-layer, #holo-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 1;
+        }
+        
+        #camera-layer { object-fit: cover; opacity: 0.5; transition: opacity 0.5s; }
+        #holo-layer { z-index: 2; pointer-events: none; }
+
+        /* Thumb Yoga UI - Ergonomic Bottom Dock */
+        .thumb-dock {
+            position: absolute;
+            bottom: max(20px, env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95%;
+            max-width: 400px;
+            z-index: 50;
+            background: var(--ui-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 40px;
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 15px rgba(0, 243, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 15px;
+        }
+
+        .dock-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid transparent;
+            border-radius: 20px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            transition: all 0.2s;
+        }
+        .dock-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
+        .dock-btn.active { border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0,243,255,0.3); }
+
+        /* Stewardess UI */
+        .stewardess {
+            position: absolute;
+            top: max(20px, env(safe-area-inset-top));
+            left: 20px;
+            right: 20px;
+            background: var(--ui-bg);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            padding: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            z-index: 40;
+            border-bottom: 2px solid var(--neon-pink);
+            transform: translateY(-150%);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .stewardess.show { transform: translateY(0); }
+
+        .avatar-glitch {
+            animation: glitch-anim 3s infinite;
+        }
+        
+        @keyframes glitch-anim {
+            0%, 95% { transform: translate(0, 0); opacity: 1; filter: hue-rotate(0deg); }
+            96% { transform: translate(2px, -2px); opacity: 0.8; filter: hue-rotate(90deg); }
+            97% { transform: translate(-2px, 2px); opacity: 0.9; filter: hue-rotate(-90deg); }
+            98% { transform: translate(0, 0); opacity: 1; filter: hue-rotate(0deg); }
+        }
+
+        /* Screen Flash for Scanning */
+        #scan-flash {
+            position: absolute;
+            inset: 0;
+            background: white;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.1s;
+        }
+
+        .eco-mode { filter: saturate(0.5) brightness(0.8); }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+
+        /* Sensor Permission Overlay for iOS */
+        #sensor-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(3, 0, 10, 0.95);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            transition: opacity 0.5s;
+        }
+    </style>
+</head>
+<body id="app-body">
+
+    <!-- Sensor Permission Overlay -->
+    <div id="sensor-overlay">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[var(--neon-cyan)] to-[var(--neon-purple)] p-[2px] mb-6 animate-pulse">
+            <div class="w-full h-full bg-[#03000a] rounded-full flex items-center justify-center text-3xl">
+                🧭
+            </div>
+        </div>
+        <h1 class="text-2xl cyber-font neon-text-cyan mb-2">CALIBRATE SENSORS</h1>
+        <p class="text-gray-300 mb-8 max-w-xs text-sm">To enable full 360° Augmented Reality tracking (SAO / Rust style), we need access to your device's gyroscope.</p>
+        <button onclick="requestSensorAccess()" class="px-8 py-4 rounded-3xl bg-gradient-to-r from-[var(--neon-cyan)] to-[var(--neon-purple)] font-bold tracking-widest cyber-font text-white shadow-[0_0_20px_rgba(0,243,255,0.4)] active:scale-95 transition-transform">
+            INITIALIZE AR SYNC
+        </button>
+    </div>
+
+    <!-- Scanning Flash Effect -->
+    <div id="scan-flash"></div>
+
+    <!-- Background Camera Feed -->
+    <video id="camera-layer" autoplay playsinline></video>
+    
+    <!-- Three.js Holodeck/Map Canvas -->
+    <canvas id="holo-layer"></canvas>
+
+    <!-- Hidden canvas for image processing (Light Cartography) -->
+    <canvas id="proc-canvas" width="128" height="128" class="hidden"></canvas>
+
+    <!-- UI Overlay: Top Stewardess / Quest Tracker -->
+    <div id="stewardess-ui" class="stewardess shadow-lg shadow-[var(--neon-pink)]/20">
+        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-[#ff007f] to-[#b026ff] p-[2px] flex-shrink-0 avatar-glitch">
+            <div class="w-full h-full bg-[#03000a] rounded-full flex items-center justify-center text-2xl">
+                🐰
+            </div>
+        </div>
+        <div class="flex flex-col flex-grow">
+            <div class="flex justify-between items-center">
+                <span class="text-xs font-bold neon-text-pink cyber-font">AI STEWARDESS // BUNNY-X</span>
+                <span id="quest-status" class="text-[10px] bg-green-900/50 text-[var(--neon-green)] px-2 py-1 rounded-full border border-[var(--neon-green)]">ONLINE</span>
+            </div>
+            <p id="stewardess-msg" class="text-sm mt-1 leading-tight text-gray-200">
+                Initializing Holo-Map... Ready for Light Cartography.
+            </p>
+        </div>
+    </div>
+
+    <!-- Top Right Eco/Offline Indicators -->
+    <div class="absolute top-[max(20px,env(safe-area-inset-top))] right-4 z-40 flex flex-col gap-2 items-end pointer-events-none">
+        <div class="bg-black/60 backdrop-blur px-3 py-1 rounded-full border border-gray-700 flex items-center gap-2 pointer-events-auto" onclick="toggleEcoMode()">
+            <span id="eco-dot" class="w-2 h-2 rounded-full bg-[var(--neon-green)] shadow-[0_0_5px_var(--neon-green)]"></span>
+            <span class="text-[10px] cyber-font text-gray-300">ECO MODE</span>
+        </div>
+        <div class="bg-black/60 backdrop-blur px-3 py-1 rounded-full border border-gray-700 flex items-center gap-2">
+            <span class="text-[10px] cyber-font text-gray-300">XYZ: <span id="xyz-coords">0.0, 0.0</span></span>
+        </div>
+    </div>
+
+    <!-- Thumb Yoga UI (Ergonomic Bottom Dock) -->
+    <div class="thumb-dock">
+        
+        <!-- Map View Modes -->
+        <div class="flex justify-between gap-2 px-2 pb-2 border-b border-gray-800">
+            <button onclick="setMapMode('AR')" id="btn-mode-AR" class="dock-btn active flex-1">
+                <span class="text-lg">📷</span>
+                <span class="text-[10px] cyber-font mt-1">MIXED AR</span>
+            </button>
+            <button onclick="setMapMode('2.5D')" id="btn-mode-25D" class="dock-btn flex-1">
+                <span class="text-lg">🗺️</span>
+                <span class="text-[10px] cyber-font mt-1">2.5D HAMBURG</span>
+            </button>
+            <button onclick="setMapMode('3D')" id="btn-mode-3D" class="dock-btn flex-1">
+                <span class="text-lg">🧊</span>
+                <span class="text-[10px] cyber-font mt-1">HOLO CUBE</span>
+            </button>
+        </div>
+
+        <!-- Primary Action Row -->
+        <div class="flex justify-between items-center gap-3 mt-1">
+            
+            <!-- Camera Flip / Tools -->
+            <button onclick="flipCamera()" class="w-14 h-14 rounded-full bg-gray-800/80 flex items-center justify-center border border-gray-600 active:scale-95 transition-transform flex-shrink-0">
+                <span class="text-xl">🔄</span>
+            </button>
+
+            <!-- Giant Light Scan Button -->
+            <button onclick="triggerLightScan()" class="flex-grow h-16 rounded-3xl bg-gradient-to-r from-[var(--neon-cyan)] to-[var(--neon-purple)] flex items-center justify-center shadow-[0_0_20px_rgba(0,243,255,0.4)] active:scale-95 transition-transform relative overflow-hidden group">
+                <div class="absolute inset-0 bg-white/20 opacity-0 group-active:opacity-100 transition-opacity"></div>
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl animate-pulse">🔦</span>
+                    <span class="font-bold tracking-widest cyber-font text-white">LIGHT SCAN</span>
+                </div>
+            </button>
+
+            <!-- Quests / Inventory -->
+            <button onclick="advanceQuest()" class="w-14 h-14 rounded-full bg-gray-800/80 flex items-center justify-center border border-[var(--neon-pink)] shadow-[0_0_10px_rgba(255,0,127,0.3)] active:scale-95 transition-transform flex-shrink-0">
+                <span class="text-xl">📜</span>
+            </button>
+
+        </div>
+    </div>
+
+    <script>
+        // --- Globals & State ---
+        let currentStream = null;
+        let useFrontCamera = false;
+        let isEcoMode = false;
+        let mapMode = 'AR'; // AR, 2.5D, 3D
+        let currentQuestIndex = 0;
+        let controls = null; // Device Orientation Controls
+
+        // Video / Processing
+        const video = document.getElementById('camera-layer');
+        const procCanvas = document.getElementById('proc-canvas');
+        const procCtx = procCanvas.getContext('2d', { willReadFrequently: true });
+
+        // Three.js Globals
+        let scene, camera, renderer;
+        let holodeckGroup; // Contains the grid/sphere
+        let pointCloud; // Stores the scanned real-world points
+        let hamburgMapGroup; // Placeholder for Hamburg 3D structures
+        let arLootGroup; // 360 objects for AR mode
+        let pointGeometry, pointMaterial;
+        let scanPoints = [];
+
+        // Quests (Guild Wars x Pokemon Go style)
+        const quests = [
+            { title: "LOST SIGNAL", text: "Scan the dark corners. Let the light map the unknown geometry.", audio: "System online." },
+            { title: "HAMBURG RELIC", text: "A digital artifact from St. Pauli is nearby. Switch to 2.5D Map to locate it.", audio: "Look at the map." },
+            { title: "MEMORY ECHO", text: "Mapping complete. The matrix remembers your presence. Upload texture enabled.", audio: "Memory stored." }
+        ];
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            initCamera();
+            initThreeJS();
+            
+            // Show Stewardess shortly after load
+            setTimeout(() => {
+                document.getElementById('stewardess-ui').classList.add('show');
+                updateQuestUI();
+            }, 1000);
+        });
+
+        // --- Camera & Video Handling ---
+        async function initCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+
+            // Fallback for broken back cams: if back fails, try front.
+            const constraints = {
+                video: { facingMode: useFrontCamera ? "user" : "environment", width: { ideal: 640 }, height: { ideal: 480 } },
+                audio: false
+            };
+
+            try {
+                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = currentStream;
+            } catch (err) {
+                console.warn("Primary camera failed. Forcing front camera fallback.", err);
+                useFrontCamera = true;
+                try {
+                    currentStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    video.srcObject = currentStream;
+                } catch (e) {
+                    stewardessSpeak("Camera feed offline. Engaging pure Holographic simulation.", true);
+                }
+            }
+        }
+
+        window.flipCamera = function() {
+            useFrontCamera = !useFrontCamera;
+            initCamera();
+            stewardessSpeak(useFrontCamera ? "Front optical sensor active." : "Rear optical sensor active.");
+        };
+
+        // --- Three.js Holographic Engine ---
+        function initThreeJS() {
+            const canvas = document.getElementById('holo-layer');
+            renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !isEcoMode });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for performance
+
+            scene = new THREE.Scene();
+            // Fog for depth in 3D mode
+            scene.fog = new THREE.FogExp2(0x03000a, 0.02);
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            
+            // Create Holodeck Environment (Wireframe Sphere + Grid)
+            holodeckGroup = new THREE.Group();
+            
+            const gridHelper = new THREE.GridHelper(200, 100, 0xb026ff, 0x220033);
+            gridHelper.position.y = -10;
+            holodeckGroup.add(gridHelper);
+
+            const sphereGeo = new THREE.SphereGeometry(100, 32, 32);
+            const sphereMat = new THREE.MeshBasicMaterial({ 
+                color: 0x00f3ff, wireframe: true, transparent: true, opacity: 0.1 
+            });
+            const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+            holodeckGroup.add(sphereMesh);
+
+            scene.add(holodeckGroup);
+
+            // Create Hamburg Map Overlay (Abstract Cyberpunk Buildings)
+            hamburgMapGroup = new THREE.Group();
+            hamburgMapGroup.visible = false; // Hidden in pure AR mode
+            
+            const buildingGeo = new THREE.BoxGeometry(1, 1, 1);
+            const buildingMat = new THREE.MeshBasicMaterial({ 
+                color: 0xff007f, wireframe: true, transparent: true, opacity: 0.8 
+            });
+
+            // Procedurally generate some "St. Pauli" structures
+            for(let i=0; i<30; i++) {
+                const b = new THREE.Mesh(buildingGeo, buildingMat);
+                b.position.x = (Math.random() - 0.5) * 50;
+                b.position.z = (Math.random() - 0.5) * 50;
+                b.position.y = -10;
+                b.scale.y = Math.random() * 15 + 2;
+                b.scale.x = Math.random() * 3 + 1;
+                b.scale.z = Math.random() * 3 + 1;
+                b.position.y += b.scale.y / 2; // rest on grid
+                hamburgMapGroup.add(b);
+            }
+            scene.add(hamburgMapGroup);
+
+            // Add 360° AR Objects (Minecraft/Rust style nodes)
+            arLootGroup = new THREE.Group();
+            const lootGeo = new THREE.OctahedronGeometry(2);
+            const lootMat = new THREE.MeshBasicMaterial({ color: 0x39ff14, wireframe: true });
+            
+            // Place nodes North, South, East, West around the player
+            const positions360 = [
+                {x: 0, y: 0, z: -15, name: 'North Node'},
+                {x: 0, y: 0, z: 15, name: 'South Node'},
+                {x: -15, y: 0, z: 0, name: 'West Node'},
+                {x: 15, y: 0, z: 0, name: 'East Node'}
+            ];
+
+            positions360.forEach(pos => {
+                const mesh = new THREE.Mesh(lootGeo, lootMat);
+                mesh.position.set(pos.x, pos.y, pos.z);
+                
+                // Add an inner glowing core
+                const coreGeo = new THREE.OctahedronGeometry(1);
+                const coreMat = new THREE.MeshBasicMaterial({ color: 0xfffb00, transparent: true, opacity: 0.8 });
+                const core = new THREE.Mesh(coreGeo, coreMat);
+                mesh.add(core);
+
+                arLootGroup.add(mesh);
+            });
+            scene.add(arLootGroup);
+
+            // Setup Point Cloud System for "Light Cartography"
+            const maxPoints = 50000;
+            pointGeometry = new THREE.BufferGeometry();
+            
+            // SAFE FALLBACK: Explicitly call window.Float32Array to avoid scope reference errors
+            const positions = new (window.Float32Array || Float32Array)(maxPoints * 3);
+            const colors = new (window.Float32Array || Float32Array)(maxPoints * 3);
+            
+            pointGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            pointGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            pointGeometry.setDrawRange(0, 0);
+
+            pointMaterial = new THREE.PointsMaterial({
+                size: 0.5,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+
+            pointCloud = new THREE.Points(pointGeometry, pointMaterial);
+            scene.add(pointCloud);
+
+            // Note: Map mode initialization is now delayed until sensor calibration
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            // Start animation loop
+            animate();
+        }
+
+        // --- iOS 13+ Device Orientation Request ---
+        window.requestSensorAccess = function() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(permissionState => {
+                        if (permissionState === 'granted') {
+                            enableSensors();
+                        } else {
+                            alert("Gyroscope denied. AR vision will be static.");
+                            enableSensors(); // Continue anyway without tracking
+                        }
+                    })
+                    .catch(console.error);
+            } else {
+                // Non iOS 13+ devices (Android/Older iOS)
+                enableSensors();
+            }
+        };
+
+        function enableSensors() {
+            const overlay = document.getElementById('sensor-overlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => { overlay.style.display = 'none'; }, 500);
+            
+            if (!controls) {
+                // Initialize the gyro controls targeting our camera
+                controls = new THREE.DeviceOrientationControls(camera);
+            }
+            
+            // Now start the map
+            setMapMode('AR');
+            stewardessSpeak("Sensors calibrated. 360 degree spatial tracking online.");
+        }
+
+        window.setMapMode = function(mode) {
+            mapMode = mode;
+            
+            // Update UI buttons
+            ['AR', '25D', '3D'].forEach(m => {
+                document.getElementById(`btn-mode-${m}`).classList.remove('active');
+            });
+            document.getElementById(`btn-mode-${mode.replace('.','')}`).classList.add('active');
+
+            // Reset transitions
+            const targetPos = new THREE.Vector3();
+            const targetLook = new THREE.Vector3(0,0,0);
+
+            if (mode === 'AR') {
+                // Mixed Reality: Camera is central, looking forward. Holodeck is subtle.
+                video.style.opacity = '1';
+                holodeckGroup.visible = false;
+                hamburgMapGroup.visible = false;
+                arLootGroup.visible = true; // Show AR elements
+                
+                // Reset camera to origin for gyro tracking
+                camera.position.set(0, 0, 0); 
+                camera.userData.targetPos = null; // Disable position lerping in AR mode
+
+                stewardessSpeak("Mixed Reality AR mode engaged. Look around to find nodes.");
+            } 
+            else if (mode === '2.5D') {
+                // Hamburg Isometric Map
+                video.style.opacity = isEcoMode ? '0' : '0.2';
+                holodeckGroup.visible = true;
+                hamburgMapGroup.visible = true;
+                arLootGroup.visible = false;
+                
+                // Isometric angle
+                targetPos.set(40, 40, 40);
+                camera.userData.targetPos = targetPos;
+                camera.userData.targetLook = targetLook;
+                
+                stewardessSpeak("St. Pauli Topo-Map loaded. Searching for artifacts.");
+            } 
+            else if (mode === '3D') {
+                // Holo Cube / Sphere Immersive
+                video.style.opacity = '0';
+                holodeckGroup.visible = true;
+                hamburgMapGroup.visible = true;
+                arLootGroup.visible = false;
+
+                targetPos.set(0, 10, 30); // Raised slightly to see better
+                camera.userData.targetPos = targetPos;
+                camera.userData.targetLook = targetLook;
+                
+                stewardessSpeak("Immersive Holo-Cube initiated. XYZ tracking active.");
+            }
+
+            // Animate camera transition (Simple LERP in animate loop)
+            camera.userData.targetPos = targetPos;
+            camera.userData.targetLook = targetLook;
+        };
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // 360 Gyro Tracking in AR Mode
+            if (mapMode === 'AR' && controls) {
+                controls.update();
+            }
+            // Smooth camera interpolation for Map Modes (when gyro is overridden)
+            else if (camera.userData.targetPos) {
+                camera.position.lerp(camera.userData.targetPos, 0.05);
+                camera.lookAt(camera.userData.targetLook);
+            }
+
+            // Gentle rotation for the holodeck sphere
+            if (holodeckGroup && holodeckGroup.visible) {
+                holodeckGroup.children[1].rotation.y += 0.001; // rotate sphere
+                hamburgMapGroup.rotation.y = Math.sin(Date.now() * 0.0005) * 0.1; // slight sway
+            }
+
+            // Animate AR Loot Nodes (Floating effect)
+            if (arLootGroup && arLootGroup.visible) {
+                arLootGroup.children.forEach(node => {
+                    node.rotation.y += 0.02;
+                    node.rotation.x += 0.01;
+                    node.position.y = Math.sin(Date.now() * 0.002 + node.position.x) * 1.5; 
+                });
+            }
+
+            // Simulated XYZ coordinate update based on simulated movement
+            if (mapMode !== 'AR') {
+                const x = (camera.position.x + Math.sin(Date.now()/1000)).toFixed(2);
+                const z = (camera.position.z + Math.cos(Date.now()/1000)).toFixed(2);
+                document.getElementById('xyz-coords').innerText = `${x}, ${z}`;
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        window.triggerLightScan = function() {
+            // UI Flash
+            const flash = document.getElementById('scan-flash');
+            flash.style.opacity = '1';
+            setTimeout(() => { flash.style.opacity = '0'; }, 100);
+
+            // Attempt to trigger hardware torch if supported
+            if (currentStream) {
+                const track = currentStream.getVideoTracks()[0];
+                const capabilities = track.getCapabilities();
+                if (capabilities.torch) {
+                    track.applyConstraints({
+                        advanced: [{ torch: true }]
+                    }).then(() => {
+                        setTimeout(() => {
+                            track.applyConstraints({ advanced: [{ torch: false }] });
+                            processLightCartography();
+                        }, 300); // flash for 300ms then map
+                    }).catch(e => {
+                        processLightCartography(); // fallback to screen flash only
+                    });
+                } else {
+                    processLightCartography(); // fallback
+                }
+            } else {
+                processLightCartography();
+            }
+            
+            stewardessSpeak("Scanning spatial geometry...");
+        };
+
+        function processLightCartography() {
+            try {
+                // Draw current video frame to low-res processing canvas
+                if (!video.videoWidth) return;
+                
+                procCtx.drawImage(video, 0, 0, 128, 128);
+                const imgData = procCtx.getImageData(0, 0, 128, 128).data;
+                
+                const positions = pointGeometry.attributes.position.array;
+                const colors = pointGeometry.attributes.color.array;
+                
+                let pointCount = scanPoints.length;
+                const maxPoints = positions.length / 3;
+
+                // Simple edge/brightness detection to create point cloud
+                for (let y = 0; y < 128; y += 2) {
+                    for (let x = 0; x < 128; x += 2) {
+                        if (pointCount >= maxPoints) break;
+
+                        const i = (y * 128 + x) * 4;
+                        const r = imgData[i];
+                        const g = imgData[i+1];
+                        const b = imgData[i+2];
+                        const brightness = (r + g + b) / 3;
+
+                        // If bright enough, it's a feature we map
+                        if (brightness > 120) {
+                            // Map 2D pixel to 3D space in front of the camera
+                            // Adds randomness for depth simulation (analog mapping)
+                            const posX = (x - 64) * 0.5 + (Math.random() - 0.5);
+                            const posY = -(y - 64) * 0.5 + (Math.random() - 0.5);
+                            const posZ = 30 - (brightness / 255) * 20; // Brighter = closer
+
+                            positions[pointCount * 3] = posX;
+                            positions[pointCount * 3 + 1] = posY;
+                            positions[pointCount * 3 + 2] = posZ;
+
+                            // Neon tinting based on brightness
+                            colors[pointCount * 3] = (r / 255) * 1.5; 
+                            colors[pointCount * 3 + 1] = (g / 255) * 2.0; // Boost greens/cyans
+                            colors[pointCount * 3 + 2] = (b / 255) * 2.5;
+
+                            pointCount++;
+                        }
+                    }
+                }
+
+                scanPoints.length = pointCount; // update virtual length
+                pointGeometry.setDrawRange(0, pointCount);
+                pointGeometry.attributes.position.needsUpdate = true;
+                pointGeometry.attributes.color.needsUpdate = true;
+
+                // Make sure points are visible even if AR mode is off
+                if (!holodeckGroup.visible) {
+                    scene.add(pointCloud); 
+                }
+            } catch(err) {
+                console.error("Light Cartography Mapping Error:", err);
+                stewardessSpeak("Cartography failed. Re-calibrate scanner.");
+            }
+        }
+
+        window.toggleEcoMode = function() {
+            isEcoMode = !isEcoMode;
+            document.body.classList.toggle('eco-mode', isEcoMode);
+            const dot = document.getElementById('eco-dot');
+            
+            if (isEcoMode) {
+                dot.style.backgroundColor = 'gray';
+                dot.style.boxShadow = 'none';
+                renderer.setPixelRatio(1); // Drop resolution
+                stewardessSpeak("Eco mode enabled. Conserving energy for elderly and ill systems.");
+            } else {
+                dot.style.backgroundColor = 'var(--neon-green)';
+                dot.style.boxShadow = '0 0 5px var(--neon-green)';
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                stewardessSpeak("Full immersive mode restored.");
+            }
+        };
+
+        window.advanceQuest = function() {
+            currentQuestIndex = (currentQuestIndex + 1) % quests.length;
+            updateQuestUI();
+            
+            // Trigger visual effects on map based on quest
+            if (currentQuestIndex === 1 && mapMode !== '2.5D') {
+                setMapMode('2.5D'); // Force map open for relic quest
+            }
+        };
+
+        function updateQuestUI() {
+            const q = quests[currentQuestIndex];
+            const msgEl = document.getElementById('stewardess-msg');
+            msgEl.innerHTML = `<strong class="neon-text-cyan">${q.title}:</strong> ${q.text}`;
+            stewardessSpeak(q.audio);
+        }
+
+        function stewardessSpeak(text, forceGlitch = false) {
+            // Text to speech (Accessibility & Immersion)
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.pitch = 1.4; // AI Kawaii pitch
+                utterance.rate = 1.1;
+                window.speechSynthesis.speak(utterance);
+            }
+
+            // Visual UI feedback
+            const avatar = document.querySelector('.avatar-glitch');
+            avatar.style.animationDuration = '0.2s';
+            setTimeout(() => {
+                avatar.style.animationDuration = forceGlitch ? '0.5s' : '3s';
+            }, 1000);
+        }
+    </script>
+</body>
+</html>
